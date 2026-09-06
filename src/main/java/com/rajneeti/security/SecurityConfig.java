@@ -1,4 +1,4 @@
-package com.rajneeti.security;
+﻿package com.rajneeti.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -19,16 +19,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
- * Spring Security configuration.
+ * Spring Security 6 configuration.
  *
- * <p>Strategy:
- * <ul>
- *   <li>Stateless (no HTTP sessions) – JWT carries all auth state
- *   <li>CSRF disabled – not needed for stateless REST/JWT APIs
- *   <li>CORS uses the {@link CorsConfigurationSource} bean from {@link com.rajneeti.config.CorsConfig}
- *   <li>Public routes: health check, Swagger, WebSocket handshake
- *   <li>Everything else requires a valid Bearer token
- * </ul>
+ * <p>Enforces stateless authentication with JWT, CSRF disabled for REST, CORS configured,
+ * public access to register, login, refresh, and health endpoints, while keeping
+ * all other endpoints strictly protected.
  */
 @Configuration
 @EnableWebSecurity
@@ -41,16 +36,18 @@ public class SecurityConfig {
     private final UserDetailsService          userDetailsService;
     private final CorsConfigurationSource     corsConfigurationSource;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Public route patterns
-    // ──────────────────────────────────────────────────────────────────────────
     private static final String[] PUBLIC_URLS = {
             "/api/health",
-            "/api/v1/auth/**",
-            "/ws/**",               // WebSocket handshake
+            "/api/auth/register",
+            "/api/auth/login",
+            "/api/auth/refresh",
+            "/api/v1/auth/register",
+            "/api/v1/auth/login",
+            "/api/v1/auth/refresh",
+            "/ws/**",
             "/actuator/health",
             "/actuator/info",
-            "/v3/api-docs/**",      // OpenAPI (future)
+            "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"
     };
@@ -58,26 +55,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // ── CORS ──────────────────────────────────────────────────
+                // CORS configuration from CorsConfig
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
-                // ── CSRF: disabled for stateless REST/JWT ─────────────────
+                // CSRF disabled for stateless REST APIs
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // ── Session: stateless ────────────────────────────────────
+                // Stateless session management
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // ── 401 handler ───────────────────────────────────────────
+                // Unauthorized entry point (401)
                 .exceptionHandling(ex ->
                         ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
-                // ── Route authorization ───────────────────────────────────
+                // Endpoint authorization
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .anyRequest().authenticated())
 
-                // ── JWT filter ────────────────────────────────────────────
+                // Add JWT filter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);
 

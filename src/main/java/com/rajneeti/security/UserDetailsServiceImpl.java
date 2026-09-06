@@ -1,34 +1,32 @@
-package com.rajneeti.security;
+﻿package com.rajneeti.security;
 
+import com.rajneeti.entity.User;
+import com.rajneeti.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Placeholder {@link UserDetailsService} implementation.
- *
- * <p><strong>Module 01 stub only.</strong> This will be replaced in Module 02
- * when the {@code User} entity, repository, and authentication service are implemented.
- * It currently throws {@link UsernameNotFoundException} for every lookup so that
- * the JWT filter gracefully denies access without any null-pointer errors.
- *
- * <p>The bean is required now because {@link SecurityConfig} and
- * {@link JwtAuthenticationFilter} both depend on {@link UserDetailsService}.
+ * Custom {@link UserDetailsService} querying MySQL database via {@link UserRepository}.
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
+    private final UserRepository userRepository;
+
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // TODO (Module 02): Query UserRepository and return a real UserDetails
-        log.warn("UserDetailsService.loadUserByUsername called for '{}' – stub implementation. " +
-                 "Replace in Module 02.", username);
-        throw new UsernameNotFoundException(
-                "User '%s' not found. Full user management will be available in Module 02."
-                        .formatted(username));
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        User user = userRepository.findByUsernameOrEmail(identifier, identifier)
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        "User not found with username or email: " + identifier));
+
+        return UserPrincipal.create(user);
     }
 }

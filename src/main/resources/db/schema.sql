@@ -170,3 +170,19 @@ CREATE TABLE IF NOT EXISTS `match_histories` (
     INDEX `idx_match_history_match_id` (`match_id`),
     INDEX `idx_match_history_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- -----------------------------------------------------------------------------
+-- 9. Refresh Tokens Table
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `refresh_tokens` (
+    `id`          VARCHAR(36)  NOT NULL,
+    `user_id`     VARCHAR(36)  NOT NULL,
+    `token`       VARCHAR(255) NOT NULL,
+    `expiry_date` DATETIME(6)  NOT NULL,
+    `revoked`     BOOLEAN      NOT NULL DEFAULT FALSE,
+    `created_at`  DATETIME(6)  NOT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `uk_refresh_tokens_token` UNIQUE (`token`),
+    CONSTRAINT `fk_refresh_tokens_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    INDEX `idx_refresh_tokens_token` (`token`),
+    INDEX `idx_refresh_tokens_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

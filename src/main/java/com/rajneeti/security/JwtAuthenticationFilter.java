@@ -1,4 +1,4 @@
-package com.rajneeti.security;
+﻿package com.rajneeti.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,14 +19,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * JWT authentication filter – runs once per request.
- *
- * <p>Reads the {@code Authorization: Bearer <token>} header, validates the JWT,
- * and populates the {@link SecurityContextHolder} so that subsequent security
- * checks see the authenticated principal.
- *
- * <p>Skips authentication for requests that already have an authenticated principal
- * in the context (e.g., basic auth, anonymous).
+ * Filter that intercepts incoming HTTP requests, extracts the JWT Bearer token,
+ * validates it, and sets the {@link org.springframework.security.core.Authentication}
+ * in the {@link SecurityContextHolder}.
  */
 @Slf4j
 @Component
@@ -55,40 +50,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────────────────────────────────
-
     private void processToken(String token, HttpServletRequest request) {
-        if (!jwtTokenProvider.validateToken(token)) {
-            log.debug("Invalid JWT token for request: {}", request.getRequestURI());
-            return;
+        try {
+            if (!jwtTokenProvider.validateToken(token)) {
+                return;
+            }
+
+            String username = jwtTokenProvider.extractSubject(token);
+            if (username != null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to set user authentication in SecurityContext: {}", ex.getMessage());
         }
-
-        String username = jwtTokenProvider.extractSubject(token);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.debug("Authenticated user '{}' via JWT for URI: {}", username, request.getRequestURI());
     }
 
-    /**
-     * Extracts the raw JWT token from the {@code Authorization} header.
-     *
-     * @return the token string, or {@code null} if not present / malformed
-     */
     private String extractToken(HttpServletRequest request) {
         String header = request.getHeader(AUTHORIZATION_HEADER);
         if (StringUtils.hasText(header) && header.startsWith(BEARER_PREFIX)) {
-            return header.substring(BEARER_PREFIX.length());
+            return header.substring(BEARER_PREFIX.length()).trim();
         }
         return null;
     }

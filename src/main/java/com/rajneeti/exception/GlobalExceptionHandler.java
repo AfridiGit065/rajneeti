@@ -1,13 +1,13 @@
-package com.rajneeti.exception;
+﻿package com.rajneeti.exception;
 
 import com.rajneeti.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -18,172 +18,154 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * Global exception handler for all REST controllers.
- *
- * <p>Translates runtime exceptions into structured {@link ErrorResponse} payloads
- * with appropriate HTTP status codes. All exception handlers are logged at
- * appropriate levels:
- * <ul>
- *   <li>Client errors (4xx) → WARN
- *   <li>Server errors (5xx) → ERROR
- * </ul>
+ * Centralized exception handler for all REST controllers.
  */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 400 Bad Request
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─── 400 Bad Request ────────────────────────────────────────────────────────
 
-    /** @{@code @Valid} / {@code @Validated} bean validation on request bodies. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(
+    public ResponseEntity<ErrorResponse> handleValidationErrors(
             MethodArgumentNotValidException ex,
             HttpServletRequest request) {
 
-        List<ErrorResponse.FieldError> fieldErrors = ex.getBindingResult()
-                .getAllErrors()
+        List<ErrorResponse.FieldErrorItem> fieldErrors = ex.getBindingResult()
+                .getFieldErrors()
                 .stream()
-                .map(error -> {
-                    if (error instanceof FieldError fe) {
-                        return ErrorResponse.FieldError.builder()
-                                .field(fe.getField())
-                                .rejectedValue(fe.getRejectedValue())
-                                .message(fe.getDefaultMessage())
-                                .build();
-                    }
-                    return ErrorResponse.FieldError.builder()
-                            .field(error.getObjectName())
-                            .message(error.getDefaultMessage())
-                            .build();
-                })
-                .collect(Collectors.toList());
+                .map(fieldError -> ErrorResponse.FieldErrorItem.builder()
+                        .field(fieldError.getField())
+                        .rejectedValue(safeRejectedValue(fieldError))
+                        .message(fieldError.getDefaultMessage())
+                        .build())
+                .toList();
 
-        log.warn("Validation failed for [{}]: {} errors", request.getRequestURI(), fieldErrors.size());
+        log.warn("Validation failed for [{}]: {} field error(s)", request.getRequestURI(), fieldErrors.size());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ErrorResponse.builder()
                         .status(HttpStatus.BAD_REQUEST.value())
                         .error("VALIDATION_FAILED")
-                        .message("Request validation failed. Please check the 'errors' field.")
+                        .message("Request body validation failed. See 'errors' field.")
                         .path(request.getRequestURI())
                         .errors(fieldErrors)
                         .build());
     }
 
-    /** Path / query parameter type mismatches. */
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(
-            MethodArgumentTypeMismatchException ex,
-            HttpServletRequest request) {
-
-        String message = "Parameter '%s' should be of type '%s'"
-                .formatted(ex.getName(), ex.getRequiredType() != null
-                        ? ex.getRequiredType().getSimpleName() : "unknown");
-
-        log.warn("Type mismatch [{}]: {}", request.getRequestURI(), message);
-
-        return badRequest("TYPE_MISMATCH", message, request);
-    }
-
-    /** Missing required request parameters. */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponse> handleMissingParam(
-            MissingServletRequestParameterException ex,
-            HttpServletRequest request) {
-
-        log.warn("Missing parameter [{}]: {}", request.getRequestURI(), ex.getMessage());
-        return badRequest("MISSING_PARAMETER", ex.getMessage(), request);
-    }
-
-    /** Malformed or unreadable JSON body. */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleUnreadableMessage(
-            HttpMessageNotReadableException ex,
-            HttpServletRequest request) {
-
-        log.warn("Unreadable message [{}]: {}", request.getRequestURI(), ex.getMessage());
-        return badRequest("MALFORMED_JSON", "Request body is malformed or unreadable.", request);
-    }
-
-    /** Bean validation on method parameters (e.g., path variables). */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(
             ConstraintViolationException ex,
             HttpServletRequest request) {
 
-        List<ErrorResponse.FieldError> fieldErrors = ex.getConstraintViolations()
+        List<ErrorResponse.FieldErrorItem> errors = ex.getConstraintViolations()
                 .stream()
-                .map((ConstraintViolation<?> v) -> ErrorResponse.FieldError.builder()
-                        .field(v.getPropertyPath().toString())
-                        .rejectedValue(v.getInvalidValue())
-                        .message(v.getMessage())
+                .map(cv -> ErrorResponse.FieldErrorItem.builder()
+                        .field(cv.getPropertyPath().toString())
+                        .message(cv.getMessage())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
-        log.warn("Constraint violations [{}]: {}", request.getRequestURI(), fieldErrors.size());
+        log.warn("Constraint violation on [{}]: {}", request.getRequestURI(), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ErrorResponse.builder()
                         .status(HttpStatus.BAD_REQUEST.value())
                         .error("CONSTRAINT_VIOLATION")
-                        .message("Constraint violation(s) detected.")
+                        .message("Validation constraint violated.")
                         .path(request.getRequestURI())
-                        .errors(fieldErrors)
+                        .errors(errors)
                         .build());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 401 Unauthorized
-    // ──────────────────────────────────────────────────────────────────────────
-
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentials(
-            BadCredentialsException ex,
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleNotReadable(
+            HttpMessageNotReadableException ex,
             HttpServletRequest request) {
+        log.warn("Malformed JSON on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return badRequest("MALFORMED_JSON", "Request body is malformed or missing.", request);
+    }
 
-        log.warn("Bad credentials [{}]: {}", request.getRequestURI(), ex.getMessage());
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParam(
+            MissingServletRequestParameterException ex,
+            HttpServletRequest request) {
+        return badRequest("MISSING_PARAMETER",
+                "Required parameter '" + ex.getParameterName() + "' is missing.", request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+        return badRequest("TYPE_MISMATCH",
+                "Parameter '" + ex.getName() + "' should be of type " +
+                        (ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown"),
+                request);
+    }
+
+    @ExceptionHandler(TokenRefreshException.class)
+    public ResponseEntity<ErrorResponse> handleTokenRefresh(
+            TokenRefreshException ex,
+            HttpServletRequest request) {
+        log.warn("Token refresh failed on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return badRequest("TOKEN_REFRESH_ERROR", ex.getMessage(), request);
+    }
+
+    // ─── 401 Unauthorized ───────────────────────────────────────────────────────
+
+    @ExceptionHandler({InvalidCredentialsException.class, BadCredentialsException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(
+            Exception ex,
+            HttpServletRequest request) {
+        log.warn("Authentication failed on [{}]: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 ErrorResponse.builder()
                         .status(HttpStatus.UNAUTHORIZED.value())
                         .error("INVALID_CREDENTIALS")
-                        .message("Invalid username or password.")
+                        .message("Invalid email or password.")
                         .path(request.getRequestURI())
                         .build());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 403 Forbidden
-    // ──────────────────────────────────────────────────────────────────────────
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDenied(
-            AccessDeniedException ex,
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(
+            InvalidTokenException ex,
             HttpServletRequest request) {
-
-        log.warn("Access denied [{}]: {}", request.getRequestURI(), ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+        log.warn("Invalid token on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 ErrorResponse.builder()
-                        .status(HttpStatus.FORBIDDEN.value())
-                        .error("ACCESS_DENIED")
+                        .status(HttpStatus.UNAUTHORIZED.value())
+                        .error("INVALID_TOKEN")
                         .message(ex.getMessage())
                         .path(request.getRequestURI())
                         .build());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 404 Not Found
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─── 403 Forbidden ──────────────────────────────────────────────────────────
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+        log.warn("Access denied on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.FORBIDDEN.value())
+                        .error("ACCESS_DENIED")
+                        .message("Access is denied. You lack permissions for this resource.")
+                        .path(request.getRequestURI())
+                        .build());
+    }
+
+    // ─── 404 Not Found ──────────────────────────────────────────────────────────
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(
             ResourceNotFoundException ex,
             HttpServletRequest request) {
-
         log.warn("Resource not found [{}]: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 ErrorResponse.builder()
@@ -194,15 +176,12 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 405 Method Not Allowed
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─── 405 Method Not Allowed ──────────────────────────────────────────────────
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotSupported(
             HttpRequestMethodNotSupportedException ex,
             HttpServletRequest request) {
-
         log.warn("Method not supported [{}]: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(
                 ErrorResponse.builder()
@@ -213,15 +192,40 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 409 Conflict
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─── 409 Conflict ───────────────────────────────────────────────────────────
+
+    @ExceptionHandler(UsernameAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleUsernameExists(
+            UsernameAlreadyExistsException ex,
+            HttpServletRequest request) {
+        log.warn("Username conflict on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.CONFLICT.value())
+                        .error("USERNAME_ALREADY_EXISTS")
+                        .message(ex.getMessage())
+                        .path(request.getRequestURI())
+                        .build());
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleEmailExists(
+            EmailAlreadyExistsException ex,
+            HttpServletRequest request) {
+        log.warn("Email conflict on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.CONFLICT.value())
+                        .error("EMAIL_ALREADY_EXISTS")
+                        .message(ex.getMessage())
+                        .path(request.getRequestURI())
+                        .build());
+    }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleConflict(
             ResourceAlreadyExistsException ex,
             HttpServletRequest request) {
-
         log.warn("Conflict [{}]: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
                 ErrorResponse.builder()
@@ -232,15 +236,12 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 422 Unprocessable Entity
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─── 422 Unprocessable Entity ───────────────────────────────────────────────
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusiness(
             BusinessException ex,
             HttpServletRequest request) {
-
         log.warn("Business rule violation [{}]: [{}] {}", request.getRequestURI(),
                 ex.getErrorCode(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(
@@ -252,15 +253,12 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 500 Internal Server Error – catch-all
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─── 500 Internal Server Error ──────────────────────────────────────────────
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(
             Exception ex,
             HttpServletRequest request) {
-
         log.error("Unhandled exception [{}]:", request.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ErrorResponse.builder()
@@ -271,12 +269,8 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────────────────────────────────
-
     private ResponseEntity<ErrorResponse> badRequest(String error, String message,
-                                                       HttpServletRequest request) {
+                                                     HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ErrorResponse.builder()
                         .status(HttpStatus.BAD_REQUEST.value())
@@ -284,5 +278,13 @@ public class GlobalExceptionHandler {
                         .message(message)
                         .path(request.getRequestURI())
                         .build());
+    }
+
+    private Object safeRejectedValue(FieldError fieldError) {
+        String field = fieldError.getField().toLowerCase();
+        if (field.contains("password") || field.contains("token") || field.contains("secret")) {
+            return "[PROTECTED]";
+        }
+        return fieldError.getRejectedValue();
     }
 }

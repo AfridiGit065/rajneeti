@@ -1,7 +1,11 @@
-package com.rajneeti.security;
+﻿package com.rajneeti.security;
 
 import com.rajneeti.config.JwtProperties;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
@@ -11,14 +15,12 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
- * Utility class for creating, parsing, and validating JWT tokens.
- *
- * <p>Uses HMAC-SHA-256 (HS256) by default.  The signing key is derived from
- * the {@code jwt.secret} property which must be Base64-encoded and at least
- * 256 bits (32 bytes) long in production.
+ * Utility component for generating, signing, and validating JSON Web Tokens (JWT).
  */
 @Slf4j
 @Component
@@ -27,71 +29,80 @@ public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Token Generation
-    // ──────────────────────────────────────────────────────────────────────────
+    /**
+     * Generates an access token for an authenticated {@link UserPrincipal}.
+     */
+    public String generateAccessToken(UserPrincipal userPrincipal) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userPrincipal.getId().toString());
+        claims.put("email", userPrincipal.getEmail());
+        return buildToken(userPrincipal.getUsername(), claims, jwtProperties.getExpirationMs());
+    }
 
     /**
-     * Generates a signed access token for the given subject (username / user-id).
-     *
-     * @param subject    typically the username or user UUID
-     * @param extraClaims additional claims to embed (roles, email, etc.)
-     * @return signed JWT string
+     * Generates an access token with custom subject and claims.
      */
     public String generateAccessToken(String subject, Map<String, Object> extraClaims) {
         return buildToken(subject, extraClaims, jwtProperties.getExpirationMs());
     }
 
     /**
-     * Generates a signed refresh token.
+     * Generates a signed refresh token string with extended TTL.
      */
     public String generateRefreshToken(String subject) {
         return buildToken(subject, Map.of(), jwtProperties.getRefreshExpirationMs());
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Token Parsing
-    // ──────────────────────────────────────────────────────────────────────────
-
     /**
-     * Extracts the subject (username) from a token without verifying expiry.
-     * Always call {@link #validateToken(String)} first in authentication flows.
+     * Extracts the subject (username) from the token.
      */
     public String extractSubject(String token) {
         return parseClaims(token).getSubject();
     }
 
     /**
-     * Returns true if the token signature is valid and the token has not expired.
+     * Extracts the user UUID claim from the token.
+     */
+    public UUID extractUserId(String token) {
+        String userIdStr = parseClaims(token).get("userId", String.class);
+        return userIdStr != null ? UUID.fromString(userIdStr) : null;
+    }
+
+    /**
+     * Validates whether the token signature is correct and not expired.
+     * Note: Never logs token payload or token string.
      */
     public boolean validateToken(String token) {
         try {
             parseClaims(token);
             return true;
         } catch (ExpiredJwtException ex) {
-            log.warn("JWT token is expired: {}", ex.getMessage());
+            log.warn("JWT token has expired");
         } catch (UnsupportedJwtException ex) {
-            log.warn("JWT token is unsupported: {}", ex.getMessage());
+            log.warn("JWT token format is unsupported");
         } catch (MalformedJwtException ex) {
-            log.warn("JWT token is malformed: {}", ex.getMessage());
+            log.warn("JWT token is malformed");
         } catch (SignatureException ex) {
-            log.warn("JWT signature is invalid: {}", ex.getMessage());
+            log.warn("JWT signature validation failed");
         } catch (IllegalArgumentException ex) {
-            log.warn("JWT claims string is empty: {}", ex.getMessage());
+            log.warn("JWT claims string is empty or invalid");
         }
         return false;
     }
 
     /**
-     * Returns the expiry date embedded in the token.
+     * Extracts token expiration timestamp.
      */
     public Date extractExpiration(String token) {
         return parseClaims(token).getExpiration();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Private Helpers
-    // ──────────────────────────────────────────────────────────────────────────
+    /**
+     * Returns the access token expiration in seconds.
+     */
+    public long getExpirationInSeconds() {
+        return jwtProperties.getExpirationMs() / 1000L;
+    }
 
     private String buildToken(String subject, Map<String, Object> extraClaims, long ttlMs) {
         long now = System.currentTimeMillis();
@@ -113,12 +124,10 @@ public class JwtTokenProvider {
     }
 
     private SecretKey signingKey() {
-        // If the secret already looks like Base64, decode it; otherwise treat as raw UTF-8 bytes
         try {
             byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecret());
             return Keys.hmacShaKeyFor(keyBytes);
         } catch (Exception ex) {
-            // Fallback – raw string (dev only; production must use Base64 encoded ≥256-bit secret)
             return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
         }
     }
