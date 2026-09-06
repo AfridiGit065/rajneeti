@@ -1,0 +1,142 @@
+# ============================================================
+#  RAJNEETI – Application Configuration
+#  All secrets are injected via environment variables.
+#  Never hardcode passwords or secrets in this file.
+# ============================================================
+
+spring:
+  application:
+    name: RAJNEETI
+
+  # ── Profiles ──────────────────────────────────────────────
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # ── DataSource ────────────────────────────────────────────
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:rajneeti_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+    username: ${DB_USERNAME:rajneeti_user}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: RajneetiHikariPool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+
+  # ── JPA / Hibernate ───────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    show-sql: ${JPA_SHOW_SQL:false}
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          time_zone: UTC
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
+
+  # ── Jackson ───────────────────────────────────────────────
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    time-zone: UTC
+
+  # ── MVC ───────────────────────────────────────────────────
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
+
+# ── Server ────────────────────────────────────────────────────
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+# ── JWT ───────────────────────────────────────────────────────
+jwt:
+  secret: ${JWT_SECRET:THIS_IS_A_VERY_LONG_DEV_SECRET_CHANGE_IN_PRODUCTION_MIN_256_BITS}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}       # 24 hours
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 days
+
+# ── WebSocket ─────────────────────────────────────────────────
+websocket:
+  allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+  endpoint: /ws
+  app-destination-prefix: /app
+  topic-prefix: /topic
+  queue-prefix: /user
+
+# ── CORS ──────────────────────────────────────────────────────
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+  allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600
+
+# ── Actuator ──────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: RAJNEETI
+    description: Real-Time Multiplayer Bluff Strategy Game
+    version: 1.0.0-SNAPSHOT
+
+# ── Logging ───────────────────────────────────────────────────
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.rajneeti: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
+    org.springframework.web.socket: ${LOG_LEVEL_WS:INFO}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:WARN}
+    org.hibernate.type.descriptor.sql: WARN
+    com.zaxxer.hikari: WARN
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%t] %-40.40logger{39} : %m%n%wEx"
+  file:
+    name: ${LOG_FILE:logs/rajneeti.log}
+    max-size: 10MB
+    max-history: 30

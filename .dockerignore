@@ -1,0 +1,33 @@
+# Exclude build output
+target/
+
+# Exclude logs
+logs/
+*.log
+
+# Exclude IDE files
+.idea/
+*.iml
+.vscode/
+
+# Exclude test sources – not needed in the image
+src/test/
+
+# Exclude local environment files
+.env
+.env.*
+
+# Exclude Git metadata
+.git/
+.gitignore
+
+# Exclude documentation (not needed in image)
+README.md
+docs/
+
+# Exclude Docker Compose (not needed inside the image)
+docker-compose.yml
+docker-compose*.yml
+
+# Exclude Maven wrapper (builder stage handles it)
+.mvn/

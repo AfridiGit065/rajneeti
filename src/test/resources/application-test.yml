@@ -1,0 +1,28 @@
+# ============================================================
+#  Test profile – overrides datasource to H2 in-memory.
+#  Applied automatically when @ActiveProfiles("test") is used.
+# ============================================================
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:rajneeti_test;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # Suppress banner in tests
+  main:
+    banner-mode: off
+
+logging:
+  level:
+    root: WARN
+    com.rajneeti: WARN

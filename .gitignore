@@ -1,0 +1,57 @@
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+desktop.ini
+
+# ─── Java / Maven ─────────────────────────────────────────────────────────────
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+!**/src/main/**/*.jar
+!**/src/test/**/*.jar
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+
+# ─── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+.eclipse/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+.vscode/settings.json
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+*.log.*
+
+# ─── Environment / Secrets – NEVER commit these ───────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.docker/
+
+# ─── Spring Boot ──────────────────────────────────────────────────────────────
+spring-shell.log
+
+# ─── Testing ──────────────────────────────────────────────────────────────────
+surefire-reports/

@@ -1,0 +1,21 @@
+# Default
+* text=auto
+
+# Source files - LF
+*.java       text eol=lf
+*.xml        text eol=lf
+*.yml        text eol=lf
+*.yaml       text eol=lf
+*.properties text eol=lf
+*.json       text eol=lf
+*.md         text eol=lf
+*.txt        text eol=lf
+Dockerfile   text eol=lf
+*.sh         text eol=lf
+.env*        text eol=lf
+
+# Binaries
+*.jar        binary
+*.class      binary
+*.png        binary
+*.jpg        binary
