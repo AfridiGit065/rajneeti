@@ -114,6 +114,30 @@ public class GlobalExceptionHandler {
         return badRequest("TOKEN_REFRESH_ERROR", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(NotInRoomException.class)
+    public ResponseEntity<ErrorResponse> handleNotInRoom(
+            NotInRoomException ex,
+            HttpServletRequest request) {
+        log.warn("Not in room on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return badRequest("NOT_IN_ROOM", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(RoomNotJoinableException.class)
+    public ResponseEntity<ErrorResponse> handleRoomNotJoinable(
+            RoomNotJoinableException ex,
+            HttpServletRequest request) {
+        log.warn("Room not joinable on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return badRequest("ROOM_NOT_JOINABLE", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidRoomStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRoomState(
+            InvalidRoomStateException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid room state on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return badRequest("INVALID_ROOM_STATE", ex.getMessage(), request);
+    }
+
     // ─── 401 Unauthorized ───────────────────────────────────────────────────────
 
     @ExceptionHandler({InvalidCredentialsException.class, BadCredentialsException.class})
@@ -160,11 +184,25 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(NotRoomHostException.class)
+    public ResponseEntity<ErrorResponse> handleNotRoomHost(
+            NotRoomHostException ex,
+            HttpServletRequest request) {
+        log.warn("Not room host on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.FORBIDDEN.value())
+                        .error("NOT_ROOM_HOST")
+                        .message(ex.getMessage())
+                        .path(request.getRequestURI())
+                        .build());
+    }
+
     // ─── 404 Not Found ──────────────────────────────────────────────────────────
 
-    @ExceptionHandler(ResourceNotFoundException.class)
+    @ExceptionHandler({ResourceNotFoundException.class, RoomNotFoundException.class})
     public ResponseEntity<ErrorResponse> handleNotFound(
-            ResourceNotFoundException ex,
+            RuntimeException ex,
             HttpServletRequest request) {
         log.warn("Resource not found [{}]: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
@@ -217,6 +255,34 @@ public class GlobalExceptionHandler {
                 ErrorResponse.builder()
                         .status(HttpStatus.CONFLICT.value())
                         .error("EMAIL_ALREADY_EXISTS")
+                        .message(ex.getMessage())
+                        .path(request.getRequestURI())
+                        .build());
+    }
+
+    @ExceptionHandler(RoomFullException.class)
+    public ResponseEntity<ErrorResponse> handleRoomFull(
+            RoomFullException ex,
+            HttpServletRequest request) {
+        log.warn("Room full conflict on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.CONFLICT.value())
+                        .error("ROOM_FULL")
+                        .message(ex.getMessage())
+                        .path(request.getRequestURI())
+                        .build());
+    }
+
+    @ExceptionHandler(AlreadyInRoomException.class)
+    public ResponseEntity<ErrorResponse> handleAlreadyInRoom(
+            AlreadyInRoomException ex,
+            HttpServletRequest request) {
+        log.warn("Already in room conflict on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.CONFLICT.value())
+                        .error("ALREADY_IN_ROOM")
                         .message(ex.getMessage())
                         .path(request.getRequestURI())
                         .build());

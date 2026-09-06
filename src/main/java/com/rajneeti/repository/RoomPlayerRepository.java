@@ -16,6 +16,8 @@ public interface RoomPlayerRepository extends JpaRepository<RoomPlayer, UUID> {
 
     List<RoomPlayer> findByRoomId(UUID roomId);
 
+    List<RoomPlayer> findByRoomIdOrderBySeatNumberAsc(UUID roomId);
+
     Optional<RoomPlayer> findByRoomIdAndUserId(UUID roomId, UUID userId);
 
     Optional<RoomPlayer> findByRoomIdAndSeatNumber(UUID roomId, Integer seatNumber);
@@ -27,4 +29,6 @@ public interface RoomPlayerRepository extends JpaRepository<RoomPlayer, UUID> {
     long countByRoomId(UUID roomId);
 
     void deleteByRoomIdAndUserId(UUID roomId, UUID userId);
+
+    void deleteByRoomId(UUID roomId);
 }
