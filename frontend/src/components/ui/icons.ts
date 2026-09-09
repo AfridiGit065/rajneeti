@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 export {
   Loader2,
@@ -72,6 +72,12 @@ export {
   CheckCircle2,
   PenLine,
   Download,
+  Pencil,
+  History,
+  CheckCircle,
+  XCircle,
+  MinusCircle,
+  TrendingUp,
 } from "lucide-react";
 
 export type { LucideIcon } from "lucide-react";
