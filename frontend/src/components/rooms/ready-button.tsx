@@ -22,7 +22,7 @@ export function ReadyButton({ isReady, disabled, loading, onToggle }: ReadyButto
       onClick={onToggle}
     >
       <TimerReset className="size-4" aria-hidden />
-      আনরেডি
+      Not Ready
     </Button>
   ) : (
     <Button
@@ -34,7 +34,7 @@ export function ReadyButton({ isReady, disabled, loading, onToggle }: ReadyButto
       onClick={onToggle}
     >
       <CheckCheck className="size-4" aria-hidden />
-      রেডি
+      Ready
     </Button>
   );
 }

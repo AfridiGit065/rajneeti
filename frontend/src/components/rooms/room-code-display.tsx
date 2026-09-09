@@ -13,13 +13,13 @@ export function RoomCodeDisplay({ code, playerCount, maxPlayers }: RoomCodeDispl
   return (
     <div className="text-center">
       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-        রুম কোড
+        Room Code
       </p>
       <RoomCode code={code} size="lg" />
       {playerCount !== undefined && maxPlayers !== undefined ? (
         <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted">
           <Users className="size-3.5" aria-hidden />
-          {playerCount}/{maxPlayers} খেলোয়াড়
+          {playerCount}/{maxPlayers} Players
         </p>
       ) : null}
     </div>

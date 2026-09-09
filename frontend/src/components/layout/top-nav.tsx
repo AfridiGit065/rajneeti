@@ -17,12 +17,12 @@ const PUBLIC_LINKS = [
 ];
 
 const APP_LINKS = [
-  { href: "/lobby", label: "লবি" },
-  { href: "/rooms/join", label: "রুম যোগ দিন" },
-  { href: "/leaderboard", label: "লিডারবোর্ড" },
-  { href: "/history", label: "ইতিহাস" },
-  { href: "/profile", label: "প্রোফাইল" },
-  { href: "/settings", label: "সেটিংস" },
+  { href: "/lobby", label: "Lobby" },
+  { href: "/rooms/join", label: "Join Room" },
+  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/history", label: "History" },
+  { href: "/profile", label: "Profile" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
@@ -81,7 +81,7 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
                 {user.avatarInitial}
               </span>
               <span className="text-sm font-medium text-ivory">{user.displayName}</span>
-              <Badge tone="gold">লেভেল {user.level}</Badge>
+              <Badge tone="gold">Level {user.level}</Badge>
             </Link>
           ) : null}
         </div>
@@ -117,7 +117,7 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
                     <span className="text-sm font-semibold text-ivory">{user.displayName}</span>
                     <span className="text-xs text-muted">@{user.username}</span>
                   </div>
-                  <Badge tone="gold" className="ml-auto text-[10px]">লেভেল {user.level}</Badge>
+                  <Badge tone="gold" className="ml-auto text-[10px]">Level {user.level}</Badge>
                 </Link>
               </li>
             ) : null}

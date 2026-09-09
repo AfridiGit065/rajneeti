@@ -28,17 +28,17 @@ export function StartMatchDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="খেলা শুরু করো?"
-      subtitle="সবাই প্রস্তুত হলে ম্যাচ শুরু হবে।"
+      title="Start the match?"
+      subtitle="The match will begin when all players are ready."
       icon={<Swords className="size-5" aria-hidden />}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={loading}>
-            বাতিল
+            Cancel
           </Button>
           <Button variant="premium" onClick={onConfirm} loading={loading} disabled={!canStart}>
             <Swords className="size-4" aria-hidden />
-            খেলা শুরু
+            Start Game
           </Button>
         </>
       }
@@ -47,9 +47,9 @@ export function StartMatchDialog({
         <li className="flex items-center gap-2.5">
           <Users className="size-4 shrink-0 text-gold-400" aria-hidden />
           <span>
-            খেলোয়াড়: <strong className="text-ivory">{playerCount}/{maxPlayers}</strong>
+            Players: <strong className="text-ivory">{playerCount}/{maxPlayers}</strong>
             {playerCount >= 2 ? null : (
-              <span className="ml-1 text-crimson-300">— কমপক্ষে ২ জন লাগবে</span>
+              <span className="ml-1 text-crimson-300">— Minimum 2 required</span>
             )}
           </span>
         </li>
@@ -57,13 +57,13 @@ export function StartMatchDialog({
           <span className="flex items-center gap-2.5">
             <CheckCheck className="size-4 shrink-0 text-gold-400" aria-hidden />
             <span>
-              রেডি স্ট্যাটাস: <strong className="text-ivory">{allReady ? "সবাই প্রস্তুত" : "সবাই রেডি নয়"}</strong>
+              Ready Status: <strong className="text-ivory">{allReady ? "All Ready" : "Not All Ready"}</strong>
             </span>
           </span>
         </li>
         {!canStart ? (
           <li className="mt-3 rounded-lg border border-crimson-500/35 bg-crimson-600/10 px-3 py-2 text-xs text-crimson-200">
-            সবাই রেডি এবং কমপক্ষে ২ জন খেলোয়াড় থাকলে শুরু করা যাবে।
+            Can start once all players are ready and at least 2 players have joined.
           </li>
         ) : null}
       </ul>

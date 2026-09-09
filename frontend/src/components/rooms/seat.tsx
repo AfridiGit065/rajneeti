@@ -17,8 +17,8 @@ function EmptySeat({ seatIndex }: { seatIndex: number }) {
       <span className="flex size-9 items-center justify-center rounded-full border border-dashed border-forest-500/30 text-muted/50">
         <MapPin className="size-4" aria-hidden />
       </span>
-      <p className="text-xs text-muted/60">অপেক্ষমাণ আসন</p>
-      {seatIndex === 0 ? <p className="text-[10px] text-muted/40">প্রথম খেলোয়াড় হোস্ট হয়</p> : null}
+      <p className="text-xs text-muted/60">Empty Seat</p>
+      {seatIndex === 0 ? <p className="text-[10px] text-muted/40">First player becomes host</p> : null}
     </div>
   );
 }
@@ -36,7 +36,7 @@ export function Seat({ seatIndex, empty = false, delayMs = 0, children }: SeatPr
       style={{ animationDelay: `${delayMs}ms` }}
     >
       <span className="absolute right-3 top-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted">
-        আসন {seatIndex + 1}
+        Seat {seatIndex + 1}
       </span>
       {children ?? <EmptySeat seatIndex={seatIndex} />}
     </div>

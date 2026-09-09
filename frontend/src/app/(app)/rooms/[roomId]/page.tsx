@@ -182,14 +182,14 @@ export default function RoomDetailPage() {
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-gold-300"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        লবিতে ফিরে যাও
+        Back to Lobby
       </Link>
 
       {room.status !== "WAITING" ? (
         <div className="rounded-2xl border border-forest-500/25 bg-surface panel-emboss p-10 text-center">
-          <Badge tone="crimson">{room.status === "IN_PROGRESS" ? "খেলা চলছে" : "খেলা শেষ"}</Badge>
+          <Badge tone="crimson">{room.status === "IN_PROGRESS" ? "In Progress" : "Finished"}</Badge>
           <p className="mt-4 text-sm text-muted">
-            এই রুমে আর যোগ দেওয়া যাবে না।
+            This room is no longer accepting players.
           </p>
         </div>
       ) : (
@@ -202,12 +202,12 @@ export default function RoomDetailPage() {
             />
             <div className="flex flex-col items-center gap-2 sm:items-end">
               {room.name ? (
-                <p className="font-bengali text-xl font-semibold text-ivory">{room.name}</p>
+                <p className="text-xl font-semibold text-ivory">{room.name}</p>
               ) : null}
               <Badge
                 tone={room.status === "WAITING" ? "emerald" : "crimson"}
               >
-                {room.status === "WAITING" ? "অপেক্ষারত" : room.status}
+                {room.status === "WAITING" ? "Waiting" : room.status}
               </Badge>
               <Button
                 variant="outline"
@@ -215,7 +215,7 @@ export default function RoomDetailPage() {
                 onClick={() => setLeaveOpen(true)}
               >
                 <LogOut className="size-3.5" aria-hidden />
-                রুম ছেড়ে যাও
+                Leave Room
               </Button>
             </div>
           </div>
@@ -240,11 +240,11 @@ export default function RoomDetailPage() {
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-forest-500/30 bg-deep-900/40 p-10 text-center">
-              <p className="font-bengali text-lg font-semibold text-ivory">
-                তুমি এখনো এই রুমে নেই
+              <p className="text-lg font-semibold text-ivory">
+                You are not in this room yet
               </p>
               <p className="mt-1 text-sm text-muted">
-                যোগ দিতে নিচের বাটনে চাপো।
+                Click the button below to join.
               </p>
               <Button
                 className="mt-5"
@@ -253,7 +253,7 @@ export default function RoomDetailPage() {
                 onClick={joinRoom}
               >
                 <DoorOpen className="size-4" aria-hidden />
-                রুমে যোগ দাও
+                Join Room
               </Button>
             </div>
           )}
@@ -262,18 +262,18 @@ export default function RoomDetailPage() {
             <div className="mt-8 rounded-2xl border border-forest-500/25 bg-surface panel-emboss p-6">
               <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
                 <div className="flex-1">
-                  <p className="font-bengali text-sm font-semibold text-ivory">
+                  <p className="text-sm font-semibold text-ivory">
                     {isHost ? (
                       <span className="inline-flex items-center gap-1.5">
                         <Crown className="size-4 text-gold-400" aria-hidden />
-                        তুমি হোস্ট
+                        You are the Host
                       </span>
                     ) : (
-                      "তোমার রেডি স্ট্যাটাস"
+                      "Your Ready Status"
                     )}
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    কমপক্ষে {RULES.minPlayers} জন খেলোয়াড় এবং সবাই রেডি হলে খেলা শুরু করা যাবে।
+                    At least {RULES.minPlayers} players must join and all must be ready to start.
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:w-64">
@@ -292,7 +292,7 @@ export default function RoomDetailPage() {
                       onClick={() => setStartOpen(true)}
                     >
                       <Swords className="size-4" aria-hidden />
-                      খেলা শুরু
+                      Start Game
                     </Button>
                   ) : null}
                 </div>
@@ -302,8 +302,8 @@ export default function RoomDetailPage() {
                 <p className="mt-4 flex items-start gap-2 text-xs text-muted">
                   <CheckCheck className="mt-0.5 size-4 shrink-0 text-gold-400" aria-hidden />
                   {playerCount < RULES.minPlayers
-                    ? `${RULES.minPlayers - playerCount} জন খেলোয়াড় আর লাগবে।`
-                    : "সবাই রেডি করলে শুরু করা যাবে।"}
+                    ? `Need ${RULES.minPlayers - playerCount} more player(s) to start.`
+                    : "Waiting for all players to ready up."}
                 </p>
               ) : null}
             </div>
@@ -325,13 +325,13 @@ export default function RoomDetailPage() {
         open={leaveOpen}
         onClose={() => setLeaveOpen(false)}
         onConfirm={confirmLeave}
-        title="রুম ছেড়ে চলে যাবে?"
+        title="Leave this room?"
         description={
           room.status === "WAITING" && isHost
-            ? "তুমি হোস্ট — রুম ছাড়লে পুরো রুমটি বন্ধ হয়ে যাবে। নিশ্চিত?"
-            : "রুম থেকে বের হয়ে যাবে। আবার যোগ দিতে কোড লাগবে।"
+            ? "You are the host — leaving will close the entire room. Are you sure?"
+            : "You will leave the room. You will need the code to rejoin."
         }
-        confirmLabel="ছেড়ে যাই"
+        confirmLabel="Leave"
         variant="danger"
         loading={leaveLoading}
       />

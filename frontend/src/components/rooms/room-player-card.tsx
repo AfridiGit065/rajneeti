@@ -31,10 +31,10 @@ export function RoomPlayerCard({ player, isMe = false }: RoomPlayerCardProps) {
             {player.isHost ? (
               <Badge tone="gold" className="shrink-0">
                 <Crown className="size-3" aria-hidden />
-                হোস্ট
+                Host
               </Badge>
             ) : null}
-            {isMe ? <Badge tone="parchment">আপনি</Badge> : null}
+            {isMe ? <Badge tone="parchment">You</Badge> : null}
           </p>
           <p className="truncate text-xs text-muted">@{player.user.username}</p>
         </div>
@@ -46,7 +46,7 @@ export function RoomPlayerCard({ player, isMe = false }: RoomPlayerCardProps) {
             className={cn("size-3", !ready && "opacity-0")}
             aria-hidden={!ready}
           />
-          {ready ? "রেডি" : "অপেক্ষা"}
+          {ready ? "Ready" : "Waiting"}
         </Badge>
       </span>
     </div>
