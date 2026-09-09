@@ -12,6 +12,7 @@ import { PlayerSeat } from "./player-seat";
 import { OpponentSeat } from "./opponent-seat";
 import { OwnCards } from "./own-cards";
 import { ActionPanel } from "./action-panel";
+import { ChallengeFlow } from "./challenge";
 import { GameLog } from "./game-log";
 import { getAction } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
@@ -229,6 +230,10 @@ export function GameBoard({ matchId }: { matchId: string }) {
             <ActiveAction game={game} />
             <DeckDiscard game={game} />
           </div>
+
+          {game.status === MatchStatus.IN_PROGRESS ? (
+            <ChallengeFlow game={game} selfId={selfId} onResolved={setGame} />
+          ) : null}
 
           <div className="mt-auto flex flex-col items-center justify-end gap-4 lg:flex-row lg:items-end">
             <PlayerSeat player={currentPlayer} />

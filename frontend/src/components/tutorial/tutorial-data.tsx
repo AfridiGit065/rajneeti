@@ -331,7 +331,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
             কয়েন হলো রাজনীতির অর্থনৈতিক চালিকাশক্তি। নির্দিষ্ট কয়েন জমিয়ে আপনি মারাত্মক আক্রমণ চালাতে পারেন।
           </Bullet>
           <Bullet icon={<AlertTriangle className="size-3.5 text-gold-400" aria-hidden />}>
-            <strong className="text-gold-300">{RULES.forcedCoupThreshold}+ কয়েন নিয়ম:</strong> যদি কোনো পালায় আপনার কোষাগারে ১০ বা ততোধিক কয়েন জমা হয়, তবে আপনাকে অবশ্যই বাধ্যতামূলকভাবে 'ক্ষমতা দখল' (Coup) করতে হবে!
+            <strong className="text-gold-300">{RULES.forcedCoupThreshold}+ কয়েন নিয়ম:</strong> যদি কোনো পালায় আপনার কোষাগারে ১০ বা ততোধিক কয়েন জমা হয়, তবে আপনাকে অবশ্যই বাধ্যতামূলকভাবে ‘ক্ষমতা দখল’ (Coup) করতে হবে!
           </Bullet>
         </ul>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
@@ -480,7 +480,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
             ব্লক করাও একটি চরিত্র দাবি — তাই ব্লকের বিরুদ্ধেও অন্য খেলোয়াড়রা চ্যালেঞ্জ জানাতে পারে!
           </Bullet>
           <Bullet>
-            'আয়' (Income) এবং 'ক্ষমতা দখল' (Coup) কোনো চরিত্র দিয়েই ব্লক করা যায় না।
+            ‘আয়’ (Income) এবং ‘ক্ষমতা দখল’ (Coup) কোনো চরিত্র দিয়েই ব্লক করা যায় না।
           </Bullet>
         </ul>
         <div className="space-y-2 pt-1">
@@ -550,7 +550,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
       <div className="space-y-4">
         <ul className="space-y-3">
           <Bullet icon={<Crown className="size-3.5 text-gold-400" aria-hidden />}>
-            কোষাগারে {RULES.coupCost} কয়েন জমা হলে যেকোনো খেলোয়াড় 'ক্ষমতা দখল' ঘোষণা করতে পারেন।
+            কোষাগারে {RULES.coupCost} কয়েন জমা হলে যেকোনো খেলোয়াড় ‘ক্ষমতা দখল’ ঘোষণা করতে পারেন।
           </Bullet>
           <Bullet>
             টার্গেট খেলোয়াড় তৎক্ষণাৎ তার যেকোনো একটি কার্ড বেছে উন্মোচিত করতে বাধ্য হন।

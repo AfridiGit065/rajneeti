@@ -20,3 +20,4 @@ export { PlayerStatus } from "./player-status";
 export type { PlayerPresence, PlayerTone } from "./player-status";
 export { ActionButton } from "./action-button";
 export type { ActionKind, ActionSize } from "./action-button";
+export * from "./challenge";

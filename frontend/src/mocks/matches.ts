@@ -34,7 +34,7 @@ function makePlayer(
 const players = [
   makePlayer(0, MOCK_USERS[0]!, { coins: 5 }),
   makePlayer(1, MOCK_USERS[1]!, { isTurn: false, coins: 3 }),
-  makePlayer(2, MOCK_USERS[2]!, { isTurn: false, coins: 8 }),
+  makePlayer(2, MOCK_USERS[2]!, { isTurn: true, coins: 8 }),
   makePlayer(3, MOCK_USERS[3]!, { isTurn: false, coins: 2 }),
 ];
 
@@ -42,15 +42,15 @@ export const MOCK_GAME_STATE: GameState = {
   matchId: "match-1",
   roomId: "room-1",
   status: "IN_PROGRESS" as MatchStatus,
-  phase: "action_selection",
+  phase: "action_resolution",
   players,
-  currentTurnPlayerId: players[0]!.id,
+  currentTurnPlayerId: players[2]!.id,
   turnOrder: players.map((p) => p.id),
   turnNumber: 7,
   deckCount: 11,
   revealedCardsCount: 2,
   winnerPlayerId: null,
-  activeAction: null,
+  activeAction: { action: "tax", claimedCharacter: "minister" },
   pendingChallenge: null,
   pendingBlock: null,
   log: [
@@ -63,13 +63,13 @@ export const MOCK_GAME_STATE: GameState = {
     {
       id: "log-2",
       timestamp: new Date().toISOString(),
-      text: "যন্ত্রণা কর আদায় দাবি করল — চ্যালেঞ্জ সফল!",
+      text: "শাপলা কর আদায় অ্যাকশন চ্যালেঞ্জ করে মন্ত্রী প্রমাণ পেল।",
       kind: "challenge",
     },
     {
       id: "log-3",
       timestamp: new Date().toISOString(),
-      text: "শাপলা সংগ্রামের কাছ থেকে 2 কয়েন চুরি করল।",
+      text: "যন্ত্রণা মন্ত্রী দাবি করে কর আদায় ঘোষণা করেছে — সাড়া দিন!",
       kind: "action",
     },
   ],
