@@ -6,11 +6,11 @@ const now = new Date().toISOString();
 export const MOCK_ROOMS: RoomSummary[] = [
   {
     roomId: "room-1",
-    roomCode: "RG6K2",
-    name: "দেরাজ অ্যাভিনিউ",
+    roomCode: "RAJ123",
+    name: "সংসদ ভবন",
     host: MOCK_USERS[0]!,
     status: "WAITING",
-    maxPlayers: 4,
+    maxPlayers: 6,
     createdAt: now,
     players: [
       {
