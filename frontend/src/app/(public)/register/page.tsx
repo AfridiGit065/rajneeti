@@ -55,14 +55,12 @@ const INITIAL_VALUES: FormValues = {
 export default function RegisterPage() {
   const router = useRouter();
   const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const usernameCheckSeq = useRef(0);
 
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
   const [status, setStatus] = useState<Status>("idle");
   const [serverError, setServerError] = useState<string | null>(null);
-  const [checkingUsername, setCheckingUsername] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -74,17 +72,6 @@ export default function RegisterPage() {
   );
 
   const submitting = status === "submitting";
-
-  async function checkUsernameAvailability(username: string) {
-    const seq = ++usernameCheckSeq.current;
-    setCheckingUsername(true);
-    const result = await AuthService.checkUsername(username);
-    if (seq !== usernameCheckSeq.current) return;
-    setCheckingUsername(false);
-    if (result.ok && !result.data.available) {
-      setErrors((prev) => ({ ...prev, username: "This username is already taken." }));
-    }
-  }
 
   function handleChange(field: FieldName, value: string) {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -104,9 +91,6 @@ export default function RegisterPage() {
             : validateConfirm(values.confirm, values.password);
     setErrors((prev) => ({ ...prev, [field]: nextError ?? undefined }));
 
-    if (field === "username" && !nextError && values.username.trim().length >= USERNAME_MIN) {
-      void checkUsernameAvailability(values.username.trim());
-    }
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -202,9 +186,7 @@ export default function RegisterPage() {
             value={values.username}
             error={usernameError}
             hint={
-              !usernameError && checkingUsername
-                ? "Checking username availability…"
-                : undefined
+              undefined
             }
             disabled={submitting}
             onChange={(e) => handleChange("username", e.target.value)}
@@ -294,7 +276,7 @@ export default function RegisterPage() {
             size="lg"
             fullWidth
             loading={submitting}
-            disabled={checkingUsername}
+            disabled={submitting}
           >
             <UserPlus className="size-4" aria-hidden />
             Create Account

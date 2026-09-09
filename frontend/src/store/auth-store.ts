@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { configureApiClient } from "@/lib/api-client";
 import { AuthService, type AuthResult } from "@/services/auth-service";
 import type { LoginInput, UserPublic } from "@/types/user";
 import type { Result } from "@/types/api";
@@ -9,6 +10,7 @@ import type { Result } from "@/types/api";
 interface AuthState {
   user: UserPublic | null;
   accessToken: string | null;
+  refreshToken: string | null;
   status: "idle" | "loading" | "authenticated" | "unauthenticated";
   remember: boolean;
   login: (input: LoginInput, remember: boolean) => Promise<Result<AuthResult>>;
@@ -29,6 +31,7 @@ function toSessionState(result: AuthResult) {
       level: result.user.level ?? 1,
     },
     accessToken: result.session.accessToken,
+    refreshToken: result.session.refreshToken,
     status: "authenticated" as const,
   };
 }
@@ -38,6 +41,7 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       status: "idle",
       remember: false,
       login: async (input, remember) => {
@@ -47,22 +51,27 @@ export const useAuthStore = create<AuthState>()(
         return result;
       },
       logout: async () => {
-        await AuthService.logout();
+        await AuthService.logout(useAuthStore.getState().refreshToken ?? undefined);
         useAuthStore.persist.clearStorage();
-        set({ user: null, accessToken: null, status: "unauthenticated", remember: false });
+        set({ user: null, accessToken: null, refreshToken: null, status: "unauthenticated", remember: false });
       },
       setSession: (result) => set({ ...toSessionState(result) }),
       setUser: (user) => set({ user }),
       clearSession: () =>
-        set({ user: null, accessToken: null, status: "unauthenticated" }),
+        set({ user: null, accessToken: null, refreshToken: null, status: "unauthenticated" }),
       setRemember: (remember) => set({ remember }),
     }),
     {
       name: "rajneeti-auth",
       partialize: (state) =>
-        state.remember
-          ? { remember: true, user: state.user, accessToken: state.accessToken, status: state.status }
-          : { remember: false },
+        ({ remember: state.remember, user: state.user, accessToken: state.accessToken, refreshToken: state.refreshToken, status: state.status }),
     },
   ),
 );
+
+configureApiClient({
+  getAccessToken: () => useAuthStore.getState().accessToken,
+  onUnauthorized: () => {
+    useAuthStore.getState().clearSession();
+  },
+});

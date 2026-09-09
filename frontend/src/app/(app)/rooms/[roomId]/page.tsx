@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { RoomService } from "@/services/room-service";
 import { useRoomStore } from "@/store/room-store";
 import { useAuthStore } from "@/store/auth-store";
-import { RULES } from "@/lib/game/rules";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -18,8 +17,6 @@ import {
   RoomCodeDisplay,
   Seat,
   RoomPlayerCard,
-  ReadyButton,
-  StartMatchDialog,
 } from "@/components/rooms";
 import {
   AlertTriangle,
@@ -53,11 +50,8 @@ export default function RoomDetailPage() {
     setView("loading");
     setErrorMessage(null);
   }
-  const [readyLoading, setReadyLoading] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
-  const [startLoading, setStartLoading] = useState(false);
   const [leaveLoading, setLeaveLoading] = useState(false);
-  const [startOpen, setStartOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
 
   useEffect(() => {
@@ -81,17 +75,6 @@ export default function RoomDetailPage() {
   const me = room?.players.find((p) => p.user.id === currentUser?.id) ?? null;
   const isHost = me?.isHost ?? false;
   const playerCount = room?.players.length ?? 0;
-  const allReady =
-    !!room && room.players.length >= RULES.minPlayers && room.players.every((p) => p.isReady);
-  const canStart = isHost && playerCount >= RULES.minPlayers && allReady;
-
-  async function toggleReady() {
-    if (!room) return;
-    setReadyLoading(true);
-    const result = await RoomService.setReady(room.roomId, !me?.isReady);
-    setReadyLoading(false);
-    if (result.ok) setActiveRoom(result.data);
-  }
 
   async function joinRoom() {
     if (!room) return;
@@ -101,23 +84,15 @@ export default function RoomDetailPage() {
     if (result.ok) setActiveRoom(result.data);
   }
 
-  async function confirmStart() {
-    if (!room) return;
-    setStartLoading(true);
-    const result = await RoomService.startGame(room.roomId);
-    if (!result.ok) {
-      setStartLoading(false);
-      setStartOpen(false);
-      return;
-    }
-    router.push(`/game/${result.data.matchId}`);
-  }
-
   async function confirmLeave() {
     if (!room) return;
     setLeaveLoading(true);
-    await RoomService.leaveRoom(room.roomId);
+    const result = await RoomService.leaveRoom(room.roomId);
     setLeaveLoading(false);
+    if (!result.ok) {
+      setErrorMessage(result.error.message);
+      return;
+    }
     setActiveRoom(null);
     router.replace("/lobby");
   }
@@ -272,25 +247,14 @@ export default function RoomDetailPage() {
                       "Your Ready Status"
                     )}
                   </p>
-                  <p className="mt-1 text-xs text-muted">
-                    At least {RULES.minPlayers} players must join and all must be ready to start.
-                  </p>
+                  <p className="mt-1 text-xs text-muted">Game readiness will be available in a future gameplay update.</p>
                 </div>
                 <div className="flex flex-col gap-3 sm:w-64">
-                  <ReadyButton
-                    isReady={me.isReady}
-                    loading={readyLoading}
-                    onToggle={toggleReady}
-                  />
+                  <Button variant="outline" size="lg" fullWidth disabled>
+                    Ready
+                  </Button>
                   {isHost ? (
-                    <Button
-                      variant="premium"
-                      size="lg"
-                      fullWidth
-                      disabled={!canStart}
-                      loading={startLoading}
-                      onClick={() => setStartOpen(true)}
-                    >
+                    <Button variant="premium" size="lg" fullWidth disabled>
                       <Swords className="size-4" aria-hidden />
                       Start Game
                     </Button>
@@ -298,28 +262,15 @@ export default function RoomDetailPage() {
                 </div>
               </div>
 
-              {!allReady ? (
-                <p className="mt-4 flex items-start gap-2 text-xs text-muted">
-                  <CheckCheck className="mt-0.5 size-4 shrink-0 text-gold-400" aria-hidden />
-                  {playerCount < RULES.minPlayers
-                    ? `Need ${RULES.minPlayers - playerCount} more player(s) to start.`
-                    : "Waiting for all players to ready up."}
-                </p>
-              ) : null}
+              <p className="mt-4 flex items-start gap-2 text-xs text-muted">
+                <CheckCheck className="mt-0.5 size-4 shrink-0 text-gold-400" aria-hidden />
+                Ready and start controls will be enabled with the gameplay module.
+              </p>
             </div>
           ) : null}
         </>
       )}
 
-      <StartMatchDialog
-        open={startOpen}
-        onClose={() => setStartOpen(false)}
-        onConfirm={confirmStart}
-        playerCount={playerCount}
-        maxPlayers={room.maxPlayers}
-        allReady={allReady}
-        loading={startLoading}
-      />
 
       <ConfirmDialog
         open={leaveOpen}
@@ -328,7 +279,7 @@ export default function RoomDetailPage() {
         title="Leave this room?"
         description={
           room.status === "WAITING" && isHost
-            ? "You are the host — leaving will close the entire room. Are you sure?"
+            ? "You are the host. If players remain, the next player becomes host. Are you sure?"
             : "You will leave the room. You will need the code to rejoin."
         }
         confirmLabel="Leave"

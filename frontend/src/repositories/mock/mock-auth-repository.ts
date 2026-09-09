@@ -30,7 +30,7 @@ export class MockAuthRepository implements AuthRepository {
     return ok(buildSession(MOCK_CURRENT_USER));
   }
 
-  async register(input: RegisterInput): Promise<Result<AuthSession>> {
+  async register(input: RegisterInput): Promise<Result<UserPublic>> {
     await delay(700);
     if (MOCK_USERS.some((u) => u.username.toLowerCase() === input.username.toLowerCase())) {
       return err({
@@ -47,13 +47,13 @@ export class MockAuthRepository implements AuthRepository {
       });
     }
     return ok(
-      buildSession({
+      {
         id: "u-new",
         username: input.username,
         displayName: input.displayName,
         avatarInitial: input.displayName.slice(0, 1) || "র",
         level: 1,
-      }),
+      },
     );
   }
 
@@ -71,7 +71,7 @@ export class MockAuthRepository implements AuthRepository {
     return ok(buildSession(MOCK_CURRENT_USER));
   }
 
-  async logout(): Promise<Result<void>> {
+  async logout(_refreshToken?: string): Promise<Result<void>> {
     await delay(200);
     return ok(undefined);
   }

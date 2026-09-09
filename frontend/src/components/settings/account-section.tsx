@@ -3,7 +3,6 @@
 import { UserIcon, Mail, AtSign, Lock, PenLine } from "@/components/ui/icons";
 import { SettingsSection } from "./settings-section";
 import { useAuthStore } from "@/store/auth-store";
-import { AuthService } from "@/services/auth-service";
 import { useUiStore } from "@/store/ui-store";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +11,7 @@ export function AccountSection() {
   const pushToast = useUiStore((s) => s.pushToast);
 
   const username = user?.username ?? "guest";
-  const email = AuthService.demoCredentials.email;
+  const email = user?.email ?? "Not available";
 
   const comingSoon = (label: string) =>
     pushToast({ kind: "info", title: label, message: "Editing will be available soon." });
@@ -57,7 +56,7 @@ export function AccountSection() {
           </div>
         </div>
         <span className="shrink-0 rounded-md bg-deep-750 px-2 py-1 text-[10px] font-semibold text-muted">
-          Demo
+          Verified
         </span>
       </div>
     </SettingsSection>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,7 @@ import {
   MinusCircle,
 } from "@/components/ui/icons";
 import { useAuthStore } from "@/store/auth-store";
-import { MOCK_CURRENT_USER } from "@/mocks/users";
-import { MOCK_PROFILE_STATS } from "@/repositories/mock/mock-meta-repository";
+import { ProfileService } from "@/services/profile-service";
 import { MOCK_MATCH_HISTORY } from "@/mocks/meta";
 import { EditProfileModal } from "@/components/profile/edit-profile-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -38,41 +37,55 @@ export default function ProfilePage() {
   const setUser = useAuthStore((s) => s.setUser);
   const { success: toastSuccess } = useToast();
 
-  // State initialized from mock data / auth store
   const [profile, setProfile] = useState({
-    id: authUser?.id ?? MOCK_CURRENT_USER.id,
-    username: authUser?.username ?? MOCK_CURRENT_USER.username,
-    displayName: authUser?.displayName ?? MOCK_CURRENT_USER.displayName,
-    avatarInitial: authUser?.avatarInitial ?? MOCK_CURRENT_USER.avatarInitial,
-    avatarUrl: (authUser as { avatarUrl?: string })?.avatarUrl ?? "",
-    level: authUser?.level ?? MOCK_CURRENT_USER.level,
-    rating: 1845,
-    totalMatches: MOCK_PROFILE_STATS.gamesPlayed,
-    wins: MOCK_PROFILE_STATS.wins,
-    losses: MOCK_PROFILE_STATS.losses,
-    draws: MOCK_PROFILE_STATS.draws,
-    // Calculate accurate win rate from wins and matches
-    winRate: Number(
-      ((MOCK_PROFILE_STATS.wins / MOCK_PROFILE_STATS.gamesPlayed) * 100).toFixed(1)
-    ),
-    totalCoinsEarned: MOCK_PROFILE_STATS.totalCoinsEarned,
-    bluffsSucceeded: MOCK_PROFILE_STATS.bluffsSucceeded,
-    challengesWon: MOCK_PROFILE_STATS.challengesWon,
-    eliminations: MOCK_PROFILE_STATS.eliminations,
-    winStreak: 5,
+    id: authUser?.id ?? "",
+    username: authUser?.username ?? "",
+    displayName: authUser?.displayName ?? "",
+    avatarInitial: authUser?.avatarInitial ?? "",
+    avatarUrl: authUser?.avatarUrl ?? "",
+    level: authUser?.level ?? 1,
+    rating: authUser?.rating ?? 0,
+    totalMatches: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    winRate: 0,
+    totalCoinsEarned: 0,
+    bluffsSucceeded: 0,
+    challengesWon: 0,
+    eliminations: 0,
+    winStreak: 0,
   });
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  useEffect(() => {
+    ProfileService.getProfile().then((result) => {
+      if (result.ok) {
+        const data = result.data;
+        setProfile((current) => ({ ...current, id: data.id, username: data.username, displayName: data.username, avatarInitial: data.username.slice(0, 2).toUpperCase(), avatarUrl: data.avatarUrl ?? "", rating: data.rating, totalMatches: data.totalMatches, wins: data.wins, losses: data.losses, winRate: data.winRate }));
+      } else setProfileError(result.error.message);
+      setLoadingProfile(false);
+    });
+  }, []);
 
   // Handle Profile Update (only username & avatarUrl editable)
-  const handleProfileSave = (data: { username: string; avatarUrl: string }) => {
+  const handleProfileSave = async (data: { username: string; avatarUrl: string }) => {
+    const result = await ProfileService.updateProfile(data);
+    if (!result.ok) {
+      setProfileError(result.error.message);
+      return;
+    }
     setProfile((prev) => ({
       ...prev,
-      username: data.username,
-      avatarUrl: data.avatarUrl,
-      avatarInitial: data.username.slice(0, 2).toUpperCase(),
+      username: result.data.username,
+      displayName: result.data.username,
+      avatarUrl: result.data.avatarUrl ?? "",
+      avatarInitial: result.data.username.slice(0, 2).toUpperCase(),
     }));
     setAvatarError(false);
 
@@ -80,8 +93,10 @@ export default function ProfilePage() {
     if (authUser) {
       setUser({
         ...authUser,
-        username: data.username,
-        avatarInitial: data.username.slice(0, 2).toUpperCase(),
+        username: result.data.username,
+        displayName: result.data.username,
+        avatarInitial: result.data.username.slice(0, 2).toUpperCase(),
+        avatarUrl: result.data.avatarUrl ?? "",
       });
     }
 
@@ -93,6 +108,8 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-8 pb-12">
+      {loadingProfile ? <p className="text-sm text-muted">Loading profile...</p> : null}
+      {profileError ? <p role="alert" className="text-sm text-crimson-300">{profileError}</p> : null}
       {/* ── Premium Profile Header Banner ───────────────── */}
       <section className="relative overflow-hidden rounded-3xl border border-forest-500/25 bg-surface panel-emboss panel-texture p-6 sm:p-8">
         {/* Subtle decorative background gradient */}

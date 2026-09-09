@@ -10,7 +10,7 @@ import { Lock, UserIcon, Check, X, Sparkles } from "@/components/ui/icons";
 interface EditProfileModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: { username: string; avatarUrl: string }) => void;
+  onSave: (data: { username: string; avatarUrl: string }) => Promise<void>;
   profile: {
     username: string;
     avatarUrl?: string;
@@ -44,18 +44,18 @@ export function EditProfileModal({
     setPreviewError(false);
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = username.trim();
     if (!trimmed) {
       setError("ইউজারনেম খালি হতে পারে না");
       return;
     }
-    if (trimmed.length < 3 || trimmed.length > 30) {
-      setError("ইউজারনেম ৩ থেকে ৩০ অক্ষরের মধ্যে হতে হবে");
+    if (trimmed.length < 3 || trimmed.length > 50) {
+      setError("ইউজারনেম ৩ থেকে ৫০ অক্ষরের মধ্যে হতে হবে");
       return;
     }
-    onSave({
+    await onSave({
       username: trimmed,
       avatarUrl: avatarUrl.trim(),
     });

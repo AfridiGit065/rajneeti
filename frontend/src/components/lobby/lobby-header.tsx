@@ -6,10 +6,11 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Settings, Trophy, UserIcon } from "@/components/ui/icons";
 import { PlayerMiniProfile } from "./player-mini-profile";
 import { useAuthStore } from "@/store/auth-store";
-import { MOCK_CURRENT_USER } from "@/mocks/users";
 
 export function LobbyHeader() {
-  const user = useAuthStore((s) => s.user) ?? MOCK_CURRENT_USER;
+  const user = useAuthStore((s) => s.user);
+
+  if (!user) return null;
 
   return (
     <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-forest-500/25 bg-surface px-4 py-3.5 panel-emboss sm:px-5">

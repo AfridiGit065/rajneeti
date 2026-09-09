@@ -1,6 +1,6 @@
 import type { UserPublic } from "./user";
 
-export type RoomStatus = "WAITING" | "IN_PROGRESS" | "FINISHED";
+export type RoomStatus = "WAITING" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
 
 export interface RoomPlayer {
   playerId: string;

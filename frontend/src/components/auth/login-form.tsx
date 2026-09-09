@@ -146,7 +146,7 @@ export function LoginForm() {
           type="button"
           disabled={submitting}
           onClick={() =>
-            info("Password Reset", "Password reset is coming soon. Please use the demo credentials below.")
+            info("Password Reset", "Password reset is coming soon.")
           }
           className="text-xs font-medium text-muted transition-colors hover:text-gold-300 disabled:opacity-45"
         >
@@ -166,19 +166,6 @@ export function LoginForm() {
         </Button>
       </Link>
 
-      <div className="flex items-start gap-2 rounded-lg border border-forest-500/20 bg-deep-900/60 px-3.5 py-2.5 text-xs text-muted">
-        <Lock className="mt-0.5 size-3.5 shrink-0 text-gold-400" aria-hidden />
-        <span>
-          Demo Credentials —{" "}
-          <code className="rounded bg-deep-800 px-1 py-0.5 font-mono text-parchment-300">
-            {AuthService.demoCredentials.email}
-          </code>{" "}
-          /{" "}
-          <code className="rounded bg-deep-800 px-1 py-0.5 font-mono text-parchment-300">
-            {AuthService.demoCredentials.password}
-          </code>
-        </span>
-      </div>
     </form>
   );
 }

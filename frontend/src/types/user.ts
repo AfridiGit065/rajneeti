@@ -4,6 +4,8 @@ export interface UserPublic {
   displayName: string;
   avatarInitial: string;
   level: number;
+  email?: string;
+  avatarUrl?: string;
   rating?: number;
   titled?: boolean;
 }

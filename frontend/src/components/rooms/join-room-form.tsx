@@ -31,7 +31,7 @@ export function JoinRoomForm() {
 
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState<string | undefined>(undefined);
-  const [searching, setSearching] = useState(false);
+  const [searching] = useState(false);
   const [preview, setPreview] = useState<RoomSummary | null>(null);
   const [joining, setJoining] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -69,16 +69,9 @@ export function JoinRoomForm() {
     }
     setCodeError(undefined);
 
-    setSearching(true);
-    const result = await RoomService.findRoomByCode(normalized);
-    setSearching(false);
-
-    if (!result.ok) {
-      setPreview(null);
-      setServerError(result.error.message);
-      return;
-    }
-    setPreview(result.data);
+    const room = recent.find((item) => item.roomCode === normalized);
+    if (room) setPreview(room);
+    else setPreview({ roomId: "", roomCode: normalized, name: "", host: { id: "", username: "", displayName: "", avatarInitial: "", level: 1 }, status: "WAITING", maxPlayers: 0, players: [], createdAt: "" });
   }
 
   async function handleJoin() {
@@ -154,7 +147,7 @@ export function JoinRoomForm() {
                     </span>
                   </p>
                   <p className="mt-0.5 text-xs text-muted">
-                    Host: {preview.host.displayName} ·{" "}
+                    {preview.roomId ? `Host: ${preview.host.displayName} · ` : "Room code entered · "}
                     <span className="inline-flex items-center gap-1">
                       <Users className="size-3" aria-hidden />
                       {preview.players.length}/{preview.maxPlayers}

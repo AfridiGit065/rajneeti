@@ -11,6 +11,7 @@ const ROOM_STATUS: Record<RoomStatus, { label: string; tone: BadgeTone }> = {
   WAITING: { label: "Waiting", tone: "emerald" },
   IN_PROGRESS: { label: "In Progress", tone: "gold" },
   FINISHED: { label: "Finished", tone: "neutral" },
+  CANCELLED: { label: "Cancelled", tone: "neutral" },
 };
 
 export function RoomCard({ room }: { room: RoomSummary }) {
