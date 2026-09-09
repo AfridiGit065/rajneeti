@@ -29,7 +29,7 @@ export class MockAuthRepository implements AuthRepository {
 
   async register(input: RegisterInput): Promise<Result<AuthSession>> {
     await delay(700);
-    if (MOCK_USERS.some((u) => u.username === input.username)) {
+    if (MOCK_USERS.some((u) => u.username.toLowerCase() === input.username.toLowerCase())) {
       return err({
         status: 409,
         error: "USERNAME_ALREADY_EXISTS",
@@ -52,6 +52,12 @@ export class MockAuthRepository implements AuthRepository {
         level: 1,
       }),
     );
+  }
+
+  async checkUsername(username: string): Promise<Result<{ available: boolean }>> {
+    await delay(220);
+    const taken = MOCK_USERS.some((u) => u.username.toLowerCase() === username.toLowerCase());
+    return ok({ available: !taken });
   }
 
   async refresh(refreshToken: string): Promise<Result<AuthSession>> {

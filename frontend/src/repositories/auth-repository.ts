@@ -12,4 +12,5 @@ export interface AuthRepository {
   refresh(refreshToken: string): Promise<Result<AuthSession>>;
   logout(): Promise<Result<void>>;
   getCurrentUser(): Promise<Result<UserPublic>>;
+  checkUsername(username: string): Promise<Result<{ available: boolean }>>;
 }

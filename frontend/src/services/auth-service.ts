@@ -45,6 +45,10 @@ export const AuthService = {
     return repositories.auth.logout();
   },
 
+  async checkUsername(username: string): Promise<Result<{ available: boolean }>> {
+    return repositories.auth.checkUsername(username);
+  },
+
   normalizeError(error: ApiError): string {
     return error.message;
   },
