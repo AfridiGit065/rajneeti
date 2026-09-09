@@ -1,4 +1,4 @@
-﻿package com.rajneeti.dto.auth;
+package com.rajneeti.dto.auth;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

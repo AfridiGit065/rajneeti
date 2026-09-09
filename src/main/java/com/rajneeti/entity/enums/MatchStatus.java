@@ -1,4 +1,4 @@
-﻿package com.rajneeti.entity.enums;
+package com.rajneeti.entity.enums;
 
 /**
  * Status lifecycle of a game match.

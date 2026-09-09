@@ -17,11 +17,12 @@ import {
   RoomCodeDisplay,
   Seat,
   RoomPlayerCard,
+  ReadyButton,
+  StartMatchDialog,
 } from "@/components/rooms";
 import {
   AlertTriangle,
   ArrowLeft,
-  CheckCheck,
   Crown,
   DoorOpen,
   LogOut,
@@ -53,6 +54,9 @@ export default function RoomDetailPage() {
   const [joinLoading, setJoinLoading] = useState(false);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [readyLoading, setReadyLoading] = useState(false);
+  const [startLoading, setStartLoading] = useState(false);
+  const [startDialogOpen, setStartDialogOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,6 +99,29 @@ export default function RoomDetailPage() {
     }
     setActiveRoom(null);
     router.replace("/lobby");
+  }
+
+  async function toggleReady() {
+    if (!room) return;
+    const newReady = !(me?.isReady ?? false);
+    setReadyLoading(true);
+    const result = await RoomService.setReady(room.roomId, newReady);
+    setReadyLoading(false);
+    if (result.ok) setActiveRoom(result.data);
+  }
+
+  async function confirmStartMatch() {
+    if (!room) return;
+    setStartLoading(true);
+    const result = await RoomService.startGame(room.roomId);
+    setStartLoading(false);
+    if (!result.ok) {
+      setErrorMessage(result.error.message);
+      setStartDialogOpen(false);
+      return;
+    }
+    setStartDialogOpen(false);
+    router.push(`/game/${result.data.matchId}`);
   }
 
   if (view === "loading") {
@@ -247,25 +274,29 @@ export default function RoomDetailPage() {
                       "Your Ready Status"
                     )}
                   </p>
-                  <p className="mt-1 text-xs text-muted">Game readiness will be available in a future gameplay update.</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {me.isReady ? "You are ready. Waiting for the host to start." : "Click Ready when you're set to play."}
+                  </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:w-64">
-                  <Button variant="outline" size="lg" fullWidth disabled>
-                    Ready
-                  </Button>
+                  <ReadyButton
+                    isReady={me.isReady}
+                    loading={readyLoading}
+                    onToggle={toggleReady}
+                  />
                   {isHost ? (
-                    <Button variant="premium" size="lg" fullWidth disabled>
+                    <Button
+                      variant="premium"
+                      size="lg"
+                      fullWidth
+                      onClick={() => setStartDialogOpen(true)}
+                    >
                       <Swords className="size-4" aria-hidden />
                       Start Game
                     </Button>
                   ) : null}
                 </div>
               </div>
-
-              <p className="mt-4 flex items-start gap-2 text-xs text-muted">
-                <CheckCheck className="mt-0.5 size-4 shrink-0 text-gold-400" aria-hidden />
-                Ready and start controls will be enabled with the gameplay module.
-              </p>
             </div>
           ) : null}
         </>
@@ -285,6 +316,16 @@ export default function RoomDetailPage() {
         confirmLabel="Leave"
         variant="danger"
         loading={leaveLoading}
+      />
+
+      <StartMatchDialog
+        open={startDialogOpen}
+        onClose={() => setStartDialogOpen(false)}
+        onConfirm={confirmStartMatch}
+        playerCount={playerCount}
+        maxPlayers={room.maxPlayers}
+        allReady={room.players.length >= 2 && room.players.every((p) => p.isReady)}
+        loading={startLoading}
       />
     </div>
   );

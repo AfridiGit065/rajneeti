@@ -1,4 +1,4 @@
-﻿package com.rajneeti.dto.profile;
+package com.rajneeti.dto.profile;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

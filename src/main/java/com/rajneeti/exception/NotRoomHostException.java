@@ -1,4 +1,4 @@
-﻿package com.rajneeti.exception;
+package com.rajneeti.exception;
 
 /**
  * Thrown when a non-host player attempts an operation reserved strictly for the room host.

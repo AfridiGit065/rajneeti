@@ -1,4 +1,4 @@
-﻿package com.rajneeti.controller;
+package com.rajneeti.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rajneeti.config.CorsProperties;
@@ -8,8 +8,6 @@ import com.rajneeti.dto.profile.StatisticsResponse;
 import com.rajneeti.dto.profile.UpdateProfileRequest;
 import com.rajneeti.exception.GlobalExceptionHandler;
 import com.rajneeti.exception.UsernameAlreadyExistsException;
-import com.rajneeti.security.JwtAuthenticationEntryPoint;
-import com.rajneeti.security.JwtAuthenticationFilter;
 import com.rajneeti.security.JwtTokenProvider;
 import com.rajneeti.security.SecurityConfig;
 import com.rajneeti.security.UserPrincipal;
@@ -38,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ProfileController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class, com.rajneeti.security.JwtAuthenticationEntryPoint.class})
 class ProfileControllerTest {
 
     @Autowired
@@ -49,12 +47,6 @@ class ProfileControllerTest {
 
     @MockBean
     private ProfileService profileService;
-
-    @MockBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @MockBean
-    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @MockBean
     private UserDetailsService userDetailsService;
@@ -68,7 +60,7 @@ class ProfileControllerTest {
     @MockBean
     private CorsProperties corsProperties;
 
-    @MockBean
+    @MockBean(name = "corsConfigurationSource")
     private CorsConfigurationSource corsConfigurationSource;
 
     private UserPrincipal testPrincipal;

@@ -1,4 +1,4 @@
-﻿package com.rajneeti.exception;
+package com.rajneeti.exception;
 
 /**
  * Thrown when a room cannot be found by ID or room code.

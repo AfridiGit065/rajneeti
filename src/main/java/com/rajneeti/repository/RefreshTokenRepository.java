@@ -1,4 +1,4 @@
-﻿package com.rajneeti.repository;
+package com.rajneeti.repository;
 
 import com.rajneeti.entity.RefreshToken;
 import com.rajneeti.entity.User;

@@ -1,4 +1,4 @@
-﻿package com.rajneeti.controller;
+package com.rajneeti.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rajneeti.config.CorsProperties;
@@ -11,7 +11,6 @@ import com.rajneeti.exception.GlobalExceptionHandler;
 import com.rajneeti.exception.NotRoomHostException;
 import com.rajneeti.exception.RoomNotFoundException;
 import com.rajneeti.security.JwtAuthenticationEntryPoint;
-import com.rajneeti.security.JwtAuthenticationFilter;
 import com.rajneeti.security.JwtTokenProvider;
 import com.rajneeti.security.SecurityConfig;
 import com.rajneeti.security.UserPrincipal;
@@ -56,9 +55,6 @@ class RoomControllerTest {
     private RoomService roomService;
 
     @MockBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @MockBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @MockBean
@@ -73,7 +69,7 @@ class RoomControllerTest {
     @MockBean
     private CorsProperties corsProperties;
 
-    @MockBean
+    @MockBean(name = "corsConfigurationSource")
     private CorsConfigurationSource corsConfigurationSource;
 
     private UserPrincipal testPrincipal;

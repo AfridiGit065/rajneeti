@@ -44,3 +44,29 @@ export interface BackendRoom {
   players: BackendRoomPlayer[];
   createdAt: string;
 }
+
+export interface BackendMatchPlayer {
+  id: string;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  seatNumber: number;
+  finalRank?: number;
+  coinsAtEnd: number;
+  eliminated: boolean;
+  eliminatedAt?: string;
+}
+
+export interface BackendMatch {
+  id: string;
+  roomId: string;
+  roomCode: string;
+  status: "CREATED" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
+  playerCount: number;
+  players: BackendMatchPlayer[];
+  winnerId?: string;
+  winnerUsername?: string;
+  startedAt?: string;
+  endedAt?: string;
+  createdAt: string;
+}

@@ -1,7 +1,7 @@
-package com.rajneeti.dto.room;
+package com.rajneeti.dto.match;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.rajneeti.entity.enums.RoomStatus;
+import com.rajneeti.entity.enums.MatchStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,23 +12,24 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Complete details of a room lobby and its current participants.
+ * Response DTO for match details.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RoomResponse {
+public class MatchResponse {
 
     private UUID id;
+    private UUID roomId;
     private String roomCode;
-    private UUID hostId;
-    private String hostUsername;
-    private RoomStatus status;
-    private Integer maxPlayers;
-    private Integer currentPlayers;
-    private Boolean canStart;
-    private List<RoomPlayerResponse> players;
+    private MatchStatus status;
+    private Integer playerCount;
+    private List<MatchPlayerResponse> players;
+    private UUID winnerId;
+    private String winnerUsername;
+    private LocalDateTime startedAt;
+    private LocalDateTime endedAt;
     private LocalDateTime createdAt;
 }

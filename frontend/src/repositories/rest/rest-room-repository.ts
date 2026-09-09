@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import type { BackendRoom } from "@/types/backend";
+import type { BackendMatch, BackendRoom } from "@/types/backend";
 import type { RoomRepository } from "../room-repository";
 import type { CreateRoomInput, JoinRoomInput, RoomSummary } from "@/types/room";
 import { err, type Result } from "@/types/api";
@@ -47,6 +47,12 @@ export class RestRoomRepository implements RoomRepository {
   async createRoom(input: CreateRoomInput): Promise<Result<RoomSummary>> { return mapRoom(await apiClient.post<BackendRoom>("/api/rooms", { maxPlayers: input.maxPlayers })); }
   async joinRoom(input: JoinRoomInput): Promise<Result<RoomSummary>> { return mapRoom(await apiClient.post<BackendRoom>("/api/rooms/join", { roomCode: input.roomCode })); }
   async leaveRoom(roomId: string): Promise<Result<void>> { return apiClient.post<void>(`/api/rooms/${roomId}/leave`); }
-  async readyUp(): Promise<Result<RoomSummary>> { throw new Error("Ready state is not part of the Phase 1 frontend integration."); }
-  async startGame(): Promise<Result<{ matchId: string }>> { throw new Error("Starting a match is not part of the Phase 1 frontend integration."); }
+  async readyUp(roomId: string, ready: boolean): Promise<Result<RoomSummary>> {
+    const endpoint = ready ? `/api/rooms/${roomId}/ready` : `/api/rooms/${roomId}/unready`;
+    return mapRoom(await apiClient.post<BackendRoom>(endpoint));
+  }
+  async startGame(roomId: string): Promise<Result<{ matchId: string }>> {
+    const result = await apiClient.post<BackendMatch>(`/api/rooms/${roomId}/start`);
+    return result.ok ? { ok: true, data: { matchId: result.data.id } } : result;
+  }
 }

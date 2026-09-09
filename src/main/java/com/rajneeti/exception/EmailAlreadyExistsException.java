@@ -1,4 +1,4 @@
-﻿package com.rajneeti.exception;
+package com.rajneeti.exception;
 
 /**
  * Thrown when registration fails because the requested email is already in use.

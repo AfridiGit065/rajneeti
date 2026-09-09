@@ -1,4 +1,4 @@
-﻿package com.rajneeti.exception;
+package com.rajneeti.exception;
 
 /**
  * Thrown when an operation is invalid for the room's current lifecycle state.

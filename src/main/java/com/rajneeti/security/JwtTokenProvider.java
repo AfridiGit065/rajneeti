@@ -1,4 +1,4 @@
-﻿package com.rajneeti.security;
+package com.rajneeti.security;
 
 import com.rajneeti.config.JwtProperties;
 import io.jsonwebtoken.Claims;

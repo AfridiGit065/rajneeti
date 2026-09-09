@@ -1,4 +1,4 @@
-﻿package com.rajneeti.entity;
+package com.rajneeti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.rajneeti.entity.enums.RoomStatus;

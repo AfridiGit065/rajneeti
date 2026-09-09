@@ -1,4 +1,4 @@
-﻿package com.rajneeti.exception;
+package com.rajneeti.exception;
 
 import com.rajneeti.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,10 +33,10 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex,
             HttpServletRequest request) {
 
-        List<ErrorResponse.FieldErrorItem> fieldErrors = ex.getBindingResult()
+        List<ErrorResponse.FieldError> fieldErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(fieldError -> ErrorResponse.FieldErrorItem.builder()
+                .map(fieldError -> ErrorResponse.FieldError.builder()
                         .field(fieldError.getField())
                         .rejectedValue(safeRejectedValue(fieldError))
                         .message(fieldError.getDefaultMessage())
@@ -60,9 +60,9 @@ public class GlobalExceptionHandler {
             ConstraintViolationException ex,
             HttpServletRequest request) {
 
-        List<ErrorResponse.FieldErrorItem> errors = ex.getConstraintViolations()
+        List<ErrorResponse.FieldError> errors = ex.getConstraintViolations()
                 .stream()
-                .map(cv -> ErrorResponse.FieldErrorItem.builder()
+                .map(cv -> ErrorResponse.FieldError.builder()
                         .field(cv.getPropertyPath().toString())
                         .message(cv.getMessage())
                         .build())
@@ -255,6 +255,34 @@ public class GlobalExceptionHandler {
                 ErrorResponse.builder()
                         .status(HttpStatus.CONFLICT.value())
                         .error("EMAIL_ALREADY_EXISTS")
+                        .message(ex.getMessage())
+                        .path(request.getRequestURI())
+                        .build());
+    }
+
+    @ExceptionHandler(MatchAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleMatchAlreadyExists(
+            MatchAlreadyExistsException ex,
+            HttpServletRequest request) {
+        log.warn("Match already exists conflict on [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.CONFLICT.value())
+                        .error("MATCH_ALREADY_EXISTS")
+                        .message(ex.getMessage())
+                        .path(request.getRequestURI())
+                        .build());
+    }
+
+    @ExceptionHandler(MatchNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMatchNotFound(
+            MatchNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Match not found [{}]: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.NOT_FOUND.value())
+                        .error("MATCH_NOT_FOUND")
                         .message(ex.getMessage())
                         .path(request.getRequestURI())
                         .build());

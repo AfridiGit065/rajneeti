@@ -1,4 +1,4 @@
-﻿package com.rajneeti.exception;
+package com.rajneeti.exception;
 
 /**
  * Thrown when login authentication fails due to invalid credentials.

@@ -1,4 +1,4 @@
-﻿package com.rajneeti.repository;
+package com.rajneeti.repository;
 
 import com.rajneeti.entity.MatchPlayer;
 import org.springframework.data.jpa.repository.JpaRepository;

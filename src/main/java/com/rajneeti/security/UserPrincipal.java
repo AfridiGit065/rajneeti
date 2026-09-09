@@ -1,4 +1,4 @@
-﻿package com.rajneeti.security;
+package com.rajneeti.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.rajneeti.entity.User;

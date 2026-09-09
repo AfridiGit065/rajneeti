@@ -1,4 +1,4 @@
-﻿package com.rajneeti.entity;
+package com.rajneeti.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

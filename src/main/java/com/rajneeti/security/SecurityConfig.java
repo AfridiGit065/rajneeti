@@ -1,4 +1,4 @@
-﻿package com.rajneeti.security;
+package com.rajneeti.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

@@ -1,4 +1,4 @@
-﻿package com.rajneeti.dto.profile;
+package com.rajneeti.dto.profile;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

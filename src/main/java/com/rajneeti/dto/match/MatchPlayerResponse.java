@@ -1,4 +1,4 @@
-package com.rajneeti.dto.auth;
+package com.rajneeti.dto.match;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -10,22 +10,22 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Safe public representation of a user without sensitive credentials.
+ * Response DTO for a player within a match.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class UserResponse {
+public class MatchPlayerResponse {
 
     private UUID id;
+    private UUID userId;
     private String username;
-    private String email;
     private String avatarUrl;
-    private Integer rating;
-    private Integer totalMatches;
-    private Integer wins;
-    private Integer losses;
-    private LocalDateTime createdAt;
+    private Integer seatNumber;
+    private Integer finalRank;
+    private Integer coinsAtEnd;
+    private Boolean eliminated;
+    private LocalDateTime eliminatedAt;
 }

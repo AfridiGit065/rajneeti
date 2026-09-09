@@ -1,4 +1,4 @@
-﻿package com.rajneeti.dto.room;
+package com.rajneeti.dto.room;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
