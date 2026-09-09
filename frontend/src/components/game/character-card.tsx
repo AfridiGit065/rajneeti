@@ -85,6 +85,15 @@ export function CharacterCard({
         <p className={cn("mt-0.5 uppercase tracking-[0.25em] text-gold-400", enNameSizes[size])}>
           {character.nameEn}
         </p>
+        <span
+          className={cn(
+            "mt-1 inline-flex max-w-full truncate rounded-full border px-2 py-0.5 font-bengali text-[0.6rem] font-semibold",
+            accent.border,
+            accent.text,
+          )}
+        >
+          {character.role}
+        </span>
         <div className="divider-gold my-2.5" />
         <div className="space-y-1.5 text-parchment-300">
           <div className="flex items-start gap-2">

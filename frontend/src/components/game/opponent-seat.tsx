@@ -3,29 +3,9 @@
 import { cn } from "@/lib/cn";
 import { CoinDisplay } from "./coin-display";
 import { InfluenceDisplay } from "./influence-display";
-import { Shield, Skull } from "@/components/ui/icons";
+import { PlayerInfluenceCards } from "./influence-cards";
+import { Skull } from "@/components/ui/icons";
 import type { GamePlayer } from "@/types/game";
-
-function HiddenBacks({ count }: { count: number }) {
-  if (count <= 0) return null;
-  return (
-    <div className="flex -space-x-1.5" aria-hidden>
-      {Array.from({ length: Math.min(count, 2) }).map((_, index) => (
-        <span
-          key={index}
-          className="flex size-6 items-center justify-center rounded-md border border-gold-500/40 bg-gradient-to-b from-deep-600 to-deep-800 shadow-gold"
-        >
-          <Shield className="size-3 text-gold-400" />
-        </span>
-      ))}
-      {count > 2 ? (
-        <span className="flex size-6 items-center justify-center rounded-md border border-forest-500/30 bg-deep-700 text-[0.6rem] font-bold text-muted">
-          +{count - 2}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 
 export function OpponentSeat({ player }: { player: GamePlayer }) {
   return (
@@ -65,7 +45,9 @@ export function OpponentSeat({ player }: { player: GamePlayer }) {
             revealed={player.influenceCards.filter((c) => c.revealed).length}
             size="sm"
           />
-          <HiddenBacks count={player.influenceCards.length} />
+        </div>
+        <div className="mt-1.5">
+          <PlayerInfluenceCards cards={player.influenceCards} faceDown size="xs" />
         </div>
       </div>
 

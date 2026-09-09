@@ -63,6 +63,10 @@
   --animate-card-flip: card-flip 600ms cubic-bezier(0.4, 0, 0.2, 1) both;
   --animate-glow-pulse: glow-pulse 4s ease-in-out infinite;
   --animate-shimmer: shimmer 2.5s linear infinite;
+  --animate-card-draw: card-draw 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-card-return: card-return 520ms cubic-bezier(0.55, 0, 0.55, 0.2) both;
+  --animate-card-discard: card-discard 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-card-reveal: card-reveal 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-toast-in: toast-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-coin-pop: coin-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 
@@ -308,6 +312,102 @@ body {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+@keyframes card-draw {
+  from {
+    transform: translateY(-130%) rotate(-6deg);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes card-return {
+  from {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(140%) rotate(4deg);
+    opacity: 0;
+  }
+}
+
+@keyframes card-discard {
+  from {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(60%) translateX(12%) rotate(14deg);
+    opacity: 0.85;
+  }
+}
+
+@keyframes card-reveal {
+  0% {
+    transform: scale(0.72);
+    opacity: 0;
+    filter: blur(3px);
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ============================================================
+   F17 — Influence card system (3D flip + card back surface)
+   ============================================================ */
+
+.influence-card {
+  transform-style: preserve-3d;
+}
+
+.influence-card-inner {
+  transform-style: preserve-3d;
+  transition: transform 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.influence-card.is-revealed .influence-card-inner,
+.influence-card.is-discarded .influence-card-inner {
+  transform: rotateY(180deg);
+}
+
+.influence-card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.influence-card-face-front {
+  transform: rotateY(180deg);
+}
+
+.influence-card-back {
+  background-color: var(--color-deep-850);
+  background-image:
+    linear-gradient(160deg, rgb(201 165 60 / 0.1), transparent 42%),
+    repeating-linear-gradient(
+      45deg,
+      rgb(201 165 60 / 0.05) 0 2px,
+      transparent 2px 9px
+    ),
+    radial-gradient(ellipse 90% 70% at 50% 14%, rgb(46 110 82 / 0.35), transparent 65%);
+  box-shadow:
+    inset 0 0 0 1px rgb(244 241 232 / 0.05),
+    var(--shadow-panel);
+}
+
+.influence-card-back-inner {
+  border: 1px solid rgb(201 165 60 / 0.45);
 }
 
 @media (prefers-reduced-motion: reduce) {
