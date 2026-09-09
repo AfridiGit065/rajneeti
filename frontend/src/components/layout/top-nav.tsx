@@ -11,8 +11,9 @@ import { useAuthStore } from "@/store/auth-store";
 import { useState } from "react";
 
 const PUBLIC_LINKS = [
-  { href: "/how-to-play", label: "কিভাবে খেলবেন" },
-  { href: "/characters", label: "চরিত্র" },
+  { href: "/", label: "Home" },
+  { href: "/how-to-play", label: "How To Play" },
+  { href: "/characters", label: "Characters" },
 ];
 
 const APP_LINKS = [
@@ -37,7 +38,7 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="প্রধান নেভিগেশন">
           {links.map((link) => {
-            const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+            const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(`${link.href}/`));
             return (
               <Link
                 key={link.href}
@@ -61,12 +62,12 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
             <>
               <Link href="/login">
                 <Button variant="ghost" size="sm">
-                  লগইন
+                  Login
                 </Button>
               </Link>
               <Link href="/register">
                 <Button variant="premium" size="sm">
-                  শুরু করো
+                  Register
                 </Button>
               </Link>
             </>
@@ -102,7 +103,7 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
         >
           <ul className="flex flex-col gap-1">
             {links.map((link) => {
-              const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+              const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(`${link.href}/`));
               return (
                 <li key={link.href}>
                   <Link
@@ -120,14 +121,14 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
             })}
             {mode === "public" ? (
               <li className="mt-2 flex gap-2">
-                <Link href="/login" className="flex-1">
+                <Link href="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
                   <Button variant="outline" fullWidth>
-                    লগইন
+                    Login
                   </Button>
                 </Link>
-                <Link href="/register" className="flex-1">
+                <Link href="/register" className="flex-1" onClick={() => setMobileOpen(false)}>
                   <Button variant="premium" fullWidth>
-                    শুরু করো
+                    Register
                   </Button>
                 </Link>
               </li>
