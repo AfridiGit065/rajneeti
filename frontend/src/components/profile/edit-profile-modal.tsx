@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Lock, UserIcon, Check, X, ShieldAlert, Sparkles } from "@/components/ui/icons";
+import { Lock, UserIcon, Check, X, Sparkles } from "@/components/ui/icons";
 
 interface EditProfileModalProps {
   open: boolean;
@@ -33,12 +33,16 @@ export function EditProfileModal({
   const [error, setError] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState(false);
 
-  useEffect(() => {
+  const [prevSnapshot, setPrevSnapshot] = useState({ open, profile });
+
+  // Adjust state during render when the modal opens or the profile changes (React-sanctioned pattern).
+  if (prevSnapshot.open !== open || prevSnapshot.profile !== profile) {
+    setPrevSnapshot({ open, profile });
     setUsername(profile.username);
     setAvatarUrl(profile.avatarUrl ?? "");
     setError(null);
     setPreviewError(false);
-  }, [profile, open]);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
