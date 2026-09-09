@@ -57,6 +57,21 @@ export {
   Gavel,
   Siren,
   FileQuestion,
+  Palette,
+  Dices,
+  Layers,
+  ListChecks,
+  Ghost,
+  ShieldCheck,
+  Trash2,
+  Gamepad2,
+  Sun,
+  Moon,
+  Hand,
+  RefreshCw,
+  CheckCircle2,
+  PenLine,
+  Download,
 } from "lucide-react";
 
 export type { LucideIcon } from "lucide-react";

@@ -43,6 +43,8 @@ const DEFAULT_SETTINGS: GameSettings = {
   language: "en",
   reducedMotion: false,
   theme: "emerald",
+  confirmCoup: true,
+  confirmAssassination: true,
 };
 
 export const useUiStore = create<UiState>()(

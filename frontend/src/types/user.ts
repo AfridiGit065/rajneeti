@@ -65,4 +65,6 @@ export interface GameSettings {
   language: "en" | "bn";
   reducedMotion: boolean;
   theme: "emerald" | "midnight";
+  confirmCoup: boolean;
+  confirmAssassination: boolean;
 }

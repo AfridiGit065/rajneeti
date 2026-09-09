@@ -73,6 +73,20 @@
 }
 
 /* ============================================================
+   Midnight theme (Cool navy variant, applied via data-theme)
+   ============================================================ */
+
+html[data-theme="midnight"] {
+  --color-deep-950: #060b16;
+  --color-deep-900: #0a1324;
+  --color-deep-850: #0e1a32;
+  --color-deep-800: #122340;
+  --color-deep-750: #172c52;
+  --color-deep-700: #1d3866;
+  --color-deep-650: #23467f;
+}
+
+/* ============================================================
    Base
    ============================================================ */
 
@@ -305,4 +319,14 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Theme setting-driven reduced motion (mirrors the media query above) */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
