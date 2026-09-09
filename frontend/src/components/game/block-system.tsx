@@ -8,14 +8,10 @@ import { Button } from "@/components/ui/button";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { getAction } from "@/lib/game/actions";
 import {
-  Shield,
   ShieldAlert,
   Gavel,
   CheckCircle,
   XCircle,
-  Skull,
-  Users,
-  AlertTriangle,
   X,
 } from "@/components/ui/icons";
 import type { GameActionId, GamePlayer } from "@/types/game";
@@ -315,7 +311,7 @@ export function BlockDialog({
 /** 3. BlockPanel: In-game active block indicator / controller */
 export function BlockPanel({
   activeBlock,
-  currentPlayer,
+  currentPlayer: _currentPlayer,
   onOpenDialog,
 }: {
   activeBlock: BlockEvent | null;

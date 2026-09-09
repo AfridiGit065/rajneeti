@@ -10,8 +10,6 @@ import {
   Skull,
   AlertTriangle,
   Eye,
-  CheckCircle,
-  Trophy,
 } from "@/components/ui/icons";
 import type { GamePlayer, InfluenceCard } from "@/types/game";
 
@@ -98,15 +96,8 @@ export function InfluenceLostModal({
   onConfirmReveal: (cardId: string) => void;
 }) {
   const hiddenCards = player.influenceCards.filter((c) => !c.revealed);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(
-    hiddenCards[0]?.id ?? null,
-  );
-
-  useEffect(() => {
-    if (hiddenCards.length > 0 && !selectedCardId) {
-      setSelectedCardId(hiddenCards[0]!.id);
-    }
-  }, [hiddenCards, selectedCardId]);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const activeCardId = selectedCardId ?? hiddenCards[0]?.id ?? null;
 
   if (!open || hiddenCards.length === 0) return null;
 
@@ -141,7 +132,7 @@ export function InfluenceLostModal({
             <CardReveal
               key={card.id}
               card={card}
-              isSelected={selectedCardId === card.id}
+              isSelected={activeCardId === card.id}
               onClick={() => setSelectedCardId(card.id)}
             />
           ))}
@@ -154,10 +145,10 @@ export function InfluenceLostModal({
         <Button
           variant="danger"
           fullWidth
-          disabled={!selectedCardId}
+          disabled={!activeCardId}
           onClick={() => {
-            if (selectedCardId) {
-              onConfirmReveal(selectedCardId);
+            if (activeCardId) {
+              onConfirmReveal(activeCardId);
             }
           }}
           className="font-bengali gap-2 shadow-crimson text-sm font-bold"
@@ -184,11 +175,11 @@ export function EliminationOverlay({
 
   useEffect(() => {
     if (!open) return;
-    setCountdown(4);
-    const interval = setInterval(() => {
+    const reset = window.setTimeout(() => setCountdown(4), 0);
+    const interval = window.setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(interval);
+          window.clearInterval(interval);
           onFinish();
           return 0;
         }
@@ -196,7 +187,10 @@ export function EliminationOverlay({
       });
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(reset);
+      window.clearInterval(interval);
+    };
   }, [open, onFinish]);
 
   if (!open) return null;

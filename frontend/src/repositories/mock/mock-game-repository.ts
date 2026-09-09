@@ -1,15 +1,18 @@
 ﻿import type { GameRepository } from "../game-repository";
 import type { ActionIntent, GameResult, GameState } from "@/types/game";
 import { err, ok, type Result } from "@/types/api";
-import { MOCK_GAME_STATE } from "@/mocks/matches";
+import { MOCK_FINISHED_GAME_STATE, MOCK_GAME_STATE } from "@/mocks/matches";
 
 const delay = (ms = 400) => new Promise((r) => setTimeout(r, ms));
 
 export class MockGameRepository implements GameRepository {
   private state: GameState = MOCK_GAME_STATE;
 
-  async getGameState(_matchId: string): Promise<Result<GameState>> {
+  async getGameState(matchId: string): Promise<Result<GameState>> {
     await delay(250);
+    if (matchId === "match-2") {
+      return ok(MOCK_FINISHED_GAME_STATE);
+    }
     return ok(this.state);
   }
 
@@ -86,6 +89,15 @@ export class MockGameRepository implements GameRepository {
 
   async getGameResult(matchId: string): Promise<Result<GameResult>> {
     await delay(300);
+    if (matchId === "match-2") {
+      return ok({
+        matchId,
+        winnerId: MOCK_FINISHED_GAME_STATE.winnerPlayerId ?? "",
+        winnerName: "শাপলা",
+        finishedAt: MOCK_FINISHED_GAME_STATE.endedAt ?? new Date().toISOString(),
+        turnCount: MOCK_FINISHED_GAME_STATE.turnNumber,
+      });
+    }
     return ok({
       matchId,
       winnerId: "p-1",

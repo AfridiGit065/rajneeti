@@ -13,6 +13,7 @@ import { OpponentSeat } from "./opponent-seat";
 import { OwnCards } from "./own-cards";
 import { ActionPanel } from "./action-panel";
 import { ChallengeFlow } from "./challenge";
+import { GameOverScreen } from "./game-over";
 import { GameLog } from "./game-log";
 import {
   BlockPanel,
@@ -318,13 +319,18 @@ export function GameBoard({ matchId }: { matchId: string }) {
     );
   }
 
-  const opponents = game.players
+const opponents = game.players
     .filter((p) => p.id !== currentPlayer.id)
     .sort((a, b) => a.seatIndex - b.seatIndex);
 
-  const winner = game.winnerPlayerId
-    ? game.players.find((p) => p.id === game.winnerPlayerId)
-    : null;
+  // Game over once the match is finished or a single player remains.
+  const survivors = game.players.filter((p) => p.isAlive);
+  const gameOver =
+    game.status === MatchStatus.FINISHED || survivors.length <= 1;
+
+  if (gameOver) {
+    return <GameOverScreen game={game} selfId={selfId} />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -344,15 +350,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
         </aside>
 
         <section className="order-1 flex flex-col gap-4 lg:order-2">
-          {game.status === MatchStatus.FINISHED && winner ? (
-            <div className="flex items-center justify-center gap-2 rounded-2xl border border-gold-500/40 bg-gold-500/10 px-4 py-3">
-              <Trophy className="size-5 text-gold-300" aria-hidden />
-              <p className="font-bengali font-semibold text-gold-200">
-                বিজয়ী: {winner.displayName ?? winner.username}
-              </p>
-            </div>
-          ) : null}
-
           {/* Block result card if recently resolved */}
           {blockResultData && (
             <BlockResult
