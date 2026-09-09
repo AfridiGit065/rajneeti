@@ -132,9 +132,12 @@ export function GameBoard({ matchId }: { matchId: string }) {
     setLoading(false);
   }
 
-  async function handleAction(actionId: GameActionId) {
+  async function handleAction(actionId: GameActionId, targetPlayerId?: string) {
     setBusy(actionId);
-    const result = await GameService.performAction(matchId, { action: actionId });
+    const result = await GameService.performAction(matchId, {
+      action: actionId,
+      targetPlayerId,
+    });
     setBusy(null);
     if (result.ok) {
       setGame(result.data);
@@ -234,8 +237,9 @@ export function GameBoard({ matchId }: { matchId: string }) {
 
           <ActionPanel
             player={currentPlayer}
+            opponents={opponents}
             busy={busy !== null}
-            onAction={(actionId) => void handleAction(actionId)}
+            onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
           />
         </section>
 
