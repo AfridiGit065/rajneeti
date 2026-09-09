@@ -1,0 +1,116 @@
+﻿import type { GameRepository } from "../game-repository";
+import type { ActionIntent, GameResult, GameState } from "@/types/game";
+import { err, ok, type Result } from "@/types/api";
+import { MOCK_GAME_STATE } from "@/mocks/matches";
+
+const delay = (ms = 400) => new Promise((r) => setTimeout(r, ms));
+
+export class MockGameRepository implements GameRepository {
+  private state: GameState = MOCK_GAME_STATE;
+
+  async getGameState(_matchId: string): Promise<Result<GameState>> {
+    await delay(250);
+    return ok(this.state);
+  }
+
+  async performAction(
+    _matchId: string,
+    intent: ActionIntent,
+  ): Promise<Result<GameState>> {
+    await delay(550);
+    this.state = {
+      ...this.state,
+      activeAction: intent,
+      phase: "action_resolution",
+      log: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          text: buildActionText(intent),
+          kind: "action",
+        },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
+  }
+
+  async challenge(_matchId: string, _targetPlayerId: string): Promise<Result<GameState>> {
+    await delay(550);
+    const actor = this.state.activeAction;
+    if (!actor) {
+      return err({
+        status: 400,
+        error: "NO_ACTIVE_ACTION",
+        message: "কোনো সক্রিয় অ্যাকশন নেই।",
+      });
+    }
+    this.state = {
+      ...this.state,
+      phase: "challenge_resolution",
+      log: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          text: "চ্যালেঞ্জ ঘোষণা করা হয়েছে!",
+          kind: "challenge",
+        },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
+  }
+
+  async block(_matchId: string, _claimedCharacter: string): Promise<Result<GameState>> {
+    await delay(500);
+    this.state = {
+      ...this.state,
+      phase: "block_resolution",
+      log: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          text: "ব্লক করা হয়েছে!",
+          kind: "block",
+        },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
+  }
+
+  async endTurn(_matchId: string, _playerId: string): Promise<Result<GameState>> {
+    await delay(350);
+    return ok(this.state);
+  }
+
+  async getGameResult(matchId: string): Promise<Result<GameResult>> {
+    await delay(300);
+    return ok({
+      matchId,
+      winnerId: "p-1",
+      winnerName: "শাপলা",
+      finishedAt: new Date().toISOString(),
+      turnCount: 11,
+    });
+  }
+}
+
+function buildActionText(intent: ActionIntent): string {
+  switch (intent.action) {
+    case "income":
+      return "আয়: +1 কয়েন অর্জন করল।";
+    case "foreign_aid":
+      return "বিদেশি অনুদান: +2 কয়েন অর্জন করল।";
+    case "tax":
+      return "কর আদায়: মন্ত্রী দাবি করে +3 কয়েন অর্জন করল।";
+    case "steal":
+      return "চুরি: দালাল দাবি করে 2 কয়েন চুরি করল।";
+    case "exchange":
+      return "কার্ড বদল: আমলা দাবি করে কার্ড বদল করল।";
+    case "assassinate":
+      return "সরিয়ে দেওয়া: ঘাতক দাবি করল!";
+    case "coup":
+      return "ক্ষমতা দখল: 7 কয়েন দিয়ে কোপ!";
+  }
+}

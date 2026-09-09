@@ -1,0 +1,120 @@
+import type { RoomSummary } from "@/types/room";
+import { MOCK_USERS } from "./users";
+
+const now = new Date().toISOString();
+
+export const MOCK_ROOMS: RoomSummary[] = [
+  {
+    roomId: "room-1",
+    roomCode: "RG6K2",
+    name: "দেরাজ অ্যাভিনিউ",
+    host: MOCK_USERS[0]!,
+    status: "WAITING",
+    maxPlayers: 4,
+    createdAt: now,
+    players: [
+      {
+        playerId: "rp-1",
+        user: MOCK_USERS[0]!,
+        seatIndex: 0,
+        isHost: true,
+        isReady: true,
+        joinedAt: now,
+      },
+      {
+        playerId: "rp-2",
+        user: MOCK_USERS[1]!,
+        seatIndex: 1,
+        isHost: false,
+        isReady: true,
+        joinedAt: now,
+      },
+      {
+        playerId: "rp-3",
+        user: MOCK_USERS[2]!,
+        seatIndex: 2,
+        isHost: false,
+        isReady: false,
+        joinedAt: now,
+      },
+    ],
+  },
+  {
+    roomId: "room-2",
+    roomCode: "PK9X1",
+    name: "লোকসভা লাউঞ্জ",
+    host: MOCK_USERS[3]!,
+    status: "WAITING",
+    maxPlayers: 6,
+    createdAt: now,
+    players: [
+      {
+        playerId: "rp-4",
+        user: MOCK_USERS[3]!,
+        seatIndex: 0,
+        isHost: true,
+        isReady: true,
+        joinedAt: now,
+      },
+      {
+        playerId: "rp-5",
+        user: MOCK_USERS[4]!,
+        seatIndex: 1,
+        isHost: false,
+        isReady: true,
+        joinedAt: now,
+      },
+      {
+        playerId: "rp-6",
+        user: MOCK_USERS[5]!,
+        seatIndex: 2,
+        isHost: false,
+        isReady: false,
+        joinedAt: now,
+      },
+    ],
+  },
+  {
+    roomId: "room-3",
+    roomCode: "DR5T7",
+    name: "গোয়েন্দা আস্তানা",
+    host: MOCK_USERS[2]!,
+    status: "IN_PROGRESS",
+    maxPlayers: 5,
+    createdAt: now,
+    players: [
+      {
+        playerId: "rp-7",
+        user: MOCK_USERS[2]!,
+        seatIndex: 0,
+        isHost: true,
+        isReady: true,
+        joinedAt: now,
+      },
+      {
+        playerId: "rp-8",
+        user: MOCK_USERS[0]!,
+        seatIndex: 1,
+        isHost: false,
+        isReady: true,
+        joinedAt: now,
+      },
+      {
+        playerId: "rp-9",
+        user: MOCK_USERS[1]!,
+        seatIndex: 2,
+        isHost: false,
+        isReady: true,
+        joinedAt: now,
+      },
+      {
+        playerId: "rp-10",
+        user: MOCK_USERS[4]!,
+        seatIndex: 3,
+        isHost: false,
+        isReady: true,
+        joinedAt: now,
+      },
+    ],
+  },
+];
