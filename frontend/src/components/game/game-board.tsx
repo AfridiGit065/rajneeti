@@ -13,7 +13,6 @@ import { OpponentSeat } from "./opponent-seat";
 import { OwnCards } from "./own-cards";
 import { ActionPanel } from "./action-panel";
 import { ChallengeFlow } from "./challenge";
-import { GameOverScreen } from "./game-over";
 import { GameLog } from "./game-log";
 import {
   BlockPanel,
@@ -319,37 +318,51 @@ export function GameBoard({ matchId }: { matchId: string }) {
     );
   }
 
-const opponents = game.players
+  const opponents = game.players
     .filter((p) => p.id !== currentPlayer.id)
     .sort((a, b) => a.seatIndex - b.seatIndex);
 
-  // Game over once the match is finished or a single player remains.
-  const survivors = game.players.filter((p) => p.isAlive);
-  const gameOver =
-    game.status === MatchStatus.FINISHED || survivors.length <= 1;
-
-  if (gameOver) {
-    return <GameOverScreen game={game} selfId={selfId} />;
-  }
+  const winner = game.winnerPlayerId
+    ? game.players.find((p) => p.id === game.winnerPlayerId)
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col">
       <GameHeader game={game} selfId={selfId} />
 
-      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[250px_minmax(0,1fr)_300px]">
-        <aside className="order-2 space-y-3 lg:order-1">
+      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-4 px-3 py-3 sm:px-4 sm:py-4 lg:grid-cols-[250px_minmax(0,1fr)_300px]">
+        {/* === Opponents column (sidebar on desktop, horizontal scroll strip on mobile) === */}
+        <aside className="order-1 space-y-3 lg:order-1">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-              প্রতিপক্ষ
+              প্রতিপক্ষ ({opponents.length})
             </h2>
-            <Badge tone="neutral">{opponents.length}</Badge>
+            <span className="text-[10px] text-muted lg:hidden font-bengali">
+              ডানে স্ক্রোল করুন ➔
+            </span>
+            <Badge tone="neutral" className="hidden lg:inline-flex">{opponents.length}</Badge>
           </div>
-          {opponents.map((player) => (
-            <OpponentSeat key={player.id} player={player} />
-          ))}
+          {/* Scrollable on mobile/tablet, stacked column on desktop */}
+          <div className="flex gap-3 overflow-x-auto pb-2 pt-1 lg:flex-col lg:overflow-visible lg:pb-0 scrollbar-thin">
+            {opponents.map((player) => (
+              <div key={player.id} className="min-w-[240px] sm:min-w-[260px] lg:min-w-0 flex-shrink-0 lg:flex-shrink">
+                <OpponentSeat player={player} />
+              </div>
+            ))}
+          </div>
         </aside>
 
-        <section className="order-1 flex flex-col gap-4 lg:order-2">
+        {/* === Main center column === */}
+        <section className="order-2 flex flex-col gap-4 lg:order-2">
+          {game.status === MatchStatus.FINISHED && winner ? (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-gold-500/40 bg-gold-500/10 px-4 py-3">
+              <Trophy className="size-5 text-gold-300" aria-hidden />
+              <p className="font-bengali font-semibold text-gold-200">
+                বিজয়ী: {winner.displayName ?? winner.username}
+              </p>
+            </div>
+          ) : null}
+
           {/* Block result card if recently resolved */}
           {blockResultData && (
             <BlockResult
@@ -389,7 +402,8 @@ const opponents = game.players
           />
         </section>
 
-        <aside className="order-3">
+        {/* === Game Log (hidden on small screens, visible on desktop) === */}
+        <aside className="order-3 hidden lg:block">
           <GameLog entries={game.log} />
         </aside>
       </main>

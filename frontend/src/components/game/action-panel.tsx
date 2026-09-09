@@ -124,7 +124,7 @@ export function ActionPanel({
         ) : null}
 
         {/* Action Grid */}
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {ACTIONS.map((action) => {
             const disabled = isDisabled(action);
             const isCoup = action.id === "coup";

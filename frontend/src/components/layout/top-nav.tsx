@@ -22,6 +22,7 @@ const APP_LINKS = [
   { href: "/leaderboard", label: "লিডারবোর্ড" },
   { href: "/history", label: "ইতিহাস" },
   { href: "/profile", label: "প্রোফাইল" },
+  { href: "/settings", label: "সেটিংস" },
 ];
 
 export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
@@ -102,6 +103,24 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
           aria-label="মোবাইল নেভিগেশন"
         >
           <ul className="flex flex-col gap-1">
+            {mode === "app" && user ? (
+              <li className="mb-2 border-b border-forest-500/20 pb-2">
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg p-2 hover:bg-deep-700/50"
+                >
+                  <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-b from-forest-500 to-forest-600 text-xs font-bold text-deep-950">
+                    {user.avatarInitial}
+                  </span>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-sm font-semibold text-ivory">{user.displayName}</span>
+                    <span className="text-xs text-muted">@{user.username}</span>
+                  </div>
+                  <Badge tone="gold" className="ml-auto text-[10px]">লেভেল {user.level}</Badge>
+                </Link>
+              </li>
+            ) : null}
             {links.map((link) => {
               const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(`${link.href}/`));
               return (

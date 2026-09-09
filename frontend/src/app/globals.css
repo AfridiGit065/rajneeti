@@ -410,122 +410,6 @@ body {
   border: 1px solid rgb(201 165 60 / 0.45);
 }
 
-/* ============================================================
-   F22 — Game over cinematic
-   ============================================================ */
-
-@keyframes victory-flare {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: scale(0.97);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.05);
-  }
-}
-
-.animate-victory-flare {
-  animation: victory-flare 7s ease-in-out infinite;
-}
-
-@keyframes trophy-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-7px);
-  }
-}
-
-.animate-trophy-float {
-  animation: trophy-float 5s ease-in-out infinite;
-}
-
-@keyframes ring-orbit {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-ring-orbit {
-  animation: ring-orbit 28s linear infinite;
-}
-
-@keyframes particle-rise {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 0;
-  }
-  12% {
-    opacity: 0.9;
-  }
-  70% {
-    opacity: 0.45;
-  }
-  100% {
-    transform: translateY(-72vh) scale(0.35);
-    opacity: 0;
-  }
-}
-
-.animate-particle-rise {
-  animation-name: particle-rise;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-@keyframes gold-shimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-  60% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.text-gold-shimmer {
-  background-image: linear-gradient(
-    100deg,
-    var(--color-gold-600) 0%,
-    var(--color-gold-300) 45%,
-    var(--color-gold-100) 68%,
-    var(--color-gold-600) 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  background-size: 220% auto;
-  animation: gold-shimmer 6s ease-in-out infinite;
-}
-
-@keyframes podium-in {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.animate-podium-in {
-  animation: podium-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* ============================================================
-   Reduced motion
-   ============================================================ */
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -546,3 +430,20 @@ html.reduce-motion *::after {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/* ── Scrollbar utilities ─────────────────────────────────── */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-forest-600) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-forest-600);
+  border-radius: 9999px;
+}

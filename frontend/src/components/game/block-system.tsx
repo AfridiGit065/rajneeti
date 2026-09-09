@@ -311,11 +311,10 @@ export function BlockDialog({
 /** 3. BlockPanel: In-game active block indicator / controller */
 export function BlockPanel({
   activeBlock,
-  currentPlayer: _currentPlayer,
   onOpenDialog,
 }: {
   activeBlock: BlockEvent | null;
-  currentPlayer: GamePlayer;
+  currentPlayer?: GamePlayer;
   onOpenDialog: () => void;
 }) {
   if (!activeBlock) return null;

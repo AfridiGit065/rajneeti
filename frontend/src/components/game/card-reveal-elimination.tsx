@@ -97,7 +97,11 @@ export function InfluenceLostModal({
 }) {
   const hiddenCards = player.influenceCards.filter((c) => !c.revealed);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const activeCardId = selectedCardId ?? hiddenCards[0]?.id ?? null;
+
+  const activeSelectedId =
+    selectedCardId && hiddenCards.some((c) => c.id === selectedCardId)
+      ? selectedCardId
+      : hiddenCards[0]?.id ?? null;
 
   if (!open || hiddenCards.length === 0) return null;
 
@@ -132,7 +136,7 @@ export function InfluenceLostModal({
             <CardReveal
               key={card.id}
               card={card}
-              isSelected={activeCardId === card.id}
+              isSelected={activeSelectedId === card.id}
               onClick={() => setSelectedCardId(card.id)}
             />
           ))}
@@ -145,10 +149,10 @@ export function InfluenceLostModal({
         <Button
           variant="danger"
           fullWidth
-          disabled={!activeCardId}
+          disabled={!activeSelectedId}
           onClick={() => {
-            if (activeCardId) {
-              onConfirmReveal(activeCardId);
+            if (activeSelectedId) {
+              onConfirmReveal(activeSelectedId);
             }
           }}
           className="font-bengali gap-2 shadow-crimson text-sm font-bold"
@@ -175,11 +179,10 @@ export function EliminationOverlay({
 
   useEffect(() => {
     if (!open) return;
-    const reset = window.setTimeout(() => setCountdown(4), 0);
-    const interval = window.setInterval(() => {
+    const interval = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          window.clearInterval(interval);
+          clearInterval(interval);
           onFinish();
           return 0;
         }
@@ -187,10 +190,7 @@ export function EliminationOverlay({
       });
     }, 1000);
 
-    return () => {
-      window.clearTimeout(reset);
-      window.clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [open, onFinish]);
 
   if (!open) return null;

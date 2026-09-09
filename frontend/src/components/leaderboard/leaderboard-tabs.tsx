@@ -21,7 +21,7 @@ export function LeaderboardTabs({
     <div
       role="tablist"
       aria-label="লিডারবোর্ড ভিউ"
-      className="inline-flex rounded-xl border border-forest-500/25 bg-deep-900/80 p-1"
+      className="flex flex-wrap sm:inline-flex rounded-xl border border-forest-500/25 bg-deep-900/80 p-1 gap-1"
     >
       {TABS.map((tab) => {
         const active = tab.value === value;
