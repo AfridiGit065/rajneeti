@@ -78,6 +78,9 @@ export {
   XCircle,
   MinusCircle,
   TrendingUp,
+  Search,
+  CalendarDays,
+  TrendingDown,
 } from "lucide-react";
 
 export type { LucideIcon } from "lucide-react";

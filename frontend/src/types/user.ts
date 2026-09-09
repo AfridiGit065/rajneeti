@@ -43,19 +43,30 @@ export interface LeaderboardEntry {
   rank: number;
   user: UserPublic;
   points: number;
+  rating?: number;
   wins: number;
   gamesPlayed: number;
   winRate: number;
 }
 
+export interface MatchParticipant {
+  displayName: string;
+  avatarInitial: string;
+  position: number;
+  isCurrentUser?: boolean;
+}
+
 export interface MatchHistoryEntry {
   matchId: string;
   playedAt: string;
+  modeName?: string;
   opponentName: string;
   result: "win" | "loss" | "draw";
   durationMinutes: number;
   position: number;
   playerCount: number;
+  ratingChange: number;
+  participants: MatchParticipant[];
 }
 
 export interface GameSettings {
