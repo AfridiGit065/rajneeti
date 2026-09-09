@@ -11,9 +11,15 @@ export type ButtonVariant =
   | "outline"
   | "ghost"
   | "danger"
-  | "premium";
+  | "premium"
+  | "gold";
 
 export type ButtonSize = "sm" | "md" | "lg" | "xl";
+
+const PREMIUM_CLASSES =
+  "bg-gradient-to-b from-gold-400 via-gold-500 to-gold-600 text-deep-950 " +
+  "shadow-[0_1px_0_rgb(255_255_255/0.3)_inset,0_14px_34px_-12px_rgb(201_165_60/0.8)] " +
+  "hover:brightness-110 active:brightness-95 border border-gold-300/60";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
@@ -31,10 +37,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   danger:
     "bg-crimson-600 text-ivory hover:bg-crimson-500 border border-crimson-400/30 " +
     "shadow-[0_1px_0_rgb(255_255_255/0.12)_inset,0_10px_24px_-12px_rgb(176_58_76/0.7)]",
-  premium:
-    "bg-gradient-to-b from-gold-400 via-gold-500 to-gold-600 text-deep-950 " +
-    "shadow-[0_1px_0_rgb(255_255_255/0.3)_inset,0_14px_34px_-12px_rgb(201_165_60/0.8)] " +
-    "hover:brightness-110 active:brightness-95 border border-gold-300/60",
+  premium: PREMIUM_CLASSES,
+  gold: PREMIUM_CLASSES,
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {

@@ -3,6 +3,8 @@ import type { Result } from "@/types/api";
 
 export interface RoomRepository {
   listRooms(): Promise<Result<RoomSummary[]>>;
+  getRoomById(roomId: string): Promise<Result<RoomSummary>>;
+  findRoomByCode(roomCode: string): Promise<Result<RoomSummary>>;
   createRoom(input: CreateRoomInput): Promise<Result<RoomSummary>>;
   joinRoom(input: JoinRoomInput): Promise<Result<RoomSummary>>;
   leaveRoom(roomId: string): Promise<Result<void>>;

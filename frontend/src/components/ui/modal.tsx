@@ -5,6 +5,15 @@ import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { X } from "./icons";
 
+export type ModalVariant = "normal" | "confirmation" | "warning" | "destructive";
+
+const VARIANT_PANEL: Record<ModalVariant, string> = {
+  normal: "border-gold-500/25",
+  confirmation: "border-forest-400/45",
+  warning: "border-gold-400/55 shadow-gold",
+  destructive: "border-crimson-400/55",
+};
+
 interface ModalProps {
   open: boolean;
   onClose: () => void;
@@ -12,6 +21,7 @@ interface ModalProps {
   subtitle?: string;
   children: ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
+  variant?: ModalVariant;
   className?: string;
   showCloseButton?: boolean;
   labelledBy?: string;
@@ -31,6 +41,7 @@ export function Modal({
   subtitle,
   children,
   size = "md",
+  variant = "normal",
   className,
   showCloseButton = true,
 }: ModalProps) {
@@ -73,9 +84,10 @@ export function Modal({
         tabIndex={-1}
         className={cn(
           "relative w-full outline-none",
-          "animate-zoom-in rounded-2xl border border-gold-500/25 bg-deep-900/95 panel-emboss panel-texture",
+          "animate-zoom-in rounded-2xl border bg-deep-900/95 panel-emboss panel-texture",
           "max-h-[90vh] overflow-y-auto",
           SIZES[size],
+          VARIANT_PANEL[variant],
           className,
         )}
       >

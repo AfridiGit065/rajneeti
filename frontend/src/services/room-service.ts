@@ -6,6 +6,12 @@ export const RoomService = {
   async listRooms(): Promise<Result<RoomSummary[]>> {
     return repositories.room.listRooms();
   },
+  async getRoomById(roomId: string): Promise<Result<RoomSummary>> {
+    return repositories.room.getRoomById(roomId);
+  },
+  async findRoomByCode(roomCode: string): Promise<Result<RoomSummary>> {
+    return repositories.room.findRoomByCode(roomCode);
+  },
   async createRoom(input: CreateRoomInput): Promise<Result<RoomSummary>> {
     return repositories.room.createRoom(input);
   },

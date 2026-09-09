@@ -1,4 +1,5 @@
 import { repositories } from "@/repositories";
+import { MOCK_DEMO_CREDENTIALS } from "@/mocks/users";
 import type { LoginInput, RegisterInput } from "@/types/user";
 import type { Result, ApiError } from "@/types/api";
 
@@ -9,6 +10,9 @@ export interface AuthResult {
 }
 
 export const AuthService = {
+  /** Demo credentials for the mock-only login (matches MockAuthRepository). */
+  demoCredentials: MOCK_DEMO_CREDENTIALS,
+
   async login(input: LoginInput): Promise<Result<AuthResult>> {
     const result = await repositories.auth.login(input);
     if (!result.ok) return result;
@@ -43,6 +47,10 @@ export const AuthService = {
 
   async logout(): Promise<Result<void>> {
     return repositories.auth.logout();
+  },
+
+  async checkUsername(username: string): Promise<Result<{ available: boolean }>> {
+    return repositories.auth.checkUsername(username);
   },
 
   normalizeError(error: ApiError): string {

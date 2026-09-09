@@ -24,6 +24,28 @@ export class MockRoomRepository implements RoomRepository {
     return ok([...this.rooms]);
   }
 
+  async getRoomById(roomId: string): Promise<Result<RoomSummary>> {
+    await delay(250);
+    const room = this.rooms.find((r) => r.roomId === roomId);
+    return room
+      ? ok(room)
+      : err({ status: 404, error: "ROOM_NOT_FOUND", message: "রুম পাওয়া যায়নি।" });
+  }
+
+  async findRoomByCode(roomCode: string): Promise<Result<RoomSummary>> {
+    await delay(350);
+    const room = this.rooms.find(
+      (r) => r.roomCode.toUpperCase() === roomCode.trim().toUpperCase(),
+    );
+    return room
+      ? ok(room)
+      : err({
+          status: 404,
+          error: "ROOM_NOT_FOUND",
+          message: "এই কোডের রুম পাওয়া যায়নি।",
+        });
+  }
+
   async createRoom(input: CreateRoomInput): Promise<Result<RoomSummary>> {
     await delay(600);
     const room: RoomSummary = {

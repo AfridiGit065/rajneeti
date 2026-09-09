@@ -1,0 +1,9 @@
+export { SettingsSection } from "./settings-section";
+export { SettingToggle } from "./setting-toggle";
+export { AccountSection } from "./account-section";
+export { AppearanceSection } from "./appearance-section";
+export { AudioSection } from "./audio-section";
+export { GameplaySection } from "./gameplay-section";
+export { NotificationSection } from "./notification-section";
+export { PrivacySection } from "./privacy-section";
+export { DangerZoneSection } from "./danger-zone-section";

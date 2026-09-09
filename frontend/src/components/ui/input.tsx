@@ -10,10 +10,12 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   leadingIcon?: ReactNode;
   trailingIcon?: ReactNode;
+  /** Interactive element rendered at the right edge (e.g. show/hide password toggle). */
+  trailingAction?: ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, hint, error, leadingIcon, trailingIcon, className, id, ...rest }, ref) => {
+  ({ label, hint, error, leadingIcon, trailingIcon, trailingAction, className, id, ...rest }, ref) => {
     const autoId = useId();
     const inputId = id ?? autoId;
     return (
@@ -49,7 +51,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             )}
             {...rest}
           />
-          {trailingIcon ? (
+          {trailingAction ? (
+            <span className="absolute inset-y-0 right-0 flex items-center pr-1.5">
+              {trailingAction}
+            </span>
+          ) : trailingIcon ? (
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
               {trailingIcon}
             </span>

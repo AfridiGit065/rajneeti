@@ -4,6 +4,7 @@ export interface UserPublic {
   displayName: string;
   avatarInitial: string;
   level: number;
+  rating?: number;
   titled?: boolean;
 }
 
@@ -64,4 +65,6 @@ export interface GameSettings {
   language: "en" | "bn";
   reducedMotion: boolean;
   theme: "emerald" | "midnight";
+  confirmCoup: boolean;
+  confirmAssassination: boolean;
 }
