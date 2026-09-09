@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { ACTIONS } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CoinDisplay } from "./coin-display";
 import {
   Coins,
@@ -16,9 +14,6 @@ import {
   RefreshCw,
   Skull,
   Crown,
-  AlertTriangle,
-  Users,
-  X,
   type LucideIcon,
 } from "@/components/ui/icons";
 import { ActionModals, type ActionModalStep } from "./action-modals";
@@ -33,20 +28,6 @@ const ACTION_ICONS: Record<GameActionId, LucideIcon> = {
   assassinate: Skull,
   coup: Crown,
 };
-
-
-function costTag(action: GameAction): string {
-  const parts: string[] = [];
-  if (action.requiresCharacter) {
-    parts.push(CHARACTER_MAP[action.requiresCharacter]?.nameBn ?? "");
-  }
-  if (typeof action.cost === "number") {
-    parts.push(`${action.cost} কয়েন`);
-  } else if (typeof action.gain === "number") {
-    parts.push(`+${action.gain}`);
-  }
-  return parts.filter(Boolean).join(" · ");
-}
 
 export function ActionPanel({
   player,
@@ -67,7 +48,6 @@ export function ActionPanel({
   const mandatoryCoup = isAlive && isTurn && coins >= 10;
 
   const [modalStep, setModalStep] = useState<ActionModalStep>({ type: "none" });
-  const [exchangeSelected, setExchangeSelected] = useState<number[]>([0, 1]);
 
   const aliveOpponents = opponents.filter((o) => o.isAlive);
 
