@@ -1,13 +1,15 @@
-import { ModulePlaceholder } from "@/components/layout/module-placeholder";
+import { PageHeader } from "@/components/layout/page-header";
+import { JoinRoomForm } from "@/components/rooms/join-room-form";
 
 export default function JoinRoomPage() {
   return (
-    <ModulePlaceholder
-      title="রুমে যোগ দিন"
-      eyebrow="রুম কোড"
-      subtitle="বন্ধুর রুম কোড লিখে ঢুকে যান।"
-      module="০৪ · Lobby & Rooms"
-      note="রুম কোড ইনপুট ও ভেরিফিকেশন ফ্লো এই মডিউলে তৈরি হবে।"
-    />
+    <div className="mx-auto max-w-3xl animate-fade-up">
+      <PageHeader
+        eyebrow="রুম কোড"
+        title="ঘরে যোগ দিন"
+        subtitle="বন্ধুর রুম কোড লিখে ঢুকে পড়ো — বা সাম্প্রতিক রুম থেকে বেছে নাও।"
+      />
+      <JoinRoomForm />
+    </div>
   );
 }

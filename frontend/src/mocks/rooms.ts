@@ -34,7 +34,7 @@ export const MOCK_ROOMS: RoomSummary[] = [
         user: MOCK_USERS[2]!,
         seatIndex: 2,
         isHost: false,
-        isReady: false,
+        isReady: true,
         joinedAt: now,
       },
     ],
