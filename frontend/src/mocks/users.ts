@@ -6,6 +6,7 @@ export const MOCK_CURRENT_USER: UserPublic = {
   displayName: "শাপলা",
   avatarInitial: "শা",
   level: 12,
+  rating: 1520,
   titled: true,
 };
 
@@ -17,6 +18,7 @@ export const MOCK_USERS: UserPublic[] = [
     displayName: "সংগ্রাম",
     avatarInitial: "স",
     level: 9,
+    rating: 1310,
   },
   {
     id: "u-3",
@@ -24,6 +26,7 @@ export const MOCK_USERS: UserPublic[] = [
     displayName: "যন্ত্রণা",
     avatarInitial: "য",
     level: 15,
+    rating: 1680,
     titled: true,
   },
   {
@@ -32,6 +35,7 @@ export const MOCK_USERS: UserPublic[] = [
     displayName: "প্রকৃতি",
     avatarInitial: "প",
     level: 7,
+    rating: 1190,
   },
   {
     id: "u-5",
@@ -39,6 +43,7 @@ export const MOCK_USERS: UserPublic[] = [
     displayName: "বঙ্গভূমি",
     avatarInitial: "ব",
     level: 11,
+    rating: 1445,
   },
   {
     id: "u-6",
@@ -46,5 +51,6 @@ export const MOCK_USERS: UserPublic[] = [
     displayName: "ময়লা পক্ষ",
     avatarInitial: "ম",
     level: 5,
+    rating: 1075,
   },
 ];
