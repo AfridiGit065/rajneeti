@@ -14,13 +14,25 @@ import { OwnCards } from "./own-cards";
 import { ActionPanel } from "./action-panel";
 import { ChallengeFlow } from "./challenge";
 import { GameLog } from "./game-log";
+import {
+  BlockPanel,
+  BlockDialog,
+  BlockResult,
+  type BlockEvent,
+  type BlockResultData,
+  type BlockOutcome,
+} from "./block-system";
+import {
+  InfluenceLostModal,
+  EliminationOverlay,
+} from "./card-reveal-elimination";
 import { getAction } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { GameService } from "@/services/game-service";
 import { MOCK_CURRENT_USER } from "@/mocks/users";
 import { useAuthStore } from "@/store/auth-store";
 import { useToast } from "@/hooks/use-toast";
-import { MatchStatus, type GameActionId, type GamePhase, type GameState } from "@/types/game";
+import { MatchStatus, type GameActionId, type GamePhase, type GamePlayer, type GameState } from "@/types/game";
 
 const PHASE_LABEL: Record<GamePhase, string> = {
   setup: "সেটআপ",
@@ -103,6 +115,16 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const { success, error: notifyError } = useToast();
   const selfId = useAuthStore((s) => s.user)?.id ?? MOCK_CURRENT_USER.id;
 
+  // Block System State (Module F20)
+  const [activeBlock, setActiveBlock] = useState<BlockEvent | null>(null);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [blockResultData, setBlockResultData] = useState<BlockResultData | null>(null);
+
+  // Card Reveal & Elimination State (Module F21)
+  const [influenceLostOpen, setInfluenceLostOpen] = useState(false);
+  const [influenceLostReason, setInfluenceLostReason] = useState("");
+  const [eliminationPlayer, setEliminationPlayer] = useState<GamePlayer | null>(null);
+
   const load = useCallback(async () => GameService.getGameState(matchId), [matchId]);
 
   useEffect(() => {
@@ -140,12 +162,117 @@ export function GameBoard({ matchId }: { matchId: string }) {
       targetPlayerId,
     });
     setBusy(null);
+
     if (result.ok) {
       setGame(result.data);
       success(`${getAction(actionId).nameBn} — অ্যাকশন চলছে`);
+
+      // Mock block opportunity triggers for F20 demonstration
+      if (actionId === "foreign_aid" || actionId === "steal" || actionId === "assassinate") {
+        const potentialBlocker =
+          (targetPlayerId ? result.data.players.find((p) => p.id === targetPlayerId) : null) ??
+          result.data.players.find((p) => p.userId !== selfId && p.isAlive);
+
+        if (potentialBlocker) {
+          const claimedCharacter =
+            actionId === "foreign_aid"
+              ? "minister"
+              : actionId === "steal"
+              ? "amla"
+              : "goyenda";
+
+          const actor =
+            result.data.players.find((p) => p.userId === selfId) ?? result.data.players[0]!;
+
+          const newBlockEvent: BlockEvent = {
+            blocker: potentialBlocker,
+            targetOrActor: actor,
+            actionId,
+            claimedCharacter,
+          };
+
+          setActiveBlock(newBlockEvent);
+          setBlockDialogOpen(true);
+        }
+      }
+
+      // If action is Coup, trigger card loss for the target player (F21 simulation)
+      if (actionId === "coup" && targetPlayerId) {
+        const target = result.data.players.find((p) => p.id === targetPlayerId);
+        if (target) {
+          setInfluenceLostReason(`ক্ষমতা দখল (Coup) আক্রমণের শিকার হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন`);
+          setInfluenceLostOpen(true);
+        }
+      }
     } else {
       notifyError(result.error.message);
     }
+  }
+
+  function handleBlockResolution(outcome: BlockOutcome) {
+    if (!activeBlock || !game) return;
+
+    const challenger =
+      game.players.find((p) => p.userId === selfId) ?? game.players[0]!;
+
+    const resultData: BlockResultData = {
+      outcome,
+      blocker: activeBlock.blocker,
+      challenger,
+      claimedCharacter: activeBlock.claimedCharacter,
+      actionId: activeBlock.actionId,
+    };
+
+    setBlockResultData(resultData);
+    setActiveBlock(null);
+
+    // If challenger or blocker loses influence, trigger F21 Card Reveal
+    if (outcome === "challenger_loses_influence") {
+      setInfluenceLostReason("ব্লকের বিরুদ্ধে করা চ্যালেঞ্জে ব্যর্থ হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
+      setInfluenceLostOpen(true);
+    } else if (
+      outcome === "blocker_loses_influence" ||
+      outcome === "block_claim_is_bluff"
+    ) {
+      setInfluenceLostReason("ব্লকের মিথ্যা দাবি ফাঁস হওয়ায় ব্লকার ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
+      setInfluenceLostOpen(true);
+    }
+  }
+
+  function handleConfirmCardReveal(revealedCardId: string) {
+    if (!game) return;
+    setInfluenceLostOpen(false);
+
+    // Update game state: reveal the selected card
+    const updatedPlayers = game.players.map((p) => {
+      const hasCard = p.influenceCards.some((c) => c.id === revealedCardId);
+      if (!hasCard) return p;
+
+      const updatedCards = p.influenceCards.map((c) =>
+        c.id === revealedCardId ? { ...c, revealed: true } : c,
+      );
+      const remainingHidden = updatedCards.filter((c) => !c.revealed).length;
+      const isAlive = remainingHidden > 0;
+
+      // If reached 0 influence, trigger EliminationOverlay
+      if (!isAlive && p.isAlive) {
+        setEliminationPlayer({ ...p, isAlive: false, influenceCards: updatedCards });
+      }
+
+      return {
+        ...p,
+        isAlive,
+        influenceCards: updatedCards,
+      };
+    });
+
+    setGame({
+      ...game,
+      players: updatedPlayers,
+      revealedCardsCount: game.revealedCardsCount + 1,
+    });
+
+    success("কার্ড সফলভাবে উন্মোচিত হয়েছে");
   }
 
   if (loading) {
@@ -226,6 +353,23 @@ export function GameBoard({ matchId }: { matchId: string }) {
             </div>
           ) : null}
 
+          {/* Block result card if recently resolved */}
+          {blockResultData && (
+            <BlockResult
+              result={blockResultData}
+              onDismiss={() => setBlockResultData(null)}
+            />
+          )}
+
+          {/* Active Block Indicator */}
+          {activeBlock && (
+            <BlockPanel
+              activeBlock={activeBlock}
+              currentPlayer={currentPlayer}
+              onOpenDialog={() => setBlockDialogOpen(true)}
+            />
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             <ActiveAction game={game} />
             <DeckDiscard game={game} />
@@ -252,6 +396,34 @@ export function GameBoard({ matchId }: { matchId: string }) {
           <GameLog entries={game.log} />
         </aside>
       </main>
+
+      {/* Module F20: Block Dialog Modal */}
+      {activeBlock && (
+        <BlockDialog
+          event={activeBlock}
+          currentPlayer={currentPlayer}
+          open={blockDialogOpen}
+          onClose={() => setBlockDialogOpen(false)}
+          onResolve={handleBlockResolution}
+        />
+      )}
+
+      {/* Module F21: Influence Lost Modal (Card Reveal Choice) */}
+      <InfluenceLostModal
+        open={influenceLostOpen}
+        player={currentPlayer}
+        reason={influenceLostReason}
+        onConfirmReveal={handleConfirmCardReveal}
+      />
+
+      {/* Module F21: Elimination Dramatic Overlay */}
+      {eliminationPlayer && (
+        <EliminationOverlay
+          open={eliminationPlayer !== null}
+          eliminatedPlayer={eliminationPlayer}
+          onFinish={() => setEliminationPlayer(null)}
+        />
+      )}
     </div>
   );
-}
+}
