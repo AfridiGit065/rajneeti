@@ -6,6 +6,18 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 import { AuthService } from "@/services/auth-service";
+import {
+  EMAIL_MAX,
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+  USERNAME_MAX,
+  USERNAME_MIN,
+  validateConfirm,
+  validateEmail,
+  validatePassword,
+  validateRegister,
+  validateUsername,
+} from "@/lib/validation/auth";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -21,15 +33,6 @@ import {
   Mail,
   UserPlus,
 } from "@/components/ui/icons";
-
-const USERNAME_MIN = 3;
-const USERNAME_MAX = 24;
-const PASSWORD_MIN = 6;
-const PASSWORD_MAX = 128;
-const EMAIL_MAX = 254;
-
-const USERNAME_PATTERN = /^[a-zA-Z0-9._]+$/;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 type FormValues = {
   username: string;
@@ -48,55 +51,6 @@ const INITIAL_VALUES: FormValues = {
   password: "",
   confirm: "",
 };
-
-function validateUsername(value: string): string | null {
-  if (!value) return "ইউজারনেম দিন।";
-  if (value.length < USERNAME_MIN)
-    return `ইউজারনেম কমপক্ষে ${USERNAME_MIN} অক্ষরের হতে হবে।`;
-  if (value.length > USERNAME_MAX)
-    return `ইউজারনেম সর্বোচ্চ ${USERNAME_MAX} অক্ষরের হতে পারে।`;
-  if (!USERNAME_PATTERN.test(value))
-    return "শুধু ইংরেজি অক্ষর, সংখ্যা, '.' এবং '_' ব্যবহার করা যাবে।";
-  if (/^\d+$/.test(value)) return "ইউজারনেম শুধু সংখ্যা হতে পারবে না।";
-  return null;
-}
-
-function validateEmail(value: string): string | null {
-  if (!value) return "ইমেইল ঠিকানা দিন।";
-  if (value.length > EMAIL_MAX) return "ইমেইল ঠিকানা খুব দীর্ঘ।";
-  if (!EMAIL_PATTERN.test(value)) return "সঠিক ইমেইল ঠিকানা দিন।";
-  return null;
-}
-
-function validatePassword(value: string): string | null {
-  if (!value) return "পাসওয়ার্ড দিন।";
-  if (value.length < PASSWORD_MIN)
-    return `পাসওয়ার্ড কমপক্ষে ${PASSWORD_MIN} অক্ষরের হতে হবে।`;
-  if (value.length > PASSWORD_MAX)
-    return `পাসওয়ার্ড সর্বোচ্চ ${PASSWORD_MAX} অক্ষরের হতে পারে।`;
-  if (!/[A-Za-z]/.test(value) || !/\d/.test(value))
-    return "পাসওয়ার্ডে অন্তত একটি অক্ষর এবং একটি সংখ্যা থাকতে হবে।";
-  return null;
-}
-
-function validateConfirm(value: string, password: string): string | null {
-  if (!value) return "পাসওয়ার্ড আবার লিখুন।";
-  if (value !== password) return "দুই পাসওয়ার্ড মিলছে না।";
-  return null;
-}
-
-function validateAll(values: FormValues): FieldErrors {
-  const errors: FieldErrors = {};
-  const usernameError = validateUsername(values.username);
-  if (usernameError) errors.username = usernameError;
-  const emailError = validateEmail(values.email);
-  if (emailError) errors.email = emailError;
-  const passwordError = validatePassword(values.password);
-  if (passwordError) errors.password = passwordError;
-  const confirmError = validateConfirm(values.confirm, values.password);
-  if (confirmError) errors.confirm = confirmError;
-  return errors;
-}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -159,7 +113,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setServerError(null);
 
-    const nextErrors = validateAll(values);
+    const nextErrors = validateRegister(values);
     setErrors(nextErrors);
     setTouched({ username: true, email: true, password: true, confirm: true });
     if (Object.values(nextErrors).some(Boolean)) return;

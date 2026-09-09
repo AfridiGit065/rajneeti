@@ -2,6 +2,7 @@ export { Button } from "./button";
 export type { ButtonVariant, ButtonSize } from "./button";
 export { IconButton } from "./icon-button";
 export { Input } from "./input";
+export { Checkbox } from "./checkbox";
 export { Select } from "./select";
 export { Modal } from "./modal";
 export type { ModalVariant } from "./modal";

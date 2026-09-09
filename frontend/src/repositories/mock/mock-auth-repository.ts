@@ -1,7 +1,7 @@
 import type { AuthRepository } from "../auth-repository";
 import type { AuthSession, LoginInput, RegisterInput, UserPublic } from "@/types/user";
 import { err, ok, type Result } from "@/types/api";
-import { MOCK_CURRENT_USER, MOCK_USERS } from "@/mocks/users";
+import { MOCK_CURRENT_USER, MOCK_DEMO_CREDENTIALS, MOCK_USERS } from "@/mocks/users";
 
 const delay = (ms = 450) => new Promise((r) => setTimeout(r, ms));
 
@@ -17,7 +17,10 @@ function buildSession(user: UserPublic): AuthSession {
 export class MockAuthRepository implements AuthRepository {
   async login(input: LoginInput): Promise<Result<AuthSession>> {
     await delay();
-    if (input.email.length < 3 || input.password.length < 4) {
+    const valid =
+      input.email.trim().toLowerCase() === MOCK_DEMO_CREDENTIALS.email.toLowerCase() &&
+      input.password === MOCK_DEMO_CREDENTIALS.password;
+    if (!valid) {
       return err({
         status: 401,
         error: "INVALID_CREDENTIALS",

@@ -9,6 +9,11 @@ export const MOCK_CURRENT_USER: UserPublic = {
   titled: true,
 };
 
+export const MOCK_DEMO_CREDENTIALS = {
+  email: "shapla@example.com",
+  password: "shapla123",
+} as const;
+
 export const MOCK_USERS: UserPublic[] = [
   MOCK_CURRENT_USER,
   {

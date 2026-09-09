@@ -42,6 +42,7 @@ export {
   AtSign,
   UserPlus,
   KeyRound,
+  LogIn,
   Play,
   Plus,
   DoorOpen,
