@@ -6,6 +6,26 @@ import { cn } from "@/lib/cn";
 import { ResultBadge } from "./result-badge";
 import type { MatchHistoryEntry } from "@/types/user";
 
+function RatingChange({ change }: { change: number }) {
+  if (change > 0) {
+    return (
+      <span className="text-forest-300">
+        <TrendingUp className="mr-1 inline size-3.5" aria-hidden />
+        {formatRatingChange(change)}
+      </span>
+    );
+  }
+  if (change < 0) {
+    return (
+      <span className="text-crimson-300">
+        <TrendingDown className="mr-1 inline size-3.5" aria-hidden />
+        {formatRatingChange(change)}
+      </span>
+    );
+  }
+  return <span className="text-muted">{formatRatingChange(0)}</span>;
+}
+
 function SummaryBox({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-forest-500/15 bg-deep-800/50 p-3">
@@ -26,10 +46,10 @@ export function MatchDetailsModal({
     <Modal
       open={match !== null}
       onClose={onClose}
-      title={match ? `ম্যাচ ${match.matchId}` : undefined}
+      title={match ? `Match ${match.matchId}` : undefined}
       subtitle={
         match
-          ? `${formatDate(match.playedAt)} · ${match.durationMinutes} মিনিট · ${match.playerCount} জন`
+          ? `${formatDate(match.playedAt)} · ${match.durationMinutes} mins · ${match.playerCount} Players`
           : undefined
       }
       size="md"
@@ -37,10 +57,10 @@ export function MatchDetailsModal({
       {match ? (
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <SummaryBox label="ফলাফল">
+            <SummaryBox label="Result">
               <ResultBadge result={match.result} />
             </SummaryBox>
-            <SummaryBox label="রেটিং পরিবর্তন">
+            <SummaryBox label="Rating Change">
               <span
                 className={cn(
                   match.ratingChange > 0 && "text-forest-300",
@@ -56,29 +76,29 @@ export function MatchDetailsModal({
                 {formatRatingChange(match.ratingChange)}
               </span>
             </SummaryBox>
-            <SummaryBox label="ফাইনাল র‍্যাংক">
+            <SummaryBox label="Final Rank">
               <span className="font-mono">
                 #{match.position} <span className="font-normal text-muted">/ {match.playerCount}</span>
               </span>
             </SummaryBox>
-            <SummaryBox label="সময়কাল">
+            <SummaryBox label="Duration">
               <span className="flex items-center gap-1.5">
                 <Clock3 className="size-3.5 text-gold-300" aria-hidden />
-                {match.durationMinutes} মিনিট
+                {match.durationMinutes} mins
               </span>
             </SummaryBox>
-            <SummaryBox label="খেলোয়াড়">
+            <SummaryBox label="Players">
               <span className="flex items-center gap-1.5">
                 <Users className="size-3.5 text-gold-300" aria-hidden />
-                {match.playerCount} জন
+                {match.playerCount} Players
               </span>
             </SummaryBox>
-            <SummaryBox label="মোড">{match.modeName ?? "ক্লাসিক"}</SummaryBox>
+            <SummaryBox label="Mode">{match.modeName ?? "Classic"}</SummaryBox>
           </div>
 
           <div>
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-[0.15em] text-muted">
-              অংশগ্রহণকারী
+              Participants
             </h3>
             <ol className="space-y-2">
               {match.participants.map((p, index) => (
@@ -100,10 +120,19 @@ export function MatchDetailsModal({
                   >
                     {p.avatarInitial}
                   </span>
-                  <span className="truncate font-medium text-ivory">{p.displayName}</span>
-                  <span className="ml-auto shrink-0">
-                    {p.isCurrentUser ? <Badge tone="gold">আপনি</Badge> : null}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-ivory">
+                      <span className="truncate">{p.displayName}</span>
+                      {p.isCurrentUser ? <Badge tone="gold">You</Badge> : null}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    {p.isCurrentUser ? (
+                      <p className="text-xs font-semibold">
+                        <RatingChange change={match.ratingChange} />
+                      </p>
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ol>

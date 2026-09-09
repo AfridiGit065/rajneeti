@@ -12,15 +12,13 @@ export function NotificationSection() {
   return (
     <SettingsSection
       icon={<Bell className="size-4.5" aria-hidden />}
-      title="নোটিফিকেশন"
-      titleEn="Notifications"
-      description="খেলা সংক্রান্ত খবর।"
+      title="Notifications"
+      description="Game announcements and turn alerts."
     >
       <SettingToggle
         icon={<Bell className="size-4" aria-hidden />}
-        title="গেম নোটিফিকেশন"
-        titleEn="Game notifications"
-        description="তোমার পালা, চ্যালেঞ্জ ও ফলাফলের খবর।"
+        title="Game Notifications"
+        description="Alerts for your turns, challenges, and match resolutions."
         checked={settings.notificationsEnabled}
         onCheckedChange={(v) => updateSettings({ notificationsEnabled: v })}
       />

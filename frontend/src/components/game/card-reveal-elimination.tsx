@@ -58,8 +58,8 @@ export function CardReveal({
         {isSelected && (
           <div className="absolute inset-0 bg-crimson-950/50 backdrop-blur-[1px] flex flex-col items-center justify-center p-2 text-center animate-fade-in">
             <Skull className="size-8 text-crimson-300 animate-bounce" />
-            <span className="mt-1 font-bengali text-xs font-bold text-crimson-200">
-              উন্মোচন নির্বাচিত
+            <span className="mt-1 font-cinzel text-[11px] font-bold text-crimson-200 uppercase tracking-wider">
+              Selected to Reveal
             </span>
           </div>
         )}
@@ -76,7 +76,7 @@ export function CardReveal({
 
       <div className="mt-1">
         <Badge tone={isSelected ? "crimson" : "neutral"} className="text-[10px]">
-          {isSelected ? "উন্মোচিত হবে" : "রক্ষা করা"}
+          {isSelected ? "Will Reveal" : "Protected"}
         </Badge>
       </div>
     </button>
@@ -87,7 +87,7 @@ export function CardReveal({
 export function InfluenceLostModal({
   open,
   player,
-  reason = "আক্রমণ বা ভুল চ্যালেঞ্জের কারণে ১টি ইনফ্লুয়েন্স হারাচ্ছেন",
+  reason = "You lost an influence due to an action or a failed challenge.",
   onConfirmReveal,
 }: {
   open: boolean;
@@ -119,14 +119,14 @@ export function InfluenceLostModal({
           </div>
           <div>
             <span className="font-cinzel text-xs font-bold uppercase tracking-[0.25em] text-crimson-400">
-              Influence Lost · প্রভাব হারানো
+              Influence Lost
             </span>
-            <h2 className="font-bengali text-2xl font-bold text-ivory mt-0.5">
-              একটি কার্ড উন্মোচন করুন
+            <h2 className="font-display text-2xl font-bold text-ivory mt-0.5">
+              Choose a Card to Reveal
             </h2>
           </div>
-          <p className="font-bengali text-xs text-muted max-w-sm mx-auto">
-            {reason}। নিচের যেকোনো ১টি কার্ড বেছে নিয়ে প্রকাশ্যে আনুন।
+          <p className="text-xs text-muted max-w-sm mx-auto">
+            {reason} Pick one of your remaining influence cards below to reveal.
           </p>
         </div>
 
@@ -142,8 +142,8 @@ export function InfluenceLostModal({
           ))}
         </div>
 
-        <div className="rounded-xl border border-crimson-500/30 bg-deep-950/80 p-3 text-xs text-muted font-bengali">
-          ⚠️ উন্মোচিত কার্ডের ক্ষমতা আর ব্যবহার করা যাবে না এবং এটি টেবিলে সবার সামনে থাকবে।
+        <div className="rounded-xl border border-crimson-500/30 bg-deep-950/80 p-3 text-xs text-muted">
+          ⚠️ Once revealed, this card&apos;s special actions and abilities can no longer be used.
         </div>
 
         <Button
@@ -155,10 +155,10 @@ export function InfluenceLostModal({
               onConfirmReveal(activeSelectedId);
             }
           }}
-          className="font-bengali gap-2 shadow-crimson text-sm font-bold"
+          className="gap-2 shadow-crimson text-xs font-cinzel font-bold tracking-wider uppercase"
         >
           <Eye className="size-4" />
-          নির্বাচিত কার্ডটি উন্মোচন নিশ্চিত করুন
+          Confirm Reveal
         </Button>
       </div>
     </div>
@@ -215,26 +215,26 @@ export function EliminationOverlay({
           <h2 className="font-cinzel text-3xl sm:text-4xl font-black text-ivory tracking-widest">
             ELIMINATED
           </h2>
-          <p className="font-bengali text-xl font-bold text-crimson-200 mt-1">
-            {eliminatedPlayer.displayName ?? eliminatedPlayer.username} ছিটকে পড়েছেন!
+          <p className="text-xl font-bold text-crimson-200 mt-1">
+            {eliminatedPlayer.displayName ?? eliminatedPlayer.username} has been eliminated!
           </p>
-          <p className="font-bengali text-xs text-muted max-w-xs mx-auto leading-relaxed pt-1">
-            উভয় রাজনৈতিক প্রভাব কার্ড উন্মোচিত হওয়ায় খেলোয়াড় এই ম্যাচ থেকে অপসারিত হলেন।
+          <p className="text-xs text-muted max-w-xs mx-auto leading-relaxed pt-1">
+            With both political influence cards revealed, this player has lost all power and is out of the match.
           </p>
         </div>
 
         {/* Auto return countdown pill */}
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-deep-950 px-4 py-2.5 text-xs text-parchment-300 font-bengali">
-          <span>খেলা বোর্ডে ফিরে যাওয়া হচ্ছে… ({countdown}s)</span>
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-deep-950 px-4 py-2.5 text-xs text-parchment-300">
+          <span>Returning to match board… ({countdown}s)</span>
         </div>
 
         <Button
           variant="outline"
           fullWidth
           onClick={onFinish}
-          className="font-bengali text-xs"
+          className="text-xs font-cinzel font-semibold tracking-wider uppercase"
         >
-          বোর্ডে ফিরে যান (Return to Board)
+          Return to Board
         </Button>
       </div>
     </div>

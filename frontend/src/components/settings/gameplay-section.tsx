@@ -12,23 +12,20 @@ export function GameplaySection() {
   return (
     <SettingsSection
       icon={<Swords className="size-4.5" aria-hidden />}
-      title="খেলা"
-      titleEn="Gameplay"
-      description="গুরুত্বপূর্ণ অ্যাকশনে নিশ্চিতকরণ।"
+      title="Gameplay"
+      description="Action confirmations and warnings."
     >
       <SettingToggle
         icon={<Crown className="size-4" aria-hidden />}
-        title="ক্ষমতা দখলের আগে নিশ্চিতকরণ"
-        titleEn="Confirm before Coup"
-        description="৭ কয়েনের কুপ — ভুল টার্গেট এড়াতে জিজ্ঞেস করবে।"
+        title="Confirm before Coup"
+        description="7 coins action — confirm target player to avoid misclicks."
         checked={settings.confirmCoup}
         onCheckedChange={(v) => updateSettings({ confirmCoup: v })}
       />
       <SettingToggle
         icon={<Skull className="size-4" aria-hidden />}
-        title="সরিয়ে দেওয়ার আগে নিশ্চিতকরণ"
-        titleEn="Confirm before Assassination"
-        description="৩ কয়েনের প্রচেষ্টা — টার্গেট নিশ্চিত করে নাও।"
+        title="Confirm before Assassination"
+        description="3 coins action — confirm target player before launching attempt."
         checked={settings.confirmAssassination}
         onCheckedChange={(v) => updateSettings({ confirmAssassination: v })}
       />

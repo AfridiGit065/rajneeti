@@ -66,8 +66,8 @@ export function EditProfileModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="প্রোফাইল সম্পাদনা · Edit Profile"
-      subtitle="আপনার ব্যবহারকারী নাম ও অবতার কাস্টমাইজ করুন"
+      title="Edit Profile"
+      subtitle="Customize your username and avatar image"
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -91,14 +91,14 @@ export function EditProfileModal({
           <div className="space-y-1">
             <h4 className="text-sm font-semibold text-ivory flex items-center gap-1.5">
               <Sparkles className="size-3.5 text-gold-400" />
-              অবতার প্রিভিউ (Avatar Preview)
+              Avatar Preview
             </h4>
             <p className="text-xs text-muted">
               {avatarUrl
                 ? previewError
-                  ? "ছবির লিংক কাজ করছে না, ডিফল্ট ইনিশিয়াল প্রদর্শিত হবে"
-                  : "কাস্টম অবতার সক্রিয় আছে"
-                : "কোনো লিংক না দিলে অক্ষরের ইনিশিয়াল প্রদর্শিত হবে"}
+                  ? "Image URL not loading, default initial will be used"
+                  : "Custom avatar is active"
+                : "Leave empty to use your initial as default avatar"}
             </p>
           </div>
         </div>
@@ -106,28 +106,28 @@ export function EditProfileModal({
         {/* Editable Fields */}
         <div className="space-y-4">
           <Input
-            label="ব্যবহারকারী নাম · Username (Editable)"
+            label="Username"
             value={username}
             onChange={(e) => {
               setUsername(e.target.value);
               setError(null);
             }}
-            placeholder="আপনার নতুন ইউজারনেম লিখুন"
+            placeholder="Enter your username"
             leadingIcon={<UserIcon className="size-4" />}
             error={error ?? undefined}
-            hint="অন্যান্য খেলোয়াড়রা আপনাকে এই নামে চিনবে"
+            hint="Other players will identify you by this name"
             required
           />
 
           <Input
-            label="অবতার ছবির লিংক · Avatar URL Placeholder (Editable)"
+            label="Avatar Image URL (Optional)"
             value={avatarUrl}
             onChange={(e) => {
               setAvatarUrl(e.target.value);
               setPreviewError(false);
             }}
             placeholder="https://example.com/avatar.png"
-            hint="যেকোনো বৈধ ছবির সরাসরি URL পেস্ট করুন অথবা খালি রাখুন"
+            hint="Paste a valid direct image URL or leave blank"
           />
         </div>
 
@@ -136,13 +136,13 @@ export function EditProfileModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gold-400">
               <Lock className="size-3.5 text-gold-400" />
-              <span>গেম রেকর্ড (অপরিবর্তনযোগ্য · Read-Only)</span>
+              <span>Game Records (Read-Only)</span>
             </div>
             <span className="text-[10px] text-muted font-mono">VERIFIED DATA</span>
           </div>
 
           <p className="text-xs text-muted">
-            রেটিং ও ম্যাচের পরিসংখ্যান সার্ভার দ্বারা স্বয়ংক্রিয়ভাবে নির্ধারিত হয় এবং ম্যানুয়ালি পরিবর্তনযোগ্য নয়।
+            Rating and match statistics are tracked automatically and cannot be modified.
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
@@ -176,11 +176,11 @@ export function EditProfileModal({
         <div className="flex items-center justify-end gap-3 pt-2">
           <Button type="button" variant="outline" size="md" onClick={onClose}>
             <X className="size-4" />
-            বাতিল (Cancel)
+            Cancel
           </Button>
           <Button type="submit" variant="premium" size="md">
             <Check className="size-4" />
-            সংরক্ষণ করুন (Save)
+            Save Changes
           </Button>
         </div>
       </form>

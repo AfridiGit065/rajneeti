@@ -43,26 +43,26 @@ export function LeaderboardTable({
   return (
     <div className="overflow-x-auto rounded-2xl border border-forest-500/25 bg-deep-900/60 panel-emboss">
       <table className="w-full min-w-[680px] border-collapse text-left">
-        <caption className="sr-only">গ্লোবাল লিডারবোর্ড</caption>
+        <caption className="sr-only">Global Leaderboard</caption>
         <thead>
           <tr className="border-b border-forest-500/20 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted">
             <th scope="col" className="px-4 py-3.5">
-              র‍্যাংক
+              Rank
             </th>
             <th scope="col" className="px-4 py-3.5">
-              খেলোয়াড়
+              Player
             </th>
             <th scope="col" className="px-4 py-3.5 text-right">
-              রেটিং
+              Rating
             </th>
             <th scope="col" className="px-4 py-3.5 text-right">
-              জয়
+              Wins
             </th>
             <th scope="col" className="px-4 py-3.5 text-right">
-              ম্যাচ
+              Matches
             </th>
             <th scope="col" className="px-4 py-3.5 text-right">
-              জয়ের হার
+              Win Rate
             </th>
           </tr>
         </thead>
@@ -105,7 +105,7 @@ export function LeaderboardTable({
                       </span>
                       <span className="truncate text-xs text-muted">@{entry.user.username}</span>
                     </span>
-                    {isCurrent ? <Badge tone="gold">আপনি</Badge> : null}
+                    {isCurrent ? <Badge tone="gold">You</Badge> : null}
                   </div>
                 </td>
                 <td className="px-4 py-3.5 text-right font-mono text-sm font-semibold text-ivory">

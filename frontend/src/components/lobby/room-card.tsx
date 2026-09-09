@@ -8,9 +8,9 @@ import { PlayerMiniProfile } from "./player-mini-profile";
 import type { RoomStatus, RoomSummary } from "@/types/room";
 
 const ROOM_STATUS: Record<RoomStatus, { label: string; tone: BadgeTone }> = {
-  WAITING: { label: "অপেক্ষমাণ", tone: "emerald" },
-  IN_PROGRESS: { label: "চলছে", tone: "gold" },
-  FINISHED: { label: "শেষ", tone: "neutral" },
+  WAITING: { label: "Waiting", tone: "emerald" },
+  IN_PROGRESS: { label: "In Progress", tone: "gold" },
+  FINISHED: { label: "Finished", tone: "neutral" },
 };
 
 export function RoomCard({ room }: { room: RoomSummary }) {
@@ -19,12 +19,12 @@ export function RoomCard({ room }: { room: RoomSummary }) {
 
   const joinLabel =
     room.status === "IN_PROGRESS"
-      ? "খেলা চলছে"
+      ? "In Progress"
       : room.status === "FINISHED"
-        ? "ওভারভিউ"
+        ? "Overview"
         : filled
-          ? "রুম পূর্ণ"
-          : "যোগ দিন";
+          ? "Full"
+          : "Join";
   const joinVariant: ButtonVariant =
     room.status === "IN_PROGRESS" || filled
       ? "secondary"
@@ -37,7 +37,7 @@ export function RoomCard({ room }: { room: RoomSummary }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <RoomCode code={room.roomCode} size="sm" />
-          <h3 className="mt-2 truncate font-bengali text-lg font-semibold text-ivory">
+          <h3 className="mt-2 truncate text-lg font-semibold text-ivory">
             {room.name}
           </h3>
         </div>
@@ -47,7 +47,7 @@ export function RoomCard({ room }: { room: RoomSummary }) {
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[0.68rem] font-semibold uppercase tracking-wider text-muted">
-            হোস্ট
+            Host
           </p>
           <PlayerMiniProfile user={room.host} size="sm" showRating={false} />
         </div>

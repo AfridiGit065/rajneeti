@@ -62,11 +62,11 @@ export function MatchHistoryCard({
               </span>
             ))}
           </div>
-          <span className="ml-2 text-sm text-muted">{match.playerCount} জন</span>
+          <span className="ml-2 text-sm text-muted">{match.playerCount} Players</span>
         </div>
         <div className="text-right">
           <p className="text-[0.68rem] font-semibold uppercase tracking-wider text-muted">
-            ফাইনাল র‍্যাংক
+            Final Rank
           </p>
           <p className="font-mono text-sm font-bold text-ivory">
             #{match.position} <span className="font-normal text-muted">/ {match.playerCount}</span>
@@ -74,7 +74,7 @@ export function MatchHistoryCard({
         </div>
         <div className="text-right">
           <p className="text-[0.68rem] font-semibold uppercase tracking-wider text-muted">
-            রেটিং
+            Rating
           </p>
           <p className="text-sm font-semibold">
             <RatingChange change={match.ratingChange} />
@@ -85,13 +85,13 @@ export function MatchHistoryCard({
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-forest-500/15 pt-3">
         <span className="flex items-center gap-1.5 text-xs text-muted">
           <Clock3 className="size-3.5" aria-hidden />
-          {match.durationMinutes} মিনিট
+          {match.durationMinutes} mins
         </span>
         {extraPlayers > 0 ? (
-          <span className="text-xs text-muted">+{extraPlayers} জন অন্যান্য</span>
+          <span className="text-xs text-muted">+{extraPlayers} others</span>
         ) : null}
         <Button variant="outline" size="sm" onClick={() => onSelect(match)}>
-          বিস্তারিত
+          Details
           <ChevronRight className="size-4" aria-hidden />
         </Button>
       </div>

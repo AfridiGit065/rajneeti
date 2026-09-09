@@ -16,9 +16,9 @@ import { cn } from "@/lib/cn";
 import type { MatchHistoryEntry } from "@/types/user";
 
 const FILTERS = [
-  { value: "all", label: "সব" },
-  { value: "win", label: "জয়" },
-  { value: "loss", label: "পরাজয়" },
+  { value: "all", label: "All" },
+  { value: "win", label: "Wins" },
+  { value: "loss", label: "Losses" },
 ] as const;
 
 type HistoryFilter = (typeof FILTERS)[number]["value"];
@@ -35,7 +35,7 @@ function FilterPills({
   return (
     <div
       role="group"
-      aria-label="ফলাফল অনুযায়ী ফিল্টার"
+      aria-label="Filter by result"
       className="flex flex-wrap sm:inline-flex rounded-xl border border-forest-500/25 bg-deep-900/80 p-1 gap-1"
     >
       {FILTERS.map((filter) => {
@@ -121,34 +121,34 @@ export default function HistoryPage() {
     <div className="space-y-6">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-          পূর্বের খেলা
+          Past Matches
         </p>
-        <h1 className="mt-1 font-bengali text-2xl font-bold text-ivory">ম্যাচ ইতিহাস</h1>
-        <p className="mt-1 text-sm text-muted">আপনার প্রতিটি ম্যাচের ফলাফল ও রেটিং পরিবর্তন।</p>
+        <h1 className="mt-1 text-2xl font-bold text-ivory">Match History</h1>
+        <p className="mt-1 text-sm text-muted">Results and rating changes from your previous games.</p>
       </header>
 
       <FilterPills value={filter} counts={counts} onChange={setFilter} />
 
       {loading ? (
-        <LoadingState label="ম্যাচের ইতিহাস লোড হচ্ছে…" />
+        <LoadingState label="Loading match history…" />
       ) : error !== null ? (
         <ErrorState
-          title="ইতিহাস লোড করা যায়নি"
+          title="Could not load history"
           message={error}
           action={
             <Button variant="premium" onClick={retry}>
-              আবার চেষ্টা করুন
+              Try Again
             </Button>
           }
         />
       ) : shown.length === 0 ? (
         <EmptyState
           icon={<FileQuestion className="size-6" aria-hidden />}
-          title={filter === "all" ? "কোনো ম্যাচ এখনো খেলা হয়নি" : "এই ফিল্টারে কোনো ম্যাচ নেই"}
+          title={filter === "all" ? "No matches played yet" : "No matches in this filter"}
           description={
             filter === "all"
-              ? "প্রথম ম্যাচ শেষ হলে আপনার ফলাফল এখানে দেখা যাবে।"
-              : "ফিল্টার বদলে সব ম্যাচ দেখুন।"
+              ? "Your match history will appear here once you finish a game."
+              : "Switch filters to view all matches."
           }
         />
       ) : (

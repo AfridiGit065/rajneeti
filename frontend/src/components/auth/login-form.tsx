@@ -86,7 +86,7 @@ export function LoginForm() {
       ) : null}
 
       <Input
-        label="ইমেইল"
+        label="Email"
         leadingIcon={<Mail className="size-4" aria-hidden />}
         type="email"
         autoComplete="email"
@@ -103,11 +103,11 @@ export function LoginForm() {
       />
 
       <Input
-        label="পাসওয়ার্ড"
+        label="Password"
         leadingIcon={<Lock className="size-4" aria-hidden />}
         type={showPassword ? "text" : "password"}
         autoComplete="current-password"
-        placeholder="আপনার পাসওয়ার্ড"
+        placeholder="Enter your password"
         value={password}
         error={passwordError}
         disabled={submitting}
@@ -122,7 +122,7 @@ export function LoginForm() {
             type="button"
             variant="default"
             size="sm"
-            label={showPassword ? "পাসওয়ার্ড লুকাও" : "পাসওয়ার্ড দেখাও"}
+            label={showPassword ? "Hide password" : "Show password"}
             className="border-transparent"
             onClick={() => setShowPassword((v) => !v)}
           >
@@ -140,36 +140,36 @@ export function LoginForm() {
           checked={remember}
           disabled={submitting}
           onChange={(e) => setRemember(e.target.checked)}
-          label="মনে রাখো"
+          label="Remember me"
         />
         <button
           type="button"
           disabled={submitting}
           onClick={() =>
-            info("পাসওয়ার্ড রিসেট", "পাসওয়ার্ড রিসেট শীঘ্রই আসছে। আপাতত ডেমো পাসওয়ার্ড ব্যবহার করো।")
+            info("Password Reset", "Password reset is coming soon. Please use the demo credentials below.")
           }
           className="text-xs font-medium text-muted transition-colors hover:text-gold-300 disabled:opacity-45"
         >
-          পাসওয়ার্ড ভুলে গেছো?
+          Forgot password?
         </button>
       </div>
 
       <Button type="submit" variant="premium" size="lg" fullWidth loading={submitting}>
         <LogIn className="size-4" aria-hidden />
-        লগইন
+        Log In
       </Button>
 
       <Link href="/register" className="block">
         <Button type="button" variant="secondary" size="lg" fullWidth disabled={submitting}>
           <UserPlus className="size-4" aria-hidden />
-          অ্যাকাউন্ট তৈরি করুন
+          Create an Account
         </Button>
       </Link>
 
       <div className="flex items-start gap-2 rounded-lg border border-forest-500/20 bg-deep-900/60 px-3.5 py-2.5 text-xs text-muted">
         <Lock className="mt-0.5 size-3.5 shrink-0 text-gold-400" aria-hidden />
         <span>
-          মক ডেমো অ্যাকাউন্ট —{" "}
+          Demo Credentials —{" "}
           <code className="rounded bg-deep-800 px-1 py-0.5 font-mono text-parchment-300">
             {AuthService.demoCredentials.email}
           </code>{" "}

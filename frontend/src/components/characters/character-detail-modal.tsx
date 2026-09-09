@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { X, Shield, Coins } from "@/components/ui/icons";
@@ -129,17 +129,17 @@ export function CharacterDetailModal({ character, onClose }: Props) {
             <div className={`rounded-2xl border p-4 space-y-2 ${cfg.abilityBg}`}>
               <div className="flex items-center gap-2 mb-1">
                 <Coins className="size-4 text-gold-400" />
-                <span className="font-bengali font-bold text-xs text-forest-300 uppercase tracking-wide">
-                  বিশেষ ক্ষমতা
+                <span className="font-cinzel font-bold text-xs text-forest-300 uppercase tracking-wide">
+                  Special Action
                 </span>
               </div>
-              <p className="font-bengali font-bold text-xl text-ivory">{character.ability.nameBn}</p>
-              <p className="text-xs text-muted">{character.ability.nameEn}</p>
+              <p className="font-display font-bold text-xl text-ivory">{character.ability.nameEn}</p>
+              <p className="font-bengali text-xs text-muted">{character.ability.nameBn}</p>
               <p className={`text-2xl font-bold font-cinzel ${cfg.effectColor}`}>
                 {character.ability.effect}
               </p>
               {character.ability.effectDetail && (
-                <p className="font-bengali text-xs text-parchment-300 leading-relaxed">
+                <p className="text-xs text-parchment-300 leading-relaxed font-bengali">
                   {character.ability.effectDetail}
                 </p>
               )}
@@ -148,20 +148,20 @@ export function CharacterDetailModal({ character, onClose }: Props) {
             <div className={`rounded-2xl border p-4 space-y-2 ${cfg.blockBg}`}>
               <div className="flex items-center gap-2 mb-1">
                 <Shield className="size-4 text-crimson-400" />
-                <span className="font-bengali font-bold text-xs text-crimson-300 uppercase tracking-wide">
-                  প্রতিরোধ ক্ষমতা
+                <span className="font-cinzel font-bold text-xs text-crimson-300 uppercase tracking-wide">
+                  Counter-Action (Block)
                 </span>
               </div>
-              <p className="font-bengali font-bold text-xl text-ivory">{character.block.nameBn}</p>
-              <p className="text-xs text-muted">{character.block.nameEn}</p>
-              <p className="font-bengali text-xs text-parchment-300 leading-relaxed">
+              <p className="font-display font-bold text-xl text-ivory">{character.block.nameEn}</p>
+              <p className="font-bengali text-xs text-muted">{character.block.nameBn}</p>
+              <p className="text-xs text-parchment-300 leading-relaxed font-bengali">
                 {character.block.detail}
               </p>
             </div>
           </div>
 
-          <p className="text-center text-[10px] text-muted/60 font-bengali">
-            * এই চরিত্রগুলো সম্পূর্ণ কাল্পনিক। বাস্তব কোনো রাজনীতিবিদ বা ব্যক্তির সাথে কোনো সম্পর্ক নেই।
+          <p className="text-center text-[10px] text-muted/60">
+            * All characters and roles are purely fictional game elements.
           </p>
         </div>
       </div>

@@ -28,7 +28,7 @@ const PLAYER_OPTIONS = Array.from(
   { length: RULES.maxPlayers - RULES.minPlayers + 1 },
   (_, i) => {
     const value = String(RULES.minPlayers + i);
-    return { value, label: `${value} জন` };
+    return { value, label: `${value} Players` };
   },
 );
 
@@ -49,7 +49,7 @@ export function CreateRoomForm() {
     setServerError(null);
 
     if (name.trim().length > NAME_MAX) {
-      setNameError(`রুমের নাম সর্বোচ্চ ${NAME_MAX} অক্ষরের হতে পারে।`);
+      setNameError(`Room name cannot exceed ${NAME_MAX} characters.`);
       return;
     }
     setNameError(undefined);
@@ -83,9 +83,9 @@ export function CreateRoomForm() {
       ) : null}
 
       <Input
-        label="রুমের নাম (ঐচ্ছিক)"
+        label="Room Name (Optional)"
         type="text"
-        placeholder="যেমন — দেরাজ অ্যাভিনিউ"
+        placeholder="e.g. — Royal Court"
         maxLength={NAME_MAX}
         spellCheck={false}
         value={name}
@@ -99,7 +99,7 @@ export function CreateRoomForm() {
       />
 
       <Select
-        label="সর্বোচ্চ খেলোয়াড়"
+        label="Max Players"
         options={PLAYER_OPTIONS}
         value={maxPlayers}
         disabled={submitting}
@@ -108,14 +108,14 @@ export function CreateRoomForm() {
 
       <div>
         <span className="mb-1.5 block text-sm font-medium text-parchment-300">
-          রুমের ধরন
+          Room Visibility
         </span>
         <div className="flex items-center gap-3">
           <div className="grid flex-1 grid-cols-2 gap-1 rounded-lg border border-deep-700/70 bg-deep-900/60 p-1">
             {(
               [
-                { value: "public", label: "পাবলিক", icon: <Globe className="size-4" aria-hidden /> },
-                { value: "private", label: "প্রাইভেট", icon: <Lock className="size-4" aria-hidden /> },
+                { value: "public", label: "Public", icon: <Globe className="size-4" aria-hidden /> },
+                { value: "private", label: "Private", icon: <Lock className="size-4" aria-hidden /> },
               ] as const
             ).map((opt) => (
               <button
@@ -124,7 +124,7 @@ export function CreateRoomForm() {
                 disabled={submitting}
                 onClick={() => {
                   setVisibility(opt.value);
-                  info("রুমের ধরন", "পাবলিক/প্রাইভেট সুবিধা শীঘ্রই আসছে।");
+                  info("Room Visibility", "Private room support is coming soon.");
                 }}
                 className={
                   visibility === opt.value
@@ -137,7 +137,7 @@ export function CreateRoomForm() {
               </button>
             ))}
           </div>
-          <Badge tone="neutral">শীঘ্রই</Badge>
+          <Badge tone="neutral">Soon</Badge>
         </div>
       </div>
 
@@ -149,12 +149,12 @@ export function CreateRoomForm() {
         loading={submitting}
       >
         <DoorOpen className="size-4" aria-hidden />
-        ঘর তৈরি করুন
+        Create Room
       </Button>
 
       <p className="flex items-center justify-center gap-1.5 text-xs text-muted">
         <Sparkles className="size-3.5 text-gold-400" aria-hidden />
-        তৈরি হলেই একটি মক রুম কোড পাওয়া যাবে।
+        A unique room code will be generated upon creation.
       </p>
     </form>
   );

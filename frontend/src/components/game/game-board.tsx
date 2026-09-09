@@ -35,20 +35,20 @@ import { useToast } from "@/hooks/use-toast";
 import { MatchStatus, type GameActionId, type GamePhase, type GamePlayer, type GameState } from "@/types/game";
 
 const PHASE_LABEL: Record<GamePhase, string> = {
-  setup: "সেটআপ",
-  action_selection: "অ্যাকশন নির্বাচন",
-  action_resolution: "অ্যাকশন সমাধান",
-  challenge_resolution: "চ্যালেঞ্জ সমাধান",
-  block_resolution: "ব্লক সমাধান",
-  card_reveal: "কার্ড উন্মোচন",
-  game_over: "খেলা শেষ",
+  setup: "Setup",
+  action_selection: "Action Selection",
+  action_resolution: "Action Resolution",
+  challenge_resolution: "Challenge Resolution",
+  block_resolution: "Block Resolution",
+  card_reveal: "Card Reveal",
+  game_over: "Game Over",
 };
 
 function DeckDiscard({ game }: { game: GameState }) {
   return (
     <div className="rounded-2xl border border-forest-500/25 bg-surface p-4 panel-emboss">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-        ডেক ও ডিসকার্ড
+        Deck & Discard
       </p>
       <div className="mt-3 flex items-center justify-center gap-10">
         <div className="flex flex-col items-center gap-2">
@@ -60,7 +60,7 @@ function DeckDiscard({ game }: { game: GameState }) {
             </span>
           </div>
           <span className="font-mono text-lg font-bold text-gold-300">{game.deckCount}</span>
-          <span className="text-[0.65rem] uppercase tracking-wider text-muted">ডেক</span>
+          <span className="text-[0.65rem] uppercase tracking-wider text-muted">Deck</span>
         </div>
         <div className="flex flex-col items-center gap-2">
           <span className="flex size-10 items-center justify-center rounded-lg border border-crimson-500/30 bg-deep-800 opacity-70">
@@ -69,7 +69,7 @@ function DeckDiscard({ game }: { game: GameState }) {
           <span className="font-mono text-lg font-bold text-crimson-300">
             {game.revealedCardsCount}
           </span>
-          <span className="text-[0.65rem] uppercase tracking-wider text-muted">উন্মোচিত</span>
+          <span className="text-[0.65rem] uppercase tracking-wider text-muted">Revealed</span>
         </div>
       </div>
     </div>
@@ -80,28 +80,28 @@ function ActiveAction({ game }: { game: GameState }) {
   return (
     <div className="rounded-2xl border border-gold-500/25 bg-surface p-4 panel-emboss">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-        সক্রিয় অ্যাকশন
+        Active Action
       </p>
       {game.activeAction ? (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Swords className="size-5 text-gold-400" aria-hidden />
           <span className="text-lg font-bold text-gold-300">
-            {getAction(game.activeAction.action).nameBn}
+            {getAction(game.activeAction.action).nameEn} ({getAction(game.activeAction.action).nameBn})
           </span>
           {game.activeAction.claimedCharacter ? (
             <Badge tone="parchment">
-              {CHARACTER_MAP[game.activeAction.claimedCharacter]?.nameBn} দাবি
+              {CHARACTER_MAP[game.activeAction.claimedCharacter]?.nameBn} Claimed
             </Badge>
           ) : null}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-muted">কোনো সক্রিয় অ্যাকশন নেই।</p>
+        <p className="mt-2 text-sm text-muted">No active action.</p>
       )}
       <div className="mt-3 flex items-center gap-3">
         <Badge tone="gold">
           {PHASE_LABEL[game.phase]}
         </Badge>
-        <span className="text-xs text-muted">টার্ন #{game.turnNumber}</span>
+        <span className="text-xs text-muted">Turn #{game.turnNumber}</span>
       </div>
     </div>
   );
@@ -278,7 +278,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-app px-4">
-        <LoadingState label="গেম বোর্ড লোড হচ্ছে…" />
+        <LoadingState label="Loading game board…" />
       </div>
     );
   }
@@ -288,11 +288,11 @@ export function GameBoard({ matchId }: { matchId: string }) {
       <div className="flex min-h-screen items-center justify-center bg-app px-4">
         <div className="w-full max-w-lg">
           <ErrorState
-            title="গেম বোর্ড লোড করা যায়নি"
-            message={error ?? "ম্যাচের অবস্থা পাওয়া যায়নি।"}
+            title="Could not load game board"
+            message={error ?? "Match state could not be found."}
             action={
               <Button variant="premium" onClick={retry}>
-                আবার চেষ্টা করুন
+                Try Again
               </Button>
             }
           />
@@ -311,8 +311,8 @@ export function GameBoard({ matchId }: { matchId: string }) {
       <div className="flex min-h-screen items-center justify-center bg-app px-4">
         <EmptyState
           icon={<Trophy className="size-6" aria-hidden />}
-          title="কোনো খেলোয়াড় নেই"
-          description="এই ম্যাচে এখনো কোনো খেলোয়াড় যোগ হয়নি।"
+          title="No Players"
+          description="No players have joined this match yet."
         />
       </div>
     );
@@ -335,10 +335,10 @@ export function GameBoard({ matchId }: { matchId: string }) {
         <aside className="order-1 space-y-3 lg:order-1">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-              প্রতিপক্ষ ({opponents.length})
+              Opponents ({opponents.length})
             </h2>
-            <span className="text-[10px] text-muted lg:hidden font-bengali">
-              ডানে স্ক্রোল করুন ➔
+            <span className="text-[10px] text-muted lg:hidden">
+              Scroll right ➔
             </span>
             <Badge tone="neutral" className="hidden lg:inline-flex">{opponents.length}</Badge>
           </div>
@@ -357,8 +357,8 @@ export function GameBoard({ matchId }: { matchId: string }) {
           {game.status === MatchStatus.FINISHED && winner ? (
             <div className="flex items-center justify-center gap-2 rounded-2xl border border-gold-500/40 bg-gold-500/10 px-4 py-3">
               <Trophy className="size-5 text-gold-300" aria-hidden />
-              <p className="font-bengali font-semibold text-gold-200">
-                বিজয়ী: {winner.displayName ?? winner.username}
+              <p className="font-semibold text-gold-200">
+                Winner: {winner.displayName ?? winner.username}
               </p>
             </div>
           ) : null}

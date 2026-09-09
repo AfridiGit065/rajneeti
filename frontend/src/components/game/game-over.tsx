@@ -23,15 +23,6 @@ interface RankingEntry {
   rank: number;
 }
 
-const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-
-function bn(value: number): string {
-  return String(value)
-    .split("")
-    .map((char) => BN_DIGITS[Number(char)] ?? char)
-    .join("");
-}
-
 /**
  * Deterministic final standings: survivors first, then by coins, then seat.
  * Mirrors elimination order for the finished mock without revealing cards.
@@ -85,7 +76,7 @@ function PlayerChip({
         <span className="truncate font-bold text-ivory">
           {player.displayName ?? player.username}
         </span>
-        {showYou ? <Badge tone="gold" className="mt-0.5 w-fit">আপনি</Badge> : null}
+        {showYou ? <Badge tone="gold" className="mt-0.5 w-fit">YOU</Badge> : null}
       </span>
     </span>
   );
@@ -162,11 +153,11 @@ export function GameOverScreen({
           {/* Title */}
           <p className="mb-2 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.35em] text-gold-400">
             <Sparkles className="size-3.5" aria-hidden />
-            বিজয়ের মুহূর্ত
+            Victory Moment
             <Sparkles className="size-3.5" aria-hidden />
           </p>
-          <h1 className="text-gold-shimmer font-bengali text-4xl font-black tracking-wide sm:text-5xl">
-            খেলা শেষ
+          <h1 className="text-gold-shimmer font-cinzel text-4xl font-black tracking-wide sm:text-5xl uppercase">
+            Game Over
           </h1>
 
           {/* Winner reveal */}
@@ -184,13 +175,13 @@ export function GameOverScreen({
                 </span>
                 <div>
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-gold-400">
-                    বিজয়ী
+                    Winner
                   </p>
                   <h2 className="mt-0.5 font-cinzel text-2xl font-black uppercase tracking-[0.16em] text-ivory">
                     {winner.displayName ?? winner.username}
                   </h2>
                   <p className="mt-1.5 text-sm text-muted">
-                    শেষ পর্যন্ত ক্ষমতা ধরে রেখেছে।
+                    Held political supremacy until the end.
                   </p>
                 </div>
               </div>
@@ -198,7 +189,7 @@ export function GameOverScreen({
               <div className="mt-5 grid grid-cols-3 gap-2.5">
                 <div className="rounded-xl border border-forest-500/25 bg-deep-800/70 px-2 py-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted">
-                    ইনফ্লুয়েন্স
+                    Influence
                   </p>
                   <div className="mt-1.5 flex items-center justify-center gap-1.5">
                     {winner.influenceCards.length > 0 ? (
@@ -212,25 +203,25 @@ export function GameOverScreen({
                         />
                       ))
                     ) : (
-                      <span className="font-mono text-lg font-bold text-ivory">০</span>
+                      <span className="font-mono text-lg font-bold text-ivory">0</span>
                     )}
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-gold-500/25 bg-deep-800/70 px-2 py-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted">
-                    কয়েন
+                    Coins
                   </p>
                   <CoinDisplay coins={winner.coins} size="lg" className="mt-1" />
                 </div>
 
                 <div className="rounded-xl border border-parchment-500/25 bg-deep-800/70 px-2 py-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted">
-                    অবস্থান
+                    Rank
                   </p>
                   <span className="mt-1 flex items-center justify-center gap-1 font-mono text-lg font-bold text-ivory">
                     <Medal className="size-4 text-gold-300" aria-hidden />
-                    {bn(1)}
+                    #1
                   </span>
                 </div>
               </div>
@@ -240,7 +231,7 @@ export function GameOverScreen({
           {/* Final standings */}
           <div className="animate-podium-in mt-5 w-full rounded-2xl border border-forest-500/25 bg-surface p-4 panel-emboss [animation-delay:180ms]">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-muted">
-              চূড়ান্ত অবস্থান
+              Final Standings
             </p>
             <ol className="mt-3 space-y-2">
               {standings.map(({ player, rank }, index) => (
@@ -265,7 +256,7 @@ export function GameOverScreen({
                       {rank === 1 ? (
                         <Crown className="size-3.5" aria-hidden />
                       ) : (
-                        bn(rank)
+                        rank
                       )}
                     </span>
                     <PlayerChip
@@ -280,7 +271,7 @@ export function GameOverScreen({
                       <CoinDisplay coins={player.coins} size="sm" />
                     </span>
                     <span className="flex items-center gap-1 text-xs text-muted">
-                      <span className="flex items-center gap-0.5">{bn(player.influenceCards.length)} কার্ড</span>
+                      <span className="flex items-center gap-0.5">{player.influenceCards.length} {player.influenceCards.length === 1 ? "Card" : "Cards"}</span>
                     </span>
                   </span>
                 </li>
@@ -292,15 +283,15 @@ export function GameOverScreen({
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Button variant="premium" size="lg" onClick={() => router.push("/rooms/create")}>
               <Play className="size-4" aria-hidden />
-              আবার খেলুন
+              Play Again
             </Button>
             <Button variant="outline" size="lg" onClick={() => router.push("/lobby")}>
               <Home className="size-4" aria-hidden />
-              লবিতে ফিরে যান
+              Return to Lobby
             </Button>
             <Button variant="ghost" size="lg" onClick={() => router.push("/history")}>
               <History className="size-4" aria-hidden />
-              ম্যাচ ইতিহাস
+              Match History
             </Button>
           </div>
         </div>

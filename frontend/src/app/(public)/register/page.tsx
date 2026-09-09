@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -82,7 +82,7 @@ export default function RegisterPage() {
     if (seq !== usernameCheckSeq.current) return;
     setCheckingUsername(false);
     if (result.ok && !result.data.available) {
-      setErrors((prev) => ({ ...prev, username: "এই ইউজারনেমটি ইতিমধ্যে ব্যবহৃত।" }));
+      setErrors((prev) => ({ ...prev, username: "This username is already taken." }));
     }
   }
 
@@ -147,17 +147,17 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow="যোগ দিন · Sign Up"
-      title="নিবন্ধন"
-      subtitle="ক্ষমতার খেলায় নতুন একজন। মিথ্যা বলো না — অন্তত রেজিস্ট্রেশনে নয়।"
+      eyebrow="Join the Court"
+      title="Sign Up"
+      subtitle="A new contender enters the political fray."
       footer={
         <>
-          ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
+          Already have an account?{" "}
           <Link
             href="/login"
             className="inline-flex items-center gap-1 font-semibold text-gold-400 transition-colors hover:text-gold-300"
           >
-            লগইন করো
+            Log In
             <ArrowRight className="size-3.5" aria-hidden />
           </Link>
         </>
@@ -168,13 +168,13 @@ export default function RegisterPage() {
           <span className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border border-forest-400/40 bg-forest-500/15">
             <CheckCheck className="size-7 text-forest-300" aria-hidden />
           </span>
-          <h2 className="font-bengali text-xl font-semibold text-ivory">নিবন্ধন সফল হয়েছে!</h2>
-          <p className="mt-2 text-sm text-muted">লগইন পেজে নিয়ে যাওয়া হচ্ছে…</p>
+          <h2 className="text-xl font-semibold text-ivory">Registration Successful!</h2>
+          <p className="mt-2 text-sm text-muted">Redirecting to login…</p>
           <Link
             href="/login"
             className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-400 transition-colors hover:text-gold-300"
           >
-            এখনই লগইন করো
+            Log In Now
             <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>
@@ -191,7 +191,7 @@ export default function RegisterPage() {
           ) : null}
 
           <Input
-            label="ইউজারনেম"
+            label="Username"
             leadingIcon={<AtSign className="size-4" aria-hidden />}
             type="text"
             autoComplete="username"
@@ -203,7 +203,7 @@ export default function RegisterPage() {
             error={usernameError}
             hint={
               !usernameError && checkingUsername
-                ? "ইউজারনেম পাওয়া যাচ্ছে কিনা দেখা হচ্ছে…"
+                ? "Checking username availability…"
                 : undefined
             }
             disabled={submitting}
@@ -212,7 +212,7 @@ export default function RegisterPage() {
           />
 
           <Input
-            label="ইমেইল"
+            label="Email"
             leadingIcon={<Mail className="size-4" aria-hidden />}
             type="email"
             autoComplete="email"
@@ -226,16 +226,16 @@ export default function RegisterPage() {
           />
 
           <Input
-            label="পাসওয়ার্ড"
+            label="Password"
             leadingIcon={<Lock className="size-4" aria-hidden />}
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="কমপক্ষে ৬ অক্ষর"
+            placeholder="At least 6 characters"
             minLength={PASSWORD_MIN}
             maxLength={PASSWORD_MAX}
             value={values.password}
             error={passwordError}
-            hint="অন্তত একটি অক্ষর এবং একটি সংখ্যা থাকতে হবে।"
+            hint="Must contain at least one letter and one number."
             disabled={submitting}
             onChange={(e) => handleChange("password", e.target.value)}
             onBlur={() => handleBlur("password")}
@@ -244,7 +244,7 @@ export default function RegisterPage() {
                 type="button"
                 variant="default"
                 size="sm"
-                label={showPassword ? "পাসওয়ার্ড লুকাও" : "পাসওয়ার্ড দেখাও"}
+                label={showPassword ? "Hide password" : "Show password"}
                 className="border-transparent"
                 onClick={() => setShowPassword((v) => !v)}
               >
@@ -258,11 +258,11 @@ export default function RegisterPage() {
           />
 
           <Input
-            label="পাসওয়ার্ড নিশ্চিত করো"
+            label="Confirm Password"
             leadingIcon={<Lock className="size-4" aria-hidden />}
             type={showConfirm ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="আবার পাসওয়ার্ড লিখুন"
+            placeholder="Re-enter your password"
             minLength={PASSWORD_MIN}
             maxLength={PASSWORD_MAX}
             value={values.confirm}
@@ -275,7 +275,7 @@ export default function RegisterPage() {
                 type="button"
                 variant="default"
                 size="sm"
-                label={showConfirm ? "পাসওয়ার্ড লুকাও" : "পাসওয়ার্ড দেখাও"}
+                label={showConfirm ? "Hide password" : "Show password"}
                 className="border-transparent"
                 onClick={() => setShowConfirm((v) => !v)}
               >
@@ -297,11 +297,11 @@ export default function RegisterPage() {
             disabled={checkingUsername}
           >
             <UserPlus className="size-4" aria-hidden />
-            নিবন্ধন করো
+            Create Account
           </Button>
 
           <p className="text-center text-xs text-muted">
-            রেজিস্ট্রেশন করলে তুমি আমাদের নিয়ম মেনে খেলতে রাজি আছো।
+            By registering, you agree to the rules and code of conduct of Rajneeti.
           </p>
         </form>
       )}

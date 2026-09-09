@@ -135,14 +135,14 @@ export function ChallengeFlow({ game, selfId, onResolved }: ChallengeFlowProps) 
         <div
           className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-deep-950/90 px-4 backdrop-blur-md animate-fade-in"
           role="status"
-          aria-label="চ্যালেঞ্জ বিচারাধীন"
+          aria-label="Challenge Resolving"
         >
           <span className="relative flex size-16 items-center justify-center rounded-full border border-gold-500/40 bg-deep-900/80 shadow-gold">
             <Gavel className="size-8 text-gold-300" aria-hidden />
             <Loader2 className="absolute -right-1 -top-1 size-5 animate-spin text-crimson-300" aria-hidden />
           </span>
-          <p className="font-bengali text-xl font-bold text-ivory">চ্যালেঞ্জ বিচারাধীন…</p>
-          <p className="text-sm text-muted">দাবিটি যাচাই করা হচ্ছে</p>
+          <p className="font-cinzel text-xl font-bold text-ivory uppercase tracking-wider">Challenge Pending…</p>
+          <p className="text-sm text-muted">Verifying claimed influence card</p>
         </div>
       ) : null}
 

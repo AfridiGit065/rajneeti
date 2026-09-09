@@ -26,7 +26,7 @@ export function TurnTimer({
         )}
       >
         <Flame className="size-4 text-gold-400" aria-hidden />
-        {isSelf ? "আপনার পালা" : `${playerName} এর পালা`}
+        {isSelf ? "Your Turn" : `${playerName}'s Turn`}
       </span>
       <Timer key={turnNumber} seconds={seconds} compact label="s" />
     </div>

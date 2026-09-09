@@ -8,14 +8,12 @@ const PLACEHOLDER_ROWS = [
   {
     key: "download",
     icon: Download,
-    title: "ডেটা ডাউনলোড",
-    titleEn: "Download my data",
+    title: "Download My Data",
   },
   {
     key: "visibility",
     icon: EyeOff,
-    title: "গোপনীয়তা নিয়ন্ত্রণ",
-    titleEn: "Privacy controls",
+    title: "Privacy Controls",
   },
 ];
 
@@ -25,9 +23,8 @@ export function PrivacySection() {
   return (
     <SettingsSection
       icon={<ShieldCheck className="size-4.5" aria-hidden />}
-      title="গোপনীয়তা"
-      titleEn="Privacy"
-      description="এই ফিচারগুলো শীঘ্রই আসছে।"
+      title="Privacy"
+      description="Data management and privacy settings."
     >
       {PLACEHOLDER_ROWS.map((row) => (
         <button
@@ -37,7 +34,7 @@ export function PrivacySection() {
             pushToast({
               kind: "info",
               title: row.title,
-              message: "এই ফিচারটি শীঘ্রই আসছে।",
+              message: "This feature will be available soon.",
             })
           }
           className="flex w-full items-center gap-3 p-6 text-left transition-colors hover:bg-deep-800/40"
@@ -47,12 +44,11 @@ export function PrivacySection() {
           </span>
           <span className="flex-1">
             <span className="block text-sm font-semibold text-ivory">
-              {row.title}{" "}
-              <span className="ml-1 text-xs font-normal text-muted">{row.titleEn}</span>
+              {row.title}
             </span>
           </span>
           <span className="rounded-md bg-deep-750 px-2 py-1 text-[10px] font-semibold tracking-wide text-gold-400">
-            শীঘ্রই
+            Soon
           </span>
         </button>
       ))}

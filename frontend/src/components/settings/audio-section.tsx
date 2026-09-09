@@ -12,23 +12,20 @@ export function AudioSection() {
   return (
     <SettingsSection
       icon={<Volume2 className="size-4.5" aria-hidden />}
-      title="অডিও"
-      titleEn="Audio"
-      description="খেলার শব্দ ও ব্যাকগ্রাউন্ড মিউজিক।"
+      title="Audio"
+      description="Sound effects and background music."
     >
       <SettingToggle
         icon={<Volume2 className="size-4" aria-hidden />}
-        title="সাউন্ড ইফেক্ট"
-        titleEn="Sound effects"
-        description="কয়েন, কার্ড ও বাটনের শব্দ।"
+        title="Sound Effects"
+        description="Coins, cards, and UI button sound effects."
         checked={settings.soundEnabled}
         onCheckedChange={(v) => updateSettings({ soundEnabled: v })}
       />
       <SettingToggle
         icon={<Music className="size-4" aria-hidden />}
-        title="মিউজিক"
-        titleEn="Music"
-        description="লবি ও খেলার ব্যাকগ্রাউন্ড মিউজিক।"
+        title="Background Music"
+        description="Lobby and match atmospheric music."
         checked={settings.musicEnabled}
         onCheckedChange={(v) => updateSettings({ musicEnabled: v })}
       />

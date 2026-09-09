@@ -21,7 +21,7 @@ export function DangerZoneSection() {
     setSubmitting(true);
     try {
       await logout();
-      pushToast({ kind: "success", title: "লগআউট হয়েছে", message: "আবার দেখা হবে!" });
+      pushToast({ kind: "success", title: "Logged out", message: "See you next time!" });
       router.replace("/");
     } finally {
       setSubmitting(false);
@@ -32,9 +32,8 @@ export function DangerZoneSection() {
   return (
     <SettingsSection
       icon={<AlertTriangle className="size-4.5" aria-hidden />}
-      title="ডেঞ্জার জোন"
-      titleEn="Danger Zone"
-      description="সতর্কভাবে ব্যবহার করো — এই কাজগুলো সহজে ফেরানো যায় না।"
+      title="Danger Zone"
+      description="Use with caution — these actions cannot be easily undone."
     >
       <div className="flex flex-wrap items-center justify-between gap-4 p-6">
         <div className="flex min-w-0 items-center gap-3">
@@ -43,13 +42,13 @@ export function DangerZoneSection() {
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ivory">
-              লগআউট <span className="ml-1 text-xs font-normal text-muted">Log out</span>
+              Log Out
             </p>
-            <p className="text-xs text-muted">এই ডিভাইস থেকে সাইন আউট করো।</p>
+            <p className="text-xs text-muted">Sign out of your account on this device.</p>
           </div>
         </div>
         <Button variant="secondary" size="sm" onClick={() => setConfirm("logout")}>
-          লগআউট
+          Log Out
         </Button>
       </div>
 
@@ -60,14 +59,13 @@ export function DangerZoneSection() {
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ivory">
-              অ্যাকাউন্ট মুছে ফেলো{" "}
-              <span className="ml-1 text-xs font-normal text-muted">Delete account</span>
+              Delete Account
             </p>
-            <p className="text-xs text-muted">স্থায়ীভাবে সব তথ্য মুছে যাবে।</p>
+            <p className="text-xs text-muted">Permanently delete all profile and match data.</p>
           </div>
         </div>
         <Button variant="danger" size="sm" onClick={() => setConfirm("delete")}>
-          মুছে ফেলো
+          Delete
         </Button>
       </div>
 
@@ -75,9 +73,9 @@ export function DangerZoneSection() {
         open={confirm === "logout"}
         onClose={() => setConfirm(null)}
         onConfirm={handleLogout}
-        title="লগআউট?"
-        description="তুমি এই ডিভাইস থেকে সাইন আউট হতে যাচ্ছ। আবার ঢুকতে পুনরায় লগইন করতে হবে।"
-        confirmLabel="লগআউট"
+        title="Log Out?"
+        description="Are you sure you want to sign out? You will need your credentials to log back in."
+        confirmLabel="Log Out"
         loading={submitting}
       />
 
@@ -88,13 +86,13 @@ export function DangerZoneSection() {
           setConfirm(null);
           pushToast({
             kind: "info",
-            title: "শীঘ্রই আসছে",
-            message: "অ্যাকাউন্ট মুছে ফেলার ফিচারটি এখনো চালু হয়নি।",
+            title: "Coming Soon",
+            message: "Account deletion is not yet supported in this version.",
           });
         }}
-        title="অ্যাকাউন্ট মুছে ফেলো?"
-        description="এই ফিচারটি এখনো তৈরি হয়নি — শীঘ্রই আসছে।"
-        confirmLabel="শীঘ্রই আসছে"
+        title="Delete Account?"
+        description="This feature is under development and will be available soon."
+        confirmLabel="Understood"
       />
     </SettingsSection>
   );

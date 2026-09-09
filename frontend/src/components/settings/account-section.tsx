@@ -15,14 +15,13 @@ export function AccountSection() {
   const email = AuthService.demoCredentials.email;
 
   const comingSoon = (label: string) =>
-    pushToast({ kind: "info", title: label, message: "সম্পাদনা শীঘ্রই আসছে।" });
+    pushToast({ kind: "info", title: label, message: "Editing will be available soon." });
 
   return (
     <SettingsSection
       icon={<UserIcon className="size-4.5" aria-hidden />}
-      title="অ্যাকাউন্ট"
-      titleEn="Account"
-      description="তোমার অ্যাকাউন্ট তথ্য।"
+      title="Account"
+      description="Your account information and credentials."
     >
       <div className="flex items-center justify-between gap-4 p-6">
         <div className="flex min-w-0 items-center gap-3">
@@ -31,14 +30,14 @@ export function AccountSection() {
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ivory">
-              ইউজারনেম <span className="ml-1 text-xs font-normal text-muted">Username</span>
+              Username
             </p>
             <p className="truncate text-sm text-parchment-300">{username}</p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => comingSoon("ইউজারনেম")}>
+        <Button variant="ghost" size="sm" onClick={() => comingSoon("Username")}>
           <PenLine className="size-3.5" aria-hidden />
-          সম্পাদন
+          Edit
         </Button>
       </div>
 
@@ -49,7 +48,7 @@ export function AccountSection() {
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ivory">
-              ইমেইল <span className="ml-1 text-xs font-normal text-muted">Email</span>
+              Email
             </p>
             <p className="flex items-center gap-1.5 truncate text-sm text-parchment-300">
               {email}
@@ -58,7 +57,7 @@ export function AccountSection() {
           </div>
         </div>
         <span className="shrink-0 rounded-md bg-deep-750 px-2 py-1 text-[10px] font-semibold text-muted">
-          ডেমো
+          Demo
         </span>
       </div>
     </SettingsSection>

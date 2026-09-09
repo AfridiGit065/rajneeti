@@ -50,24 +50,24 @@ export default function LobbyPage() {
       <section className="flex flex-col items-start gap-4 rounded-2xl border border-gold-500/25 bg-surface px-5 py-6 panel-emboss sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-            মূল লবি
+            Game Lobby
           </p>
-          <h1 className="mt-1 font-bengali text-2xl font-bold text-ivory">লবি</h1>
+          <h1 className="mt-1 text-2xl font-bold text-ivory">Lobby</h1>
           <p className="mt-1 text-sm text-muted">
-            রুমে যোগ দিন বা নতুন রুম তৈরি করে খেলা শুরু করুন।
+            Join an open room or create your own to start playing.
           </p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
           <Link href="/rooms/create" className="flex-1 sm:flex-none">
             <Button variant="premium" size="lg" fullWidth className="sm:w-auto">
               <Plus className="size-5" aria-hidden />
-              রুম তৈরি
+              Create Room
             </Button>
           </Link>
           <Link href="/rooms/join" className="flex-1 sm:flex-none">
             <Button variant="outline" size="lg" fullWidth className="sm:w-auto">
               <DoorOpen className="size-5" aria-hidden />
-              রুমে যোগ দিন
+              Join Room
             </Button>
           </Link>
         </div>

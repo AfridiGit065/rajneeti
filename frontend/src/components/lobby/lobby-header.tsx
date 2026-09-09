@@ -19,17 +19,17 @@ export function LobbyHeader() {
         <span className="mx-1 hidden h-9 w-px bg-forest-500/25 sm:block" aria-hidden />
         <div className="flex items-center gap-2">
           <Link href="/profile">
-            <IconButton label="প্রোফাইল" variant="gold" size="md">
+            <IconButton label="Profile" variant="gold" size="md">
               <UserIcon className="size-5" aria-hidden />
             </IconButton>
           </Link>
           <Link href="/leaderboard">
-            <IconButton label="লিডারবোর্ড" size="md">
+            <IconButton label="Leaderboard" size="md">
               <Trophy className="size-5" aria-hidden />
             </IconButton>
           </Link>
           <Link href="/settings">
-            <IconButton label="সেটিংস" size="md">
+            <IconButton label="Settings" size="md">
               <Settings className="size-5" aria-hidden />
             </IconButton>
           </Link>

@@ -34,12 +34,12 @@ export function CardReveal({
       )}
       role="dialog"
       aria-modal="true"
-      aria-label={isReplacement ? "প্রতিস্থাপন কার্ড" : "প্রকাশিত কার্ড"}
+      aria-label={isReplacement ? "Replacement Card" : "Revealed Card"}
     >
       <div className="flex flex-col items-center gap-2 text-center animate-fade-up">
         <span
           className={cn(
-            "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-semibold",
+            "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 font-cinzel text-xs font-semibold tracking-wider uppercase",
             isReplacement
               ? "border-forest-400/45 bg-forest-500/12 text-forest-200"
               : "border-gold-500/45 bg-gold-500/12 text-gold-200",
@@ -50,14 +50,14 @@ export function CardReveal({
           ) : (
             <Eye className="size-4" aria-hidden />
           )}
-          {label ?? (isReplacement ? "প্রতিস্থাপন কার্ড" : "প্রকাশিত কার্ড")}
+          {label ?? (isReplacement ? "Replacement Card" : "Revealed Card")}
         </span>
-        <h3 className="font-bengali text-3xl font-bold text-ivory sm:text-4xl">
-          {isReplacement ? "ডেক থেকে নতুন কার্ড আসছে…" : `${character.nameBn} — ${character.nameEn}`}
+        <h3 className="font-display text-3xl font-bold text-ivory sm:text-4xl">
+          {isReplacement ? "Drawing new card from deck…" : `${character.nameBn} (${character.nameEn})`}
         </h3>
         {isReplacement ? (
           <p className="max-w-md text-sm text-muted">
-            হারানো ইনফ্লুয়েন্সের জায়গায় একটি নতুন গোপন কার্ড তুলে নিচ্ছে।
+            Drawing a fresh hidden influence card to replace the revealed card.
           </p>
         ) : null}
       </div>
@@ -90,7 +90,7 @@ export function CardReveal({
       {!isReplacement ? (
         <p className="flex items-center gap-2 text-sm font-medium text-muted animate-fade-up">
           <CheckCheck className="size-4 text-forest-300" aria-hidden />
-          কার্ডটি ডেকে ফেরত যাবে এবং প্রতিস্থাপন কার্ড দেওয়া হবে।
+          The card returns to the court deck and a replacement card is drawn.
         </p>
       ) : null}
     </div>

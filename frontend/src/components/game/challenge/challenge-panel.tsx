@@ -54,7 +54,7 @@ export function ChallengePanel({
         className,
       )}
       role="region"
-      aria-label={`চ্যালেঞ্জের সুযোগ — ${claimant.displayName ?? claimant.username} দাবি করেছে: ${character?.nameBn}`}
+      aria-label={`Challenge Opportunity — ${claimant.displayName ?? claimant.username} claimed: ${character?.nameBn}`}
     >
       <div
         className="pointer-events-none absolute inset-x-0 -top-16 h-36 bg-gradient-to-b from-crimson-500/22 to-transparent blur-2xl animate-glow-pulse"
@@ -67,9 +67,9 @@ export function ChallengePanel({
             <Swords className="size-4 text-crimson-300" aria-hidden />
           </span>
           <div>
-            <h2 className="font-bengali text-base font-bold text-ivory">চ্যালেঞ্জের সুযোগ</h2>
+            <h2 className="font-cinzel text-sm font-bold text-ivory tracking-wide uppercase">Challenge Window</h2>
             <p className="text-[0.68rem] uppercase tracking-[0.2em] text-muted">
-              OPPONENT CLAIM DETECTED
+              Opponent Claim Detected
             </p>
           </div>
         </div>
@@ -82,11 +82,11 @@ export function ChallengePanel({
               : "border-gold-500/40 bg-gold-500/8 text-gold-300",
           )}
           role="timer"
-          aria-label={`সাড়া দিতে: ${display}`}
+          aria-label={`Time to respond: ${display}`}
         >
           <TimerReset className="size-4" aria-hidden />
           {display}
-          <span className="text-xs font-medium text-muted">সেকেন্ড</span>
+          <span className="text-xs font-medium text-muted">s</span>
         </span>
       </div>
 
@@ -105,7 +105,7 @@ export function ChallengePanel({
           <div className="rounded-xl border border-gold-500/25 bg-deep-900/70 px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted">
-                দাবি — <span className="font-semibold text-ivory">“আমি {character.nameBn}।”</span>
+                Claims — <span className="font-semibold text-ivory">&ldquo;I am {character.nameBn}&rdquo;</span>
               </p>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -123,19 +123,15 @@ export function ChallengePanel({
       <div className="relative flex flex-col-reverse gap-2 border-t border-crimson-500/25 p-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-1.5 text-xs text-muted">
           <EyeOff className="size-3.5" aria-hidden />
-          সময় শেষ হলে অ্যাকশনটি স্বয়ংক্রিয়ভাবে অনুমোদিত হবে।
+          If timer expires, action will be allowed automatically.
         </p>
         <div className="flex gap-2">
-          <Button variant="outline" size="md" onClick={onAllow}>
-            অনুমোদন করুন
-            <span className="font-cinzel text-[0.6rem] uppercase tracking-[0.15em] text-muted">ALLOW</span>
+          <Button variant="outline" size="md" onClick={onAllow} className="font-cinzel text-xs font-semibold uppercase tracking-wider">
+            Allow
           </Button>
-          <Button variant="danger" size="md" onClick={onChallenge} className="animate-glow-pulse">
+          <Button variant="danger" size="md" onClick={onChallenge} className="animate-glow-pulse font-cinzel text-xs font-semibold uppercase tracking-wider">
             <Swords className="size-4" aria-hidden />
-            চ্যালেঞ্জ করুন
-            <span className="font-cinzel text-[0.6rem] uppercase tracking-[0.15em] text-crimson-200/80">
-              CHALLENGE
-            </span>
+            Challenge
           </Button>
         </div>
       </div>

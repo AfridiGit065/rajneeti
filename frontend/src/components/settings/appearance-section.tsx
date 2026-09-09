@@ -30,13 +30,12 @@ export function AppearanceSection() {
   return (
     <SettingsSection
       icon={<Palette className="size-4.5" aria-hidden />}
-      title="চেহারা"
-      titleEn="Appearance"
-      description="থিম আর অ্যানিমেশন পছন্দ — এই ডিভাইসে সংরক্ষিত থাকবে।"
+      title="Appearance"
+      description="Theme and animation preferences — saved on this device."
     >
       <div className="p-6">
         <p className="mb-3 text-sm font-semibold text-ivory">
-          থিম <span className="ml-1 text-xs font-normal text-muted">Theme</span>
+          Theme
         </p>
         <div className="grid grid-cols-2 gap-3">
           {THEMES.map((theme) => {
@@ -64,9 +63,9 @@ export function AppearanceSection() {
                   <theme.icon className="size-4" aria-hidden />
                 </span>
                 <span className="min-w-0 text-left">
-                  <span className="block text-sm font-semibold text-ivory">{theme.label}</span>
+                  <span className="block text-sm font-semibold text-ivory">{theme.labelEn}</span>
                   <span className="block text-[10px] uppercase tracking-wider text-muted">
-                    {theme.labelEn}
+                    {theme.label}
                   </span>
                 </span>
               </button>
@@ -77,9 +76,8 @@ export function AppearanceSection() {
 
       <SettingToggle
         icon={<Sparkles className="size-4" aria-hidden />}
-        title="হালকা অ্যানিমেশন"
-        titleEn="Reduced motion"
-        description="অ্যানিমেশন ও ট্রানজিশন কমিয়ে দাও — ব্যাটারি ও ফোকাস বাঁচায়।"
+        title="Reduced Motion"
+        description="Reduce animations and transitions to save battery and motion sensitivity."
         checked={settings.reducedMotion}
         onCheckedChange={(v) => updateSettings({ reducedMotion: v })}
       />

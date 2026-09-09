@@ -16,8 +16,8 @@ export function OwnCards({
     <div className={cn("w-full max-w-md", className)}>
       <p className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-muted">
         <Eye className="size-3.5 text-gold-400" aria-hidden />
-        আপনার গোপন কার্ড
-        <span className="normal-case tracking-normal text-muted/70">— শুধু আপনি দেখবেন</span>
+        Your Hidden Cards
+        <span className="normal-case tracking-normal text-muted/70">— only visible to you</span>
       </p>
       <div className="mt-2 flex items-end justify-center gap-3 sm:gap-4">
         {cards.length > 0 ? (
@@ -32,7 +32,7 @@ export function OwnCards({
             />
           ))
         ) : (
-          <p className="text-sm font-semibold text-crimson-300">কোনো ইনফ্লুয়েন্স বাকি নেই</p>
+          <p className="text-sm font-semibold text-crimson-300">No influence remaining</p>
         )}
       </div>
     </div>

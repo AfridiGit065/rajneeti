@@ -4,9 +4,9 @@ const CONFIG: Record<
   "win" | "loss" | "draw",
   { label: string; tone: BadgeTone }
 > = {
-  win: { label: "জয়", tone: "emerald" },
-  loss: { label: "পরাজয়", tone: "crimson" },
-  draw: { label: "ড্র", tone: "neutral" },
+  win: { label: "Win", tone: "emerald" },
+  loss: { label: "Loss", tone: "crimson" },
+  draw: { label: "Draw", tone: "neutral" },
 };
 
 export function ResultBadge({

@@ -5,9 +5,9 @@ import { cn } from "@/lib/cn";
 export type LeaderboardTab = "global" | "weekly" | "friends";
 
 const TABS: { value: LeaderboardTab; label: string }[] = [
-  { value: "global", label: "গ্লোবাল" },
-  { value: "weekly", label: "সাপ্তাহিক" },
-  { value: "friends", label: "বন্ধু" },
+  { value: "global", label: "Global" },
+  { value: "weekly", label: "Weekly" },
+  { value: "friends", label: "Friends" },
 ];
 
 export function LeaderboardTabs({

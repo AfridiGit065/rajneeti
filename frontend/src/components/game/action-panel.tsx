@@ -93,18 +93,18 @@ export function ActionPanel({
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-forest-500/20 px-4 py-3">
         <div className="flex items-center gap-2">
-          <h2 className="font-bengali text-lg font-bold text-ivory">অ্যাকশন নির্বাচন</h2>
+          <h2 className="text-lg font-bold text-ivory">Select Action</h2>
           <span className="font-cinzel text-xs text-muted uppercase tracking-wider">
             (Action System)
           </span>
         </div>
         {mandatoryCoup ? (
           <Badge tone="crimson" className="animate-pulse">
-            ⚠️ ১০+ কয়েন: বাধ্যতামূলক ক্ষমতা দখল (Coup)!
+            ⚠️ 10+ Coins: Mandatory Coup!
           </Badge>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted font-bengali">আপনার কোষাগার:</span>
+            <span className="text-xs text-muted">Your Treasury:</span>
             <CoinDisplay coins={coins} size="sm" />
           </div>
         )}
@@ -112,14 +112,14 @@ export function ActionPanel({
 
       <div className="p-4">
         {!isTurn ? (
-          <p className="mb-3 text-xs sm:text-sm text-muted font-bengali">
+          <p className="mb-3 text-xs sm:text-sm text-muted">
             {isAlive
-              ? "এখন আপনার পালা নয় — অন্যান্য খেলোয়াড়দের অ্যাকশনের জন্য অপেক্ষা করুন।"
-              : "আপনি খেলা থেকে অপসারিত — এখন পর্যবেক্ষক হিসেবে খেলা দেখছেন।"}
+              ? "Not your turn — waiting for other players."
+              : "You are eliminated — observing match."}
           </p>
         ) : mandatoryCoup ? (
-          <p className="mb-3 text-xs sm:text-sm text-crimson-300 font-bengali">
-            আপনার কাছে ১০ বা ততোধিক কয়েন আছে। নিয়মানুযায়ী অন্য কোনো অ্যাকশন নেওয়া যাবে না, শুধুমাত্র ক্ষমতা দখল (Coup) করতে হবে।
+          <p className="mb-3 text-xs sm:text-sm text-crimson-300">
+            You hold 10 or more coins. By game rules, you must launch a Coup.
           </p>
         ) : null}
 
@@ -173,18 +173,18 @@ export function ActionPanel({
                         -{action.cost}
                       </span>
                     ) : (
-                      <span className="font-bengali text-[10px] text-parchment-300">
-                        বদল
+                      <span className="text-[10px] text-parchment-300">
+                        Swap
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <h3 className="font-bengali text-sm font-bold text-ivory group-hover:text-gold-300 transition-colors">
-                      {action.nameBn}
-                    </h3>
-                    <p className="font-cinzel text-[10px] uppercase tracking-wider text-muted">
+                    <h3 className="text-sm font-bold text-ivory group-hover:text-gold-300 transition-colors">
                       {action.nameEn}
+                    </h3>
+                    <p className="font-bengali text-[10px] text-muted">
+                      {action.nameBn}
                     </p>
                   </div>
                 </div>
@@ -192,13 +192,13 @@ export function ActionPanel({
                 {/* Requirement & Chips */}
                 <div className="mt-2 pt-2 border-t border-forest-500/15 w-full space-y-1">
                   {character ? (
-                    <div className="flex items-center gap-1 text-[10px] font-bengali text-gold-400">
-                      <span>প্রয়োজন:</span>
-                      <span className="font-bold text-gold-300">{character.nameBn}</span>
+                    <div className="flex items-center gap-1 text-[10px] text-gold-400">
+                      <span>Requires:</span>
+                      <span className="font-bold text-gold-300 font-bengali">{character.nameBn}</span>
                     </div>
                   ) : (
-                    <div className="text-[10px] font-bengali text-muted">
-                      চরিত্র প্রয়োজন নেই
+                    <div className="text-[10px] text-muted">
+                      No Character Required
                     </div>
                   )}
 
@@ -211,7 +211,7 @@ export function ActionPanel({
                           : "border-white/5 bg-deep-900 text-muted/60",
                       )}
                     >
-                      {action.challengeable ? "চ্যালেঞ্জযোগ্য" : "চ্যালেঞ্জহীন"}
+                      {action.challengeable ? "Challengeable" : "No Challenge"}
                     </span>
                     <span
                       className={cn(
@@ -221,7 +221,7 @@ export function ActionPanel({
                           : "border-white/5 bg-deep-900 text-muted/60",
                       )}
                     >
-                      {action.blockable ? "ব্লকযোগ্য" : "ব্লকহীন"}
+                      {action.blockable ? "Blockable" : "Unblockable"}
                     </span>
                   </div>
                 </div>

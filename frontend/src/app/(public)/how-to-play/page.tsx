@@ -4,17 +4,14 @@ export default function HowToPlayPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
       <div className="mb-8 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-          নিয়মাবলী · Rules
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400 font-cinzel">
+          Rules &amp; Tutorial
         </p>
-        <h1 className="mt-2 font-bengali text-3xl font-bold text-ivory sm:text-4xl">
-          কিভাবে খেলবেন
+        <h1 className="mt-2 font-display text-3xl font-bold text-ivory sm:text-4xl">
+          How to Play
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm text-muted sm:text-base">
-          রজনীতি — কৌশল, ব্লাফ আর বিশ্বাসের খেলা। ধাপে ধাপে শিখে নাও।{" "}
-          <span className="text-parchment-300">
-            (A game of strategy, bluff and trust — learn it step by step.)
-          </span>
+          RAJNEETI — A game of strategy, bluffing, and trust. Master the court mechanics step by step.
         </p>
       </div>
       <TutorialWizard />

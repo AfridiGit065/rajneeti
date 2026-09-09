@@ -28,8 +28,8 @@ export function ChallengeDialog({
     <Modal
       open={open}
       onClose={onCancel}
-      title="চ্যালেঞ্জ ঘোষণা করবেন?"
-      subtitle="এটি ভুল প্রমাণিত হলে আপনি ১ ইনফ্লুয়েন্স হারাবেন"
+      title="Declare a Challenge?"
+      subtitle="If the claim is truthful, you will lose 1 influence"
       size="sm"
       variant="warning"
       showCloseButton={false}
@@ -58,8 +58,8 @@ export function ChallengeDialog({
             </span>
             <div className="min-w-0 leading-tight">
               <p className="truncate text-sm text-muted">
-                <span className="font-semibold text-ivory">{claimantName}</span> দাবি করছে —
-                “আমি {character.nameBn}।”
+                <span className="font-semibold text-ivory">{claimantName}</span> claims —
+                &ldquo;I am {character.nameBn}&rdquo;
               </p>
               <p className="mt-0.5 font-cinzel text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-gold-400">
                 {character.nameEn}
@@ -70,20 +70,20 @@ export function ChallengeDialog({
           <div className="flex items-start gap-2.5 rounded-xl border border-crimson-500/30 bg-crimson-500/8 px-4 py-3 text-sm text-crimson-200">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>
-              সত্যি হলে <span className="font-bold">চ্যালেঞ্জকারী</span> ১ ইনফ্লুয়েন্স হারাবে।
-              সত্যি না হলে <span className="font-bold">{claimantName}</span> ১ ইনফ্লুয়েন্স
-              হারাবে ও কার্ড প্রকাশ করবে।
+              If truthful, <span className="font-bold">you</span> will lose 1 influence.
+              If bluffing, <span className="font-bold">{claimantName}</span> will lose 1 influence
+              and must reveal a card.
             </p>
           </div>
 
           <div className="flex justify-end gap-3">
             <Button variant="outline" size="md" onClick={onCancel}>
               <X className="size-4" aria-hidden />
-              বাতিল
+              Cancel
             </Button>
             <Button variant="danger" size="md" onClick={onConfirm} className="animate-glow-pulse">
               <Swords className="size-4" aria-hidden />
-              হ্যাঁ, চ্যালেঞ্জ করি
+              Challenge Now
             </Button>
           </div>
         </div>

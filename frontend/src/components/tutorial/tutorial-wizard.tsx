@@ -54,26 +54,23 @@ export function TutorialWizard() {
             <CheckCircle2 className="size-8" aria-hidden />
           </div>
           <div>
-            <h2 className="font-bengali text-2xl font-bold text-ivory">
-              টিউটোরিয়াল শেষ!
+            <h2 className="font-display text-2xl font-bold text-ivory">
+              Tutorial Completed!
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-              নিয়মগুলো হাতে-কলমে শেখো — খেলা আমন্ত্রণ জানাচ্ছে!{" "}
-              <span className="text-parchment-300">
-                (You now know the basics. Ready to play?)
-              </span>
+              You now know the basics of strategy, bluffing, and political elimination. Ready to enter the arena?
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button variant="outline" onClick={() => go(0)}>
               <ArrowRight className="size-4 rotate-180" aria-hidden />
-              আবার দেখো
+              Review Again
             </Button>
             <Button
               variant="premium"
               onClick={() => router.push(user ? "/lobby" : "/register")}
             >
-              {user ? "লবিতে যাও" : "অ্যাকাউন্ট খুলো"}
+              {user ? "Enter Lobby" : "Create Account"}
               <ArrowRight className="size-4" aria-hidden />
             </Button>
           </div>
@@ -87,11 +84,11 @@ export function TutorialWizard() {
       {/* Progress header */}
       <div className="mb-5">
         <div className="mb-2 flex items-center justify-between gap-4 text-xs">
-          <p className="font-semibold uppercase tracking-[0.2em] text-gold-400">
-            পাঠ {step + 1} / {TOTAL}
-            <span className="ml-2 normal-case text-muted">How to Play</span>
+          <p className="font-semibold uppercase tracking-[0.2em] text-gold-400 font-cinzel">
+            Lesson {step + 1} of {TOTAL}
+            <span className="ml-2 normal-case text-muted font-sans">How to Play</span>
           </p>
-          <p className="text-muted">{Math.round(progress * 100)}%</p>
+          <p className="text-muted font-mono">{Math.round(progress * 100)}%</p>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-deep-750">
           <div
@@ -104,8 +101,8 @@ export function TutorialWizard() {
             <button
               key={s.key}
               type="button"
-              aria-label={`ধাপ ${i + 1}: ${s.labelBn}`}
-              title={`${s.labelBn} · ${s.labelEn}`}
+              aria-label={`Step ${i + 1}: ${s.labelEn}`}
+              title={`${s.labelEn} (${s.labelBn})`}
               onClick={() => go(i)}
               className={cn(
                 "h-2 rounded-full transition-all duration-200",
@@ -125,13 +122,10 @@ export function TutorialWizard() {
             <current.icon className="size-6" aria-hidden />
           </span>
           <div className="min-w-0">
-            <p className="font-bengali text-xs text-gold-500">{current.indexBn}</p>
-            <h2 className="font-bengali text-2xl font-bold text-ivory">
-              {current.labelBn}
+            <p className="text-xs text-gold-500 font-cinzel uppercase font-semibold">Step {step + 1}</p>
+            <h2 className="font-display text-2xl font-bold text-ivory">
+              {current.labelEn} <span className="text-muted text-lg font-bengali">({current.labelBn})</span>
             </h2>
-            <p className="text-xs uppercase tracking-[0.22em] text-muted">
-              {current.labelEn}
-            </p>
             <p className="mt-1 text-sm text-parchment-300">{current.summary}</p>
           </div>
         </div>
@@ -142,8 +136,7 @@ export function TutorialWizard() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" size="md" onClick={() => setFinished(true)}>
           <X className="size-4" aria-hidden />
-          এড়িয়ে যাও
-          <span className="text-xs text-muted">Skip</span>
+          Skip Tutorial
         </Button>
         <div className="flex items-center gap-2.5">
           <Button
@@ -153,18 +146,15 @@ export function TutorialWizard() {
             onClick={() => go(step - 1)}
           >
             <ArrowLeft className="size-4" aria-hidden />
-            আগের
-            <span className="text-xs text-muted">Prev</span>
+            Previous
           </Button>
           {isLast ? (
             <Button variant="premium" size="md" onClick={() => setFinished(true)}>
-              শেষ করো
-              <span className="text-xs text-gold-700/80">Finish</span>
+              Finish
             </Button>
           ) : (
             <Button variant="primary" size="md" onClick={() => go(step + 1)}>
-              পরের
-              <span className="text-xs text-deep-700/70">Next</span>
+              Next
               <ArrowRight className="size-4" aria-hidden />
             </Button>
           )}

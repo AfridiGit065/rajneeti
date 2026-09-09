@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { Shield, Coins } from "@/components/ui/icons";
@@ -129,7 +129,7 @@ export function CharacterCard({ character, onClick }: Props) {
 
         {/* CTA hint */}
         <p className="text-center text-[10px] text-muted/50 pt-1 group-hover:text-muted/80 transition-colors">
-          বিস্তারিত দেখতে ক্লিক করুন →
+          Click to view details →
         </p>
       </div>
     </button>

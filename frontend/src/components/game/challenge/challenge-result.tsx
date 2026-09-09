@@ -13,21 +13,21 @@ interface ChallengeResultProps {
 
 const CONFIG = {
   true_claim: {
-    chip: "চ্যালেঞ্জ ব্যর্থ",
+    chip: "CHALLENGE FAILED",
     chipEn: "CHALLENGE FAILED",
     icon: Skull,
-    headline: "দাবিটি সত্য ছিল!",
-    loss: (name: string) => `চ্যালেঞ্জকারী ${name} ১ ইনফ্লুয়েন্স হারাল`,
+    headline: "The Claim Was Truthful!",
+    loss: (name: string) => `Challenger ${name} lost 1 influence`,
     panel: "border-crimson-500/55 bg-crimson-600/12 text-crimson-200",
     glow: "from-crimson-500/30",
     iconColor: "text-crimson-300",
   },
   bluff: {
-    chip: "ব্লাফ ধরা পড়ল!",
+    chip: "BLUFF CAUGHT!",
     chipEn: "BLUFF CAUGHT",
     icon: ShieldAlert,
-    headline: "মিথ্যা দাবি উন্মোচিত!",
-    loss: (name: string) => `দাবিকারী ${name} ১ ইনফ্লুয়েন্স হারাল`,
+    headline: "False Claim Exposed!",
+    loss: (name: string) => `Claimant ${name} lost 1 influence`,
     panel: "border-forest-400/55 bg-forest-500/12 text-forest-200",
     glow: "from-forest-400/30",
     iconColor: "text-forest-300",
@@ -77,25 +77,22 @@ export function ChallengeResult({
 
           <span
             className={cn(
-              "mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-bold",
+              "mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 font-cinzel text-xs font-bold tracking-wider uppercase",
               cfg.panel,
             )}
           >
             {cfg.chip}
           </span>
 
-          <h3 className="mt-3 font-bengali text-2xl font-bold text-ivory sm:text-3xl">
+          <h3 className="mt-3 font-display text-2xl font-bold text-ivory sm:text-3xl">
             {cfg.headline}
           </h3>
-          <p className="mt-1 font-cinzel text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-muted">
-            {cfg.chipEn}
-          </p>
 
           <p className="mt-4 text-base font-medium text-parchment-300 sm:text-lg">
             {cfg.loss(verdict === "true_claim" ? challengerName : claimantName)}
           </p>
           <p className="mt-1 text-sm text-muted">
-            উন্মোচন প্রস্তুত হচ্ছে…
+            Preparing card reveal…
           </p>
         </div>
       </div>

@@ -63,7 +63,7 @@ export function JoinRoomForm() {
     setCode(normalized);
 
     if (!isValidRoomCode(normalized)) {
-      setCodeError("৫–৬ অক্ষরের বৈধ রুম কোড দিন।");
+      setCodeError("Please enter a valid 5–6 character room code.");
       setPreview(null);
       return;
     }
@@ -109,7 +109,7 @@ export function JoinRoomForm() {
       <Card>
         <form onSubmit={handleSearch} noValidate className="space-y-4">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-            রুম কোড
+            Room Code
           </p>
 
           <Input
@@ -150,11 +150,11 @@ export function JoinRoomForm() {
                   <p className="flex items-center gap-2 text-sm font-semibold text-ivory">
                     <Check className="size-4 text-forest-300" aria-hidden />
                     <span className="truncate">
-                      {preview.name || "নামহীন রুম"}
+                      {preview.name || "Untitled Room"}
                     </span>
                   </p>
                   <p className="mt-0.5 text-xs text-muted">
-                    হোস্ট: {preview.host.displayName} ·{" "}
+                    Host: {preview.host.displayName} ·{" "}
                     <span className="inline-flex items-center gap-1">
                       <Users className="size-3" aria-hidden />
                       {preview.players.length}/{preview.maxPlayers}
@@ -178,28 +178,28 @@ export function JoinRoomForm() {
             onClick={handleJoin}
           >
             <DoorOpen className="size-4" aria-hidden />
-            যোগ দিন
+            Join Room
           </Button>
           <p className="mt-3 text-center text-xs text-muted">
-            কোড লিখে Enter চাপো — সঠিক হলে রুমের তথ্য দেখাবে।
+            Type code and press Enter — preview will appear if valid.
           </p>
         </div>
       </Card>
 
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-          সাম্প্রতিক রুম
+          Open Rooms
         </p>
         {loadingRecent ? (
           <div className="rounded-2xl border border-forest-500/25 bg-surface panel-emboss p-6">
-            <LoadingState label="রুম খোঁজা হচ্ছে…" />
+            <LoadingState label="Searching rooms..." />
           </div>
         ) : recent.length === 0 ? (
           <div className="rounded-2xl border border-forest-500/25 bg-surface panel-emboss p-6">
             <EmptyState
               icon={<Users className="size-5" aria-hidden />}
-              title="এখনো কোনো রুম নেই"
-              description="প্রথম রুমটি তৈরি করো, নাকি অন্য কোড চেষ্টা করো।"
+              title="No Active Rooms"
+              description="Create the first room or try another room code."
             />
           </div>
         ) : (
@@ -215,11 +215,11 @@ export function JoinRoomForm() {
                   {room.roomCode}
                 </span>
                 <span className="mt-1 block truncate text-sm font-medium text-ivory">
-                  {room.name || "নামহীন রুম"}
+                  {room.name || "Untitled Room"}
                 </span>
                 <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">
                   <Users className="size-3" aria-hidden />
-                  হোস্ট: {room.host.displayName} · {room.players.length}/{room.maxPlayers}
+                  Host: {room.host.displayName} · {room.players.length}/{room.maxPlayers}
                 </span>
               </button>
             ))}
@@ -228,12 +228,12 @@ export function JoinRoomForm() {
       </div>
 
       <p className="text-center text-sm text-muted">
-        নিজের ঘর বানাতে চাও?{" "}
+        Want to host your own game?{" "}
         <Link
           href="/rooms/create"
           className="font-semibold text-gold-400 transition-colors hover:text-gold-300"
         >
-          রুম তৈরি করো
+          Create a Room
         </Link>
       </p>
     </div>

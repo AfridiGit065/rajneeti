@@ -36,7 +36,7 @@ export function OpponentSeat({ player }: { player: GamePlayer }) {
       <div className="flex min-w-0 flex-1 flex-col gap-1 leading-tight">
         <p className="truncate text-sm font-semibold text-ivory">
           {player.displayName ?? player.username}
-          {!player.isAlive ? <span className="ml-1.5 text-xs font-medium text-crimson-300">অপসারিত</span> : null}
+          {!player.isAlive ? <span className="ml-1.5 text-xs font-medium text-crimson-300">Eliminated</span> : null}
         </p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <CoinDisplay coins={player.coins} size="sm" />

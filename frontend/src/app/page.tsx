@@ -9,9 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Crown, Swords, ScrollText, Users, Landmark, BookOpen, ShieldAlert, Sparkles, EyeOff } from "@/components/ui/icons";
 
 const HERO_FEATURES = [
-  { icon: <Users className="size-4" aria-hidden />, text: `${RULES.minPlayers}–${RULES.maxPlayers} খেলোয়াড়` },
-  { icon: <Swords className="size-4" aria-hidden />, text: `${RULES.gameLengthMinutes[0]}–${RULES.gameLengthMinutes[1]} মিনিট` },
-  { icon: <ScrollText className="size-4" aria-hidden />, text: "১৫ কার্ডের ডেক" },
+  { icon: <Users className="size-4" aria-hidden />, text: `${RULES.minPlayers}–${RULES.maxPlayers} Players` },
+  { icon: <Swords className="size-4" aria-hidden />, text: `${RULES.gameLengthMinutes[0]}–${RULES.gameLengthMinutes[1]} Mins` },
+  { icon: <ScrollText className="size-4" aria-hidden />, text: "15-Card Deck" },
 ];
 
 export default function LandingPage() {
@@ -39,7 +39,7 @@ export default function LandingPage() {
           {/* Top Badge */}
           <Badge tone="gold" className="mb-6 animate-fade-up">
             <Crown className="size-3.5" aria-hidden />
-            ক্ষমতার খেলা · Bluff Strategy Game
+            The Game of Power · Bluff Strategy Game
           </Badge>
 
           {/* Hero Titles: Bengali & English */}
@@ -82,19 +82,19 @@ export default function LandingPage() {
             className="mt-10 flex flex-wrap items-center justify-center gap-4 animate-fade-up"
             style={{ animationDelay: "320ms" }}
           >
-            {/* Primary CTA: খেলা শুরু করুন → /login */}
+            {/* Primary CTA: Play Now → /login */}
             <Link href="/login">
-              <Button variant="premium" size="xl" className="font-bengali text-lg px-8 py-3.5 shadow-gold">
-                খেলা শুরু করুন
+              <Button variant="premium" size="xl" className="text-base px-8 py-3.5 shadow-gold">
+                Play Now
                 <ArrowRight className="size-5" aria-hidden />
               </Button>
             </Link>
 
-            {/* Secondary CTA: কীভাবে খেলবেন → /how-to-play */}
+            {/* Secondary CTA: How to Play → /how-to-play */}
             <Link href="/how-to-play">
-              <Button variant="outline" size="xl" className="font-bengali text-lg px-7 py-3.5">
+              <Button variant="outline" size="xl" className="text-base px-7 py-3.5">
                 <BookOpen className="size-5 text-gold-400" aria-hidden />
-                কীভাবে খেলবেন
+                How to Play
               </Button>
             </Link>
           </div>
@@ -125,15 +125,14 @@ export default function LandingPage() {
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-12 text-center">
           <p className="mb-1 text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-            ছদ্মবেশ · The Deck
+            The Deck · Characters
           </p>
-          <h2 className="font-bengali text-3xl font-bold text-ivory sm:text-4xl">
-            পাঁচ কাল্পনিক চরিত্র, একটি খেলা
+          <h2 className="text-3xl font-bold text-ivory sm:text-4xl">
+            Five Characters, One Throne
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-muted sm:text-base">
-            কোনো বাস্তব রাজনৈতিক চরিত্র নয়—বিশুদ্ধ মনস্তাত্ত্বিক কৌশলের উপর ভিত্তি করে তৈরি।
-            প্রত্যেক খেলোয়াড় গোপনে ২টি কার্ড নিয়ে চাল দেয়। মিথ্যা বলো, ব্লক করো,
-            চ্যালেঞ্জ করো — শেষ কথা বলবে বুদ্ধি।
+            Pure psychological deception and strategy.
+            Each player holds 2 hidden cards. Bluff, counter, and challenge — victory belongs to the sharpest mind.
           </p>
         </div>
 
@@ -151,14 +150,14 @@ export default function LandingPage() {
           <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-gold-500/35 bg-deep-900/50 p-8 text-center sm:col-span-2 lg:col-span-1 shadow-panel">
             <Landmark className="size-10 text-gold-400 animate-glow-pulse" aria-hidden />
             <div className="space-y-1">
-              <p className="font-bengali text-xl font-bold text-ivory">বাকি চরিত্রসমূহ</p>
+              <p className="text-xl font-bold text-ivory">More Characters</p>
               <p className="text-sm text-muted">
-                আমলা ও গোয়েন্দা — পুরো ডেকের সব কার্ড ও ক্ষমতা এক্সপ্লোর করুন।
+                আমলা (Amla) & গোয়েন্দা (Goyenda) — explore all 5 character cards and block abilities.
               </p>
             </div>
             <Link href="/characters" className="mt-2">
               <Button variant="outline" size="md">
-                সব চরিত্র দেখুন
+                View All Characters
                 <ArrowRight className="size-4" aria-hidden />
               </Button>
             </Link>
@@ -171,35 +170,35 @@ export default function LandingPage() {
         <div className="rounded-3xl border border-forest-500/25 bg-surface panel-emboss panel-texture p-8 sm:p-12">
           <div className="mb-10 text-center">
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-              খেলার ধাপসমূহ
+              How It Works
             </p>
-            <h2 className="font-bengali text-3xl font-bold text-ivory sm:text-4xl">
-              তিন ধাপে ক্ষমতার লড়াই
+            <h2 className="text-3xl font-bold text-ivory sm:text-4xl">
+              Three Steps of Power
             </h2>
             <p className="mt-2 text-sm text-muted">
-              সরাসরি ব্ল্যাফ করুন অথবা কৌশলী চালে প্রতিপক্ষকে ফাঁদে ফেলুন।
+              Bluff your way to the top or trap your opponents in their lies.
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
             {[
               {
-                step: "০১",
+                step: "01",
                 icon: <Sparkles className="size-5 text-gold-400" />,
-                title: "দাবি করুন",
-                text: "আয়, ট্যাক্স আদায় বা বিদেশি অনুদান—যেকোনো ক্ষমতা দাবি করে চাল দিন। হাতে কার্ড না থাকলেও নিখুঁত ব্ল্যাফ করুন।",
+                title: "Take Actions",
+                text: "Income, Foreign Aid, Tax, Steal, Assassinate or Coup. Claim any character ability—even if you do not hold the card.",
               },
               {
-                step: "০২",
+                step: "02",
                 icon: <ShieldAlert className="size-5 text-crimson-400" />,
-                title: "ব্লক ও চ্যালেঞ্জ",
-                text: "প্রতিপক্ষের ভান ধরতে পারলে প্রকাশ্যে চ্যালেঞ্জ দিন। মিথ্যা প্রমাণ হলে তার কার্ড কাটা যাবে, ভুল সন্দেহ করলে আপনার ক্ষতি।",
+                title: "Block & Challenge",
+                text: "Block opponent actions or challenge suspicious claims. If a bluff is caught, they lose Influence. A false challenge costs you.",
               },
               {
-                step: "০৩",
+                step: "03",
                 icon: <EyeOff className="size-5 text-forest-300" />,
-                title: "চূড়ান্ত আধিপত্য",
-                text: "৭ কয়েন জমা করে আঘাত হানুন। সব প্রতিপক্ষের ইনফ্লুয়েন্স ধ্বংস করে টেবিলে শেষ জীবিত খেলোয়াড় হিসেবে বিজয়ী হোন।",
+                title: "Eliminate & Win",
+                text: "Accumulate coins and launch an unblockable Coup. Eliminate all opponent influence cards to be the last one standing.",
               },
             ].map((item) => (
               <div
@@ -207,14 +206,14 @@ export default function LandingPage() {
                 className="relative rounded-2xl border border-forest-500/20 bg-deep-900/60 p-6 transition-all hover:border-gold-500/40"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bengali text-3xl font-bold text-gold-500/40">
+                  <span className="text-3xl font-bold text-gold-500/40">
                     {item.step}
                   </span>
                   <div className="p-2 rounded-lg bg-deep-800/80 border border-white/5">
                     {item.icon}
                   </div>
                 </div>
-                <h3 className="font-bengali text-xl font-semibold text-ivory">
+                <h3 className="text-xl font-semibold text-ivory">
                   {item.title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -227,7 +226,7 @@ export default function LandingPage() {
           <div className="mt-10 text-center">
             <Link href="/how-to-play">
               <Button variant="outline" size="md">
-                সম্পূর্ণ গেম নির্দেশিকা পড়ুন
+                Read Full Rulebook
                 <ArrowRight className="size-4" aria-hidden />
               </Button>
             </Link>

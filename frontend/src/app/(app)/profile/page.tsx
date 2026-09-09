@@ -165,128 +165,128 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Action Buttons: Edit Profile & View Match History */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {/* Button: Edit Profile */}
-            <Button
-              variant="outline"
-              size="md"
-              onClick={() => setIsEditModalOpen(true)}
-              className="gap-2 font-bengali"
-            >
-              <Pencil className="size-4 text-gold-400" />
-              প্রোফাইল সম্পাদনা · Edit Profile
-            </Button>
-
-            {/* Button: View Match History */}
-            <Link href="/history">
+            {/* Action Buttons: Edit Profile & View Match History */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {/* Button: Edit Profile */}
               <Button
-                variant="premium"
+                variant="outline"
                 size="md"
-                className="gap-2 font-bengali shadow-gold"
+                onClick={() => setIsEditModalOpen(true)}
+                className="gap-2"
               >
-                <History className="size-4" />
-                ম্যাচ ইতিহাস · View Match History
+                <Pencil className="size-4 text-gold-400" />
+                Edit Profile
               </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
 
-      {/* ── Key Performance Metrics (Required Displays) ───── */}
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
-        {/* Rating */}
-        <div className="rounded-2xl border border-forest-500/20 bg-deep-900/60 p-4 transition-all hover:border-gold-500/35">
-          <div className="flex items-center justify-between text-muted">
-            <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
-              Rating
-            </span>
-            <Trophy className="size-4 text-gold-400" />
+              {/* Button: View Match History */}
+              <Link href="/history">
+                <Button
+                  variant="premium"
+                  size="md"
+                  className="gap-2 shadow-gold"
+                >
+                  <History className="size-4" />
+                  View Match History
+                </Button>
+              </Link>
+            </div>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-ivory">
-            {profile.rating}
-          </p>
-          <p className="mt-1 text-[11px] text-forest-300 flex items-center gap-1">
-            <TrendingUp className="size-3" />
-            +২৫ রেটিং পয়েন্ট (এই সপ্তাহে)
-          </p>
-        </div>
+        </section>
 
-        {/* Total Matches */}
-        <div className="rounded-2xl border border-forest-500/20 bg-deep-900/60 p-4 transition-all hover:border-gold-500/35">
-          <div className="flex items-center justify-between text-muted">
-            <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
-              Total Matches
-            </span>
-            <Swords className="size-4 text-forest-400" />
+        {/* ── Key Performance Metrics (Required Displays) ───── */}
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
+          {/* Rating */}
+          <div className="rounded-2xl border border-forest-500/20 bg-deep-900/60 p-4 transition-all hover:border-gold-500/35">
+            <div className="flex items-center justify-between text-muted">
+              <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
+                Rating
+              </span>
+              <Trophy className="size-4 text-gold-400" />
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl font-bold text-ivory">
+              {profile.rating}
+            </p>
+            <p className="mt-1 text-[11px] text-forest-300 flex items-center gap-1">
+              <TrendingUp className="size-3" />
+              +25 rating points (this week)
+            </p>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-ivory">
-            {profile.totalMatches}
-          </p>
-          <p className="mt-1 text-[11px] text-muted">
-            মোট সম্পন্ন খেলা
-          </p>
-        </div>
 
-        {/* Wins */}
-        <div className="rounded-2xl border border-forest-500/20 bg-deep-900/60 p-4 transition-all hover:border-forest-400/40">
-          <div className="flex items-center justify-between text-forest-300">
-            <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
-              Wins
-            </span>
-            <CheckCircle className="size-4 text-forest-400" />
+          {/* Total Matches */}
+          <div className="rounded-2xl border border-forest-500/20 bg-deep-900/60 p-4 transition-all hover:border-gold-500/35">
+            <div className="flex items-center justify-between text-muted">
+              <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
+                Total Matches
+              </span>
+              <Swords className="size-4 text-forest-400" />
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl font-bold text-ivory">
+              {profile.totalMatches}
+            </p>
+            <p className="mt-1 text-[11px] text-muted">
+              Completed games
+            </p>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-forest-300">
-            {profile.wins}
-          </p>
-          <p className="mt-1 text-[11px] text-forest-300/80">
-            বিজয়ী ম্যাচসমূহ
-          </p>
-        </div>
 
-        {/* Losses */}
-        <div className="rounded-2xl border border-forest-500/20 bg-deep-900/60 p-4 transition-all hover:border-crimson-400/40">
-          <div className="flex items-center justify-between text-crimson-300">
-            <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
-              Losses
-            </span>
-            <XCircle className="size-4 text-crimson-400" />
+          {/* Wins */}
+          <div className="rounded-2xl border border-forest-500/20 bg-deep-900/60 p-4 transition-all hover:border-forest-400/40">
+            <div className="flex items-center justify-between text-forest-300">
+              <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
+                Wins
+              </span>
+              <CheckCircle className="size-4 text-forest-400" />
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl font-bold text-forest-300">
+              {profile.wins}
+            </p>
+            <p className="mt-1 text-[11px] text-forest-300/80">
+              Victories
+            </p>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-crimson-300">
-            {profile.losses}
-          </p>
-          <p className="mt-1 text-[11px] text-crimson-300/80">
-            পরাজিত ম্যাচসমূহ
-          </p>
-        </div>
 
-        {/* Win Rate */}
-        <div className="col-span-2 sm:col-span-1 rounded-2xl border border-gold-500/30 bg-deep-900/60 p-4 shadow-gold">
-          <div className="flex items-center justify-between text-gold-300">
-            <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
-              Win Rate
-            </span>
-            <Sparkles className="size-4 text-gold-400" />
+          {/* Losses */}
+          <div className="rounded-2xl border border-forest-500/20 bg-deep-900/60 p-4 transition-all hover:border-crimson-400/40">
+            <div className="flex items-center justify-between text-crimson-300">
+              <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
+                Losses
+              </span>
+              <XCircle className="size-4 text-crimson-400" />
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl font-bold text-crimson-300">
+              {profile.losses}
+            </p>
+            <p className="mt-1 text-[11px] text-crimson-300/80">
+              Defeats
+            </p>
           </div>
-          <p className="mt-2 text-2xl sm:text-3xl font-bold text-gold-gradient">
-            {profile.winRate}%
-          </p>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-deep-950">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-forest-500 via-gold-400 to-gold-300"
-              style={{ width: `${profile.winRate}%` }}
-            />
-          </div>
-        </div>
-      </section>
 
-      {/* ── Section Tabs: Overview | Statistics | Recent Matches ─ */}
-      <div className="flex border-b border-forest-500/20 gap-2 sm:gap-4 overflow-x-auto pb-px">
-        {[
-          { key: "overview", label: "Overview (এক নজরে)" },
-          { key: "statistics", label: "Statistics (পরিসংখ্যান)" },
-          { key: "matches", label: "Recent Matches (সাম্প্রতিক ম্যাচ)" },
-        ].map((tab) => {
+          {/* Win Rate */}
+          <div className="col-span-2 sm:col-span-1 rounded-2xl border border-gold-500/30 bg-deep-900/60 p-4 shadow-gold">
+            <div className="flex items-center justify-between text-gold-300">
+              <span className="text-xs uppercase tracking-wider font-semibold font-cinzel">
+                Win Rate
+              </span>
+              <Sparkles className="size-4 text-gold-400" />
+            </div>
+            <p className="mt-2 text-2xl sm:text-3xl font-bold text-gold-gradient">
+              {profile.winRate}%
+            </p>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-deep-950">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-forest-500 via-gold-400 to-gold-300"
+                style={{ width: `${profile.winRate}%` }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Section Tabs: Overview | Statistics | Recent Matches ─ */}
+        <div className="flex border-b border-forest-500/20 gap-2 sm:gap-4 overflow-x-auto pb-px">
+          {[
+            { key: "overview", label: "Overview" },
+            { key: "statistics", label: "Statistics" },
+            { key: "matches", label: "Recent Matches" },
+          ].map((tab) => {
           const active = activeTab === tab.key;
           return (
             <button

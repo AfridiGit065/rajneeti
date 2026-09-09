@@ -67,33 +67,33 @@ export default function LeaderboardPage() {
   const isGlobal = tab === "global";
   const emptyTitle =
     isGlobal
-      ? "কোনো খেলোয়াড় পাওয়া যায়নি"
+      ? "No players found"
       : tab === "weekly"
-        ? "সাপ্তাহিক ডেটা এখনো নেই"
-        : "বন্ধু তালিকা এখনো খালি";
+        ? "No weekly data available yet"
+        : "Friends list is empty";
   const emptyDescription =
     isGlobal
-      ? "অন্য নাম দিয়ে খুঁজে দেখুন।"
+      ? "Try searching for a different username."
       : tab === "weekly"
-        ? "শীঘ্রই সাপ্তাহিক র‍্যাংকিং চালু হবে।"
-        : "বন্ধুদের আমন্ত্রণ জানিয়ে প্রতিযোগিতা শুরু করুন।";
+        ? "Weekly competitive rankings will launch soon."
+        : "Invite friends to start competing on the leaderboard.";
 
   return (
     <div className="space-y-6">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-          র‍্যাংকিং
+          Rankings
         </p>
-        <h1 className="mt-1 font-bengali text-2xl font-bold text-ivory">লিডারবোর্ড</h1>
-        <p className="mt-1 text-sm text-muted">সেরা খেলোয়াড়দের রেটিং ও পরিসংখ্যান।</p>
+        <h1 className="mt-1 text-2xl font-bold text-ivory">Leaderboard</h1>
+        <p className="mt-1 text-sm text-muted">Player rankings and competitive statistics.</p>
       </header>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <LeaderboardTabs value={tab} onChange={setTab} />
         <div className="w-full sm:w-72">
           <Input
-            aria-label="খেলোয়াড় খুঁজুন"
-            placeholder="খেলোয়াড় খুঁজুন…"
+            aria-label="Search players"
+            placeholder="Search players…"
             leadingIcon={<Search className="size-4" aria-hidden />}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -102,14 +102,14 @@ export default function LeaderboardPage() {
       </div>
 
       {loading ? (
-        <LoadingState label="লিডারবোর্ড লোড হচ্ছে…" />
+        <LoadingState label="Loading leaderboard…" />
       ) : error !== null ? (
         <ErrorState
-          title="লিডারবোর্ড লোড করা যায়নি"
+          title="Could not load leaderboard"
           message={error}
           action={
             <Button variant="premium" onClick={retry}>
-              আবার চেষ্টা করুন
+              Try Again
             </Button>
           }
         />

@@ -20,34 +20,34 @@ export function RoomList({
   onRetry: () => void;
 }) {
   return (
-    <section aria-label="উপলব্ধ রুম" className="space-y-4">
+    <section aria-label="Available Rooms" className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-bengali text-xl font-bold text-ivory">উপলব্ধ রুম</h2>
+        <h2 className="text-xl font-bold text-ivory">Available Rooms</h2>
         {!loading && error === null ? (
-          <Badge tone="emerald">{rooms.length}টি রুম</Badge>
+          <Badge tone="emerald">{rooms.length} Rooms</Badge>
         ) : null}
       </div>
 
       {loading ? (
-        <LoadingState label="রুম তালিকা লোড হচ্ছে…" className="min-h-48" />
+        <LoadingState label="Loading rooms..." className="min-h-48" />
       ) : error !== null ? (
         <ErrorState
-          title="রুম লোড করা যায়নি"
+          title="Could not load rooms"
           message={error}
           action={
             <Button variant="premium" onClick={onRetry}>
-              আবার চেষ্টা করুন
+              Try Again
             </Button>
           }
         />
       ) : rooms.length === 0 ? (
         <EmptyState
           icon={<Users className="size-6" aria-hidden />}
-          title="কোনো রুম নেই"
-          description="এই মুহূর্তে কোনো খোলা রুম নেই। নতুন রুম তৈরি করে খেলা শুরু করতে পারেন।"
+          title="No Rooms Available"
+          description="There are no open rooms at the moment. Create a new room to start playing."
           action={
             <Link href="/rooms/create">
-              <Button variant="premium">রুম তৈরি করুন</Button>
+              <Button variant="premium">Create Room</Button>
             </Link>
           }
         />

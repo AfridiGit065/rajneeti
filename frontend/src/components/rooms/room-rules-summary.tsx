@@ -5,23 +5,23 @@ import { Coins, Crown, Shield, Users } from "@/components/ui/icons";
 const ITEMS = [
   {
     icon: <Users className="size-4" aria-hidden />,
-    title: "খেলোয়াড়",
-    text: `${RULES.minPlayers}–${RULES.maxPlayers} জন — হোস্ট রুমের আকার ঠিক করে।`,
+    title: "Players",
+    text: `${RULES.minPlayers}–${RULES.maxPlayers} players — the host chooses room capacity.`,
   },
   {
     icon: <Shield className="size-4" aria-hidden />,
-    title: "গোপন কার্ড",
-    text: `প্রত্যেকে ${RULES.maxInfluencePerPlayer}টি লুকানো ইনফ্লুয়েন্স কার্ড নিয়ে শুরু করে।`,
+    title: "Influence Cards",
+    text: `Each player starts with ${RULES.maxInfluencePerPlayer} face-down character cards.`,
   },
   {
     icon: <Coins className="size-4" aria-hidden />,
-    title: "শুরুর কয়েন",
-    text: `${RULES.startingCoins} কয়েন হাতে নিয়েই খেলা শুরু।`,
+    title: "Starting Treasury",
+    text: `Each player starts the game with ${RULES.startingCoins} coins.`,
   },
   {
     icon: <Crown className="size-4" aria-hidden />,
-    title: "জয়ের শর্ত",
-    text: "শেষ পর্যন্ত টিকে থাকা শেষ খেলোয়াড়ই জয়ী।",
+    title: "Victory Condition",
+    text: "The last surviving player with influence remaining wins the game.",
   },
 ] as const;
 
@@ -29,7 +29,7 @@ export function RoomRulesSummary() {
   return (
     <Card className="h-full">
       <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-        খেলার নিয়ম
+        Rules Summary
       </p>
       <ul className="space-y-4">
         {ITEMS.map((item) => (
@@ -38,7 +38,7 @@ export function RoomRulesSummary() {
               {item.icon}
             </span>
             <div>
-              <p className="font-bengali text-sm font-semibold text-ivory">{item.title}</p>
+              <p className="text-sm font-semibold text-ivory">{item.title}</p>
               <p className="mt-0.5 text-xs leading-relaxed text-muted">{item.text}</p>
             </div>
           </li>

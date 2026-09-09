@@ -17,7 +17,7 @@ const KIND_COLOR: Record<GameLogEntry["kind"], string> = {
 function formatTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 export function GameLog({ entries, className }: { entries: GameLogEntry[]; className?: string }) {
@@ -29,15 +29,15 @@ export function GameLog({ entries, className }: { entries: GameLogEntry[]; class
       )}
     >
       <div className="flex items-center justify-between gap-3 border-b border-forest-500/20 px-4 py-3">
-        <h2 className="flex items-center gap-2 font-bengali text-base font-semibold text-ivory">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-ivory">
           <ScrollText className="size-4 text-gold-400" aria-hidden />
-          গেম লগ
+          Game Log
         </h2>
         <Badge tone="neutral">{entries.length}</Badge>
       </div>
       <ul className="flex-1 space-y-2.5 overflow-y-auto px-4 py-3">
         {entries.length === 0 ? (
-          <li className="text-sm text-muted">এখনো কোনো ঘটনা ঘটেনি।</li>
+          <li className="text-sm text-muted">No events recorded yet.</li>
         ) : (
           entries.map((entry) => (
             <li key={entry.id} className="flex items-start gap-2">
@@ -47,7 +47,7 @@ export function GameLog({ entries, className }: { entries: GameLogEntry[]; class
               />
               <div className="min-w-0">
                 <p className="text-sm leading-snug text-ivory/90">
-                  {entry.textBn ?? entry.text}
+                  {entry.text ?? entry.textBn}
                 </p>
                 <p className="font-mono text-[0.65rem] text-muted">{formatTime(entry.timestamp)}</p>
               </div>

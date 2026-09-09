@@ -63,11 +63,11 @@ export function BlockResult({
             <XCircle className="size-6 text-crimson-400" />
           )}
           <span className="font-cinzel text-xs font-bold uppercase tracking-widest text-muted">
-            Block Resolution · ব্লক সমাধান
+            Block Resolution
           </span>
         </div>
         <Badge tone={isSuccess ? "emerald" : "crimson"}>
-          {isSuccess ? "সফল ব্লক" : "ব্যর্থ ব্লক"}
+          {isSuccess ? "Block Succeeded" : "Block Failed"}
         </Badge>
       </div>
 
@@ -83,12 +83,12 @@ export function BlockResult({
           </div>
         )}
         <div>
-          <h3 className="font-bengali text-lg font-bold text-ivory">
-            {result.blocker.displayName ?? result.blocker.username}-এর ব্লক:{" "}
-            <span className="text-gold-300">{character?.nameBn} দাবি</span>
+          <h3 className="text-lg font-bold text-ivory">
+            {result.blocker.displayName ?? result.blocker.username}&apos;s Block:{" "}
+            <span className="text-gold-300 font-bengali">{character?.nameBn} Claim</span>
           </h3>
-          <p className="text-xs text-muted font-bengali mt-0.5">
-            অ্যাকশন: {action.nameBn} ({action.nameEn})
+          <p className="text-xs text-muted mt-0.5">
+            Action: {action.nameEn} ({action.nameBn})
           </p>
         </div>
       </div>
@@ -96,7 +96,7 @@ export function BlockResult({
       {/* Outcome text */}
       <div
         className={cn(
-          "rounded-xl border p-4 text-xs font-bengali leading-relaxed",
+          "rounded-xl border p-4 text-xs leading-relaxed",
           isSuccess
             ? "border-forest-500/30 bg-forest-950/40 text-forest-200"
             : "border-crimson-500/30 bg-crimson-950/40 text-crimson-200",
@@ -104,28 +104,28 @@ export function BlockResult({
       >
         {result.outcome === "block_succeeds" && (
           <p>
-            🛡️ <strong className="text-ivory">{result.blocker.displayName ?? result.blocker.username}</strong>-এর ব্লক সফলভাবে গৃহীত হয়েছে! {action.nameBn} অ্যাকশনটি বাতিল হয়েছে।
+            🛡️ <strong className="text-ivory">{result.blocker.displayName ?? result.blocker.username}</strong>&apos;s block was accepted! The {action.nameEn} action has been cancelled.
           </p>
         )}
         {result.outcome === "block_claim_is_bluff" && (
           <p>
-            🎭 <strong>মিথ্যা ব্লক ফাঁস!</strong> {result.blocker.displayName ?? result.blocker.username} এর হাতে {character?.nameBn} ছিল না! ব্লকার মিথ্যা বলার অপরাধে ১টি ইনফ্লুয়েন্স কার্ড হারাল এবং মূল অ্যাকশন কার্যকর হচ্ছে।
+            🎭 <strong>Bluff Caught!</strong> {result.blocker.displayName ?? result.blocker.username} does not hold {character?.nameBn}! Blocker loses 1 influence card for false block claim, and action resolves.
           </p>
         )}
         {result.outcome === "challenger_loses_influence" && (
           <p>
-            ⚠️ <strong>ভুল চ্যালেঞ্জ!</strong> {result.blocker.displayName ?? result.blocker.username} প্রমাণ করেছে তার দাবি সত্য ছিল! চ্যালেঞ্জকারী <strong className="text-ivory">{result.challenger.displayName ?? result.challenger.username}</strong> ১টি ইনফ্লুয়েন্স হারাল এবং ব্লকটি বহাল রইল।
+            ⚠️ <strong>Wrong Challenge!</strong> {result.blocker.displayName ?? result.blocker.username} proved their claim was genuine! Challenger <strong className="text-ivory">{result.challenger.displayName ?? result.challenger.username}</strong> loses 1 influence card and the block holds.
           </p>
         )}
         {result.outcome === "blocker_loses_influence" && (
           <p>
-            ☠️ <strong>ব্লকারের ইনফ্লুয়েন্স ধ্বংস!</strong> চ্যালেঞ্জের মুখে ব্লাফ প্রমাণিত হওয়ায় {result.blocker.displayName ?? result.blocker.username} একটি প্রভাব কার্ড হারাতে বাধ্য হচ্ছে।
+            ☠️ <strong>Blocker Influence Lost!</strong> Caught bluffing on block claim, {result.blocker.displayName ?? result.blocker.username} must lose an influence card.
           </p>
         )}
       </div>
 
-      <Button variant="premium" fullWidth onClick={onDismiss} className="font-bengali">
-        চালিয়ে যান ➔
+      <Button variant="premium" fullWidth onClick={onDismiss}>
+        Continue ➔
       </Button>
     </div>
   );
@@ -177,12 +177,12 @@ export function BlockDialog({
             <span className="font-cinzel text-xs font-bold uppercase tracking-[0.25em] text-crimson-400">
               Player Blocked Action
             </span>
-            <h2 className="font-bengali text-2xl font-bold text-ivory mt-0.5">
-              {event.blocker.displayName ?? event.blocker.username} অ্যাকশন ব্লক করেছেন!
+            <h2 className="font-display text-2xl font-bold text-ivory mt-0.5">
+              {event.blocker.displayName ?? event.blocker.username} blocked the action!
             </h2>
           </div>
-          <p className="font-bengali text-xs text-muted">
-            অ্যাকশন: <strong className="text-parchment-200">{action.nameBn}</strong> ({action.nameEn})
+          <p className="text-xs text-muted">
+            Action: <strong className="text-parchment-200">{action.nameEn}</strong> ({action.nameBn})
           </p>
         </div>
 
@@ -200,7 +200,7 @@ export function BlockDialog({
           )}
           <div className="min-w-0 flex-1">
             <span className="text-[10px] font-cinzel font-bold uppercase tracking-wider text-muted">
-              Block Claim · দাবি করা চরিত্র
+              Claimed Character Role
             </span>
             <p className="font-bengali text-xl font-bold text-gold-gradient">
               {character?.nameBn}
@@ -208,11 +208,11 @@ export function BlockDialog({
             <p className="font-cinzel text-xs text-muted uppercase tracking-widest">
               {character?.nameEn}
             </p>
-            <p className="font-bengali text-[11px] text-parchment-300 mt-1">
-              {event.claimedCharacter === "minister" && "বিদেশি অনুদান ব্লক করতে মন্ত্রী দাবি করেছেন।"}
+            <p className="text-[11px] text-parchment-300 mt-1">
+              {event.claimedCharacter === "minister" && "Claimed Minister (মন্ত্রী) to block Foreign Aid."}
               {(event.claimedCharacter === "amla" || event.claimedCharacter === "dalal") &&
-                "চুরি ঠেকাতে আমলা/দালাল দাবি করেছেন।"}
-              {event.claimedCharacter === "goyenda" && "গুপ্তহত্যা ঠেকাতে গোয়েন্দা দাবি করেছেন।"}
+                "Claimed Amla / Dalal (আমলা/দালাল) to block Extortion."}
+              {event.claimedCharacter === "goyenda" && "Claimed Goyenda (গোয়েন্দা) to block Assassination."}
             </p>
           </div>
         </div>
@@ -220,9 +220,9 @@ export function BlockDialog({
         {/* Mock outcome simulation helper for testing */}
         <div className="rounded-xl border border-white/10 bg-deep-900/60 p-3 space-y-2 text-xs">
           <p className="font-cinzel text-[10px] uppercase tracking-wider text-muted font-bold">
-            Simulate Mock Outcome (মক ফলাফল বাছাই করুন):
+            Simulate Mock Outcome:
           </p>
-          <div className="grid grid-cols-2 gap-1.5 font-bengali text-[11px]">
+          <div className="grid grid-cols-2 gap-1.5 text-[11px]">
             <button
               type="button"
               onClick={() => setMockOutcomeSelect("block_succeeds")}
@@ -233,7 +233,7 @@ export function BlockDialog({
                   : "border-white/5 bg-deep-950 text-muted hover:border-white/20",
               )}
             >
-              ✓ ব্লক সফল (Block Succeeds)
+              ✓ Block Succeeds
             </button>
             <button
               type="button"
@@ -245,7 +245,7 @@ export function BlockDialog({
                   : "border-white/5 bg-deep-950 text-muted hover:border-white/20",
               )}
             >
-              ✕ ব্লাফ ধরা পড়ল (Is Bluff)
+              ✕ Caught Bluffing
             </button>
             <button
               type="button"
@@ -257,7 +257,7 @@ export function BlockDialog({
                   : "border-white/5 bg-deep-950 text-muted hover:border-white/20",
               )}
             >
-              ☠️ চ্যালেঞ্জার ইনফ্লুয়েন্স হারাল
+              ☠️ Challenger Loses Influence
             </button>
             <button
               type="button"
@@ -269,7 +269,7 @@ export function BlockDialog({
                   : "border-white/5 bg-deep-950 text-muted hover:border-white/20",
               )}
             >
-              ☠️ ব্লকার ইনফ্লুয়েন্স হারাল
+              ☠️ Blocker Loses Influence
             </button>
           </div>
         </div>
@@ -283,10 +283,10 @@ export function BlockDialog({
               onResolve(mockOutcomeSelect ?? "block_succeeds");
               onClose();
             }}
-            className="font-bengali gap-1.5"
+            className="gap-1.5 font-cinzel font-semibold text-xs tracking-wider uppercase"
           >
             <CheckCircle className="size-4 text-forest-400" />
-            অনুমোদন দিন · ALLOW
+            Allow Block
           </Button>
 
           <Button
@@ -297,10 +297,10 @@ export function BlockDialog({
               onResolve(mockOutcomeSelect ?? "block_claim_is_bluff");
               onClose();
             }}
-            className="font-bengali gap-1.5 shadow-crimson"
+            className="gap-1.5 shadow-crimson font-cinzel font-semibold text-xs tracking-wider uppercase"
           >
             <Gavel className="size-4" />
-            চ্যালেঞ্জ ব্লক · CHALLENGE BLOCK
+            Challenge Block
           </Button>
         </div>
       </div>
@@ -330,20 +330,20 @@ export function BlockPanel({
         </span>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-bengali text-sm font-bold text-ivory">
+            <span className="text-sm font-bold text-ivory">
               {activeBlock.blocker.displayName ?? activeBlock.blocker.username}
             </span>
-            <Badge tone="crimson">অ্যাকশন ব্লক করেছে</Badge>
+            <Badge tone="crimson">Blocked Action</Badge>
           </div>
-          <p className="text-xs text-muted font-bengali mt-0.5">
-            অ্যাকশন: {action.nameBn} · দাবি: <span className="text-gold-300 font-semibold">{character?.nameBn}</span>
+          <p className="text-xs text-muted mt-0.5">
+            Action: {action.nameEn} ({action.nameBn}) · Claimed: <span className="text-gold-300 font-semibold">{character?.nameBn}</span> ({character?.nameEn})
           </p>
         </div>
       </div>
 
-      <Button variant="premium" size="sm" onClick={onOpenDialog} className="font-bengali gap-2">
+      <Button variant="premium" size="sm" onClick={onOpenDialog} className="gap-2 font-cinzel font-semibold text-xs tracking-wider uppercase">
         <Gavel className="size-3.5" />
-        ব্লক প্রতিক্রিয়া দেখুন · View Block
+        View Block
       </Button>
     </div>
   );

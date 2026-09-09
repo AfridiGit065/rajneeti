@@ -7,10 +7,10 @@ import { TurnTimer } from "./turn-timer";
 import { MatchStatus, type GameState } from "@/types/game";
 
 const STATUS: Record<MatchStatus, { label: string; tone: BadgeTone }> = {
-  [MatchStatus.WAITING]: { label: "অপেক্ষমাণ", tone: "emerald" },
-  [MatchStatus.IN_PROGRESS]: { label: "চলছে", tone: "gold" },
-  [MatchStatus.FINISHED]: { label: "শেষ", tone: "neutral" },
-  [MatchStatus.ABANDONED]: { label: "পরিত্যক্ত", tone: "crimson" },
+  [MatchStatus.WAITING]: { label: "Waiting", tone: "emerald" },
+  [MatchStatus.IN_PROGRESS]: { label: "In Progress", tone: "gold" },
+  [MatchStatus.FINISHED]: { label: "Finished", tone: "neutral" },
+  [MatchStatus.ABANDONED]: { label: "Abandoned", tone: "crimson" },
 };
 
 export function GameHeader({
@@ -40,7 +40,7 @@ export function GameHeader({
         <Link href="/lobby">
           <Button variant="ghost" size="sm">
             <LogOut className="size-4" aria-hidden />
-            <span className="hidden sm:inline">বেরিয়ে যান</span>
+            <span className="hidden sm:inline">Leave Match</span>
           </Button>
         </Link>
       </div>

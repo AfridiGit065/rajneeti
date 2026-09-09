@@ -13,9 +13,9 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="পছন্দসমূহ"
-        title="সেটিংস"
-        subtitle="অ্যাকাউন্ট, চেহারা, অডিও, খেলা ও গোপনীয়তা — সব এক জায়গায়।"
+        eyebrow="Preferences"
+        title="Settings"
+        subtitle="Account, appearance, audio, gameplay and privacy — all in one place."
       />
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <AccountSection />
