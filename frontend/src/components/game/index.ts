@@ -1,5 +1,11 @@
 export { CharacterCard } from "./character-card";
+export { CharacterBadge } from "./character-badge";
+export type { CharacterTone } from "./character-badge";
 export { CoinDisplay } from "./coin-display";
 export { InfluenceDisplay } from "./influence-display";
 export { RoomCode } from "./room-code";
 export { Timer } from "./timer";
+export { PlayerStatus } from "./player-status";
+export type { PlayerPresence, PlayerTone } from "./player-status";
+export { ActionButton } from "./action-button";
+export type { ActionKind, ActionSize } from "./action-button";

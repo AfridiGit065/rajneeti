@@ -4,6 +4,7 @@ export { IconButton } from "./icon-button";
 export { Input } from "./input";
 export { Select } from "./select";
 export { Modal } from "./modal";
+export type { ModalVariant } from "./modal";
 export { Dialog } from "./dialog";
 export { ConfirmDialog } from "./confirm-dialog";
 export { Badge } from "./badge";
