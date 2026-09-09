@@ -1,6 +1,6 @@
 # RAJNEETI – রাজনীতি
 
-> **Real-Time Multiplayer Bluff Strategy Game** | Spring Boot Backend Foundation (Module 01)
+> **Real-Time Multiplayer Bluff Strategy Game** | Spring Boot Backend Foundation 
 
 ---
 
