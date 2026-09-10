@@ -51,6 +51,7 @@ export interface BackendMatchPlayer {
   username: string;
   avatarUrl?: string;
   seatNumber: number;
+  playerStatus: "ACTIVE" | "ELIMINATED";
   finalRank?: number;
   coinsAtEnd: number;
   eliminated: boolean;
@@ -66,7 +67,18 @@ export interface BackendMatch {
   players: BackendMatchPlayer[];
   winnerId?: string;
   winnerUsername?: string;
+  currentTurnPlayerId?: string;
+  turnNumber?: number;
+  turnOrder?: string[];
   startedAt?: string;
   endedAt?: string;
   createdAt: string;
+}
+
+export interface BackendTurnInfo {
+  matchId: string;
+  currentTurnPlayerId?: string;
+  turnNumber?: number;
+  turnOrder?: string[];
+  activePlayerCount?: number;
 }

@@ -29,6 +29,9 @@ public class MatchResponse {
     private List<MatchPlayerResponse> players;
     private UUID winnerId;
     private String winnerUsername;
+    private UUID currentTurnPlayerId;
+    private Integer turnNumber;
+    private List<UUID> turnOrder;
     private LocalDateTime startedAt;
     private LocalDateTime endedAt;
     private LocalDateTime createdAt;

@@ -1,7 +1,10 @@
 package com.rajneeti.entity;
 
+import com.rajneeti.entity.enums.PlayerStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -75,6 +78,12 @@ public class MatchPlayer {
     @Builder.Default
     @Column(name = "coins_at_end", nullable = false)
     private Integer coinsAtEnd = 0;
+
+    @NotNull(message = "Player status is required")
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "player_status", nullable = false, length = 20)
+    private PlayerStatus playerStatus = PlayerStatus.ACTIVE;
 
     @Builder.Default
     @Column(name = "eliminated", nullable = false)

@@ -1,11 +1,13 @@
 package com.rajneeti.service.impl;
 
 import com.rajneeti.dto.match.MatchResponse;
+import com.rajneeti.dto.turn.TurnInfo;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchPlayer;
 import com.rajneeti.entity.Room;
 import com.rajneeti.entity.RoomPlayer;
 import com.rajneeti.entity.enums.MatchStatus;
+import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.entity.enums.RoomStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.MatchAlreadyExistsException;
@@ -19,12 +21,15 @@ import com.rajneeti.repository.RoomPlayerRepository;
 import com.rajneeti.repository.RoomRepository;
 import com.rajneeti.service.MatchService;
 import com.rajneeti.service.RoomService;
+import com.rajneeti.service.TurnManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +47,7 @@ public class MatchServiceImpl implements MatchService {
     private final RoomPlayerRepository   roomPlayerRepository;
     private final RoomService            roomService;
     private final MatchMapper            matchMapper;
+    private final TurnManager            turnManager;
 
     @Override
     @Transactional
@@ -103,7 +109,11 @@ public class MatchServiceImpl implements MatchService {
 
         savedMatch.setPlayers(matchPlayers);
 
-        // 9. Transition room status to IN_GAME
+        // 9. Assign the first turn (deterministic: lowest seat number) and set startedAt
+        savedMatch.setStartedAt(LocalDateTime.now());
+        turnManager.assignFirstTurn(savedMatch, matchPlayers);
+
+        // 10. Transition room status to IN_GAME
         room.setStatus(RoomStatus.IN_GAME);
         roomRepository.save(room);
 
@@ -111,7 +121,7 @@ public class MatchServiceImpl implements MatchService {
                 savedMatch.getId(), room.getRoomCode(), matchPlayers.size(),
                 room.getHost().getUsername());
 
-        // 10. Return match response
+        // 11. Return match response
         return matchMapper.toMatchResponse(savedMatch, matchPlayers);
     }
 
@@ -139,5 +149,28 @@ public class MatchServiceImpl implements MatchService {
 
         List<MatchPlayer> players = matchPlayerRepository.findByMatchId(match.getId());
         return matchMapper.toMatchResponse(match, players);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TurnInfo getCurrentTurn(UUID matchId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new MatchNotFoundException("Match with ID '" + matchId + "' not found."));
+
+        List<MatchPlayer> players = matchPlayerRepository.findByMatchId(matchId);
+        List<UUID> turnOrder = players.stream()
+                .sorted(Comparator.comparing(MatchPlayer::getSeatNumber))
+                .map(mp -> mp.getUser().getId())
+                .toList();
+
+        return TurnInfo.builder()
+                .matchId(match.getId())
+                .currentTurnPlayerId(match.getCurrentTurnPlayerId())
+                .turnNumber(match.getTurnNumber())
+                .turnOrder(turnOrder)
+                .activePlayerCount(players.stream()
+                        .filter(p -> p.getPlayerStatus() == PlayerStatus.ACTIVE)
+                        .count())
+                .build();
     }
 }

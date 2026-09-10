@@ -62,6 +62,9 @@ class MatchServiceTest {
     @Mock
     private RoomService roomService;
 
+    @Mock
+    private TurnManager turnManager;
+
     @Spy
     private MatchMapper matchMapper = new MatchMapper();
 

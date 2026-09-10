@@ -1,6 +1,7 @@
 package com.rajneeti.service;
 
 import com.rajneeti.dto.match.MatchResponse;
+import com.rajneeti.dto.turn.TurnInfo;
 
 import java.util.UUID;
 
@@ -15,7 +16,7 @@ public interface MatchService {
      * and no active match already exists.
      *
      * Creates Match + MatchPlayer records in a single transaction,
-     * then transitions room status to IN_GAME.
+     * assigns the first turn, then transitions room status to IN_GAME.
      *
      * @param roomId the room to start a match in
      * @param userId the authenticated user requesting (must be host)
@@ -32,4 +33,9 @@ public interface MatchService {
      * Retrieves the active match (CREATED or IN_PROGRESS) for a room.
      */
     MatchResponse getActiveMatchByRoom(UUID roomId);
+
+    /**
+     * Retrieves the current turn state for a match (read-only).
+     */
+    TurnInfo getCurrentTurn(UUID matchId);
 }

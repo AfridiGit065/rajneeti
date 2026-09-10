@@ -80,6 +80,13 @@ public class Match {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "current_turn_player_id")
+    private UUID currentTurnPlayerId;
+
+    @Builder.Default
+    @Column(name = "turn_number", nullable = false)
+    private Integer turnNumber = 0;
+
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, orphanRemoval = true)

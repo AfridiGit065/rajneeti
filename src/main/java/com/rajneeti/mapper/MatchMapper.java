@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Mapper for transforming Match and MatchPlayer entities into presentation DTOs.
@@ -31,6 +32,7 @@ public class MatchMapper {
                 .username(user != null ? user.getUsername() : null)
                 .avatarUrl(user != null ? user.getAvatarUrl() : null)
                 .seatNumber(player.getSeatNumber())
+                .playerStatus(player.getPlayerStatus())
                 .finalRank(player.getFinalRank())
                 .coinsAtEnd(player.getCoinsAtEnd())
                 .eliminated(player.getEliminated())
@@ -62,6 +64,11 @@ public class MatchMapper {
                 .players(playerResponses)
                 .winnerId(winner != null ? winner.getId() : null)
                 .winnerUsername(winner != null ? winner.getUsername() : null)
+                .currentTurnPlayerId(match.getCurrentTurnPlayerId())
+                .turnNumber(match.getTurnNumber())
+                .turnOrder(playerResponses.stream()
+                        .map(MatchPlayerResponse::getUserId)
+                        .toList())
                 .startedAt(match.getStartedAt())
                 .endedAt(match.getEndedAt())
                 .createdAt(match.getCreatedAt())

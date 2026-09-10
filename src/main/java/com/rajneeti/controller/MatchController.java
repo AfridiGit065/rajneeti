@@ -2,6 +2,7 @@ package com.rajneeti.controller;
 
 import com.rajneeti.dto.ApiResponse;
 import com.rajneeti.dto.match.MatchResponse;
+import com.rajneeti.dto.turn.TurnInfo;
 import com.rajneeti.security.UserPrincipal;
 import com.rajneeti.service.MatchService;
 import lombok.RequiredArgsConstructor;
@@ -68,5 +69,19 @@ public class MatchController {
 
         MatchResponse response = matchService.getMatch(matchId);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * GET /api/rooms/{roomId}/match/{matchId}/turn
+     * Read-only endpoint to get the current turn state of a match.
+     * Clients must not directly set the current turn.
+     */
+    @GetMapping("/{roomId}/match/{matchId}/turn")
+    public ResponseEntity<ApiResponse<TurnInfo>> getCurrentTurn(
+            @PathVariable UUID roomId,
+            @PathVariable UUID matchId) {
+
+        TurnInfo turnInfo = matchService.getCurrentTurn(matchId);
+        return ResponseEntity.ok(ApiResponse.success(turnInfo));
     }
 }

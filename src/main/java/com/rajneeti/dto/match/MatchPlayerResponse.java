@@ -1,6 +1,7 @@
 package com.rajneeti.dto.match;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.rajneeti.entity.enums.PlayerStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class MatchPlayerResponse {
     private String username;
     private String avatarUrl;
     private Integer seatNumber;
+    private PlayerStatus playerStatus;
     private Integer finalRank;
     private Integer coinsAtEnd;
     private Boolean eliminated;
