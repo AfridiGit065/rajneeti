@@ -4,6 +4,7 @@ import com.rajneeti.dto.game.GameCardDto;
 import com.rajneeti.dto.game.GameLogEntryDto;
 import com.rajneeti.dto.game.GamePlayerDto;
 import com.rajneeti.dto.game.GameStateResponse;
+import com.rajneeti.dto.game.PendingActionDto;
 import com.rajneeti.entity.enums.PlayerStatus;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +46,15 @@ public class GameStateMapper {
                                 .build())
                         .toList();
 
+        PendingActionDto pendingDto = null;
+        if (state.getPendingAction() != null) {
+            pendingDto = PendingActionDto.builder()
+                    .type(state.getPendingAction().getType())
+                    .actorUserId(state.getPendingAction().getActorUserId())
+                    .startedAt(state.getPendingAction().getStartedAt())
+                    .build();
+        }
+
         return GameStateResponse.builder()
                 .matchId(state.getMatchId())
                 .roomId(state.getRoomId())
@@ -60,6 +70,7 @@ public class GameStateMapper {
                 .revealedCardsCount(state.getRevealedCardsCount())
                 .winnerUserId(state.getWinnerUserId())
                 .log(log)
+                .pendingAction(pendingDto)
                 .startedAt(state.getStartedAt())
                 .endedAt(state.getEndedAt())
                 .build();

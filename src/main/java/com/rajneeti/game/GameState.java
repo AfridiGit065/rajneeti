@@ -58,6 +58,15 @@ public class GameState {
     private boolean actionExecuted = false;
 
     /**
+     * Non-null when an action is open to block/challenge. The turn holder's
+     * action resolves instantly only after this window closes (or is skipped by
+     * Module 19). While pending, {@code actionExecuted} stays true to prevent
+     * the same player from performing a second action.
+     */
+    @Builder.Default
+    private PendingAction pendingAction = null;
+
+    /**
      * Remaining draw deck. Server-side only: the hidden order and the remaining
      * card characters are never exposed to clients.
      */

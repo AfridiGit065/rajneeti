@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api-client";
-import type { BackendGameState, BackendGamePlayer } from "@/types/backend";
+import type { BackendGameState, BackendGamePlayer, BackendPendingAction } from "@/types/backend";
 import type { GameRepository } from "../game-repository";
-import { MatchStatus, type ActionIntent, type GameResult, type GameState, type GamePhase, type InfluenceCard, type GameLogEntry } from "@/types/game";
+import { MatchStatus, type ActionIntent, type GameActionId, type GameResult, type GameState, type GamePhase, type InfluenceCard, type GameLogEntry } from "@/types/game";
 import { err, ok, type Result } from "@/types/api";
 
 const CHARACTER_IDS = ["minister", "ghatok", "dalal", "amla", "goyenda"] as const;
@@ -87,7 +87,7 @@ function toGameState(backend: BackendGameState): GameState {
     deckCount: backend.deckCount,
     revealedCardsCount: backend.revealedCardsCount,
     winnerPlayerId: backend.winnerUserId ?? null,
-    activeAction: null,
+    activeAction: mapPendingAction(backend.pendingAction),
     pendingChallenge: null,
     pendingBlock: null,
     log: backend.log.map((entry) => ({
@@ -101,6 +101,12 @@ function toGameState(backend: BackendGameState): GameState {
   };
 }
 
+function mapPendingAction(pending: BackendPendingAction | undefined): ActionIntent | null {
+  if (!pending) return null;
+  const action: GameActionId = pending.type === "FOREIGN_AID" ? "foreign_aid" : "income";
+  return { action };
+}
+
 const notImplemented = (): Result<GameState> =>
   err<GameState>({
     status: 501,
@@ -112,8 +118,9 @@ const notImplemented = (): Result<GameState> =>
  * REST-backed game repository.
  *
  * Reads the authoritative, player-safe game state from the backend game
- * engine. Instant gameplay actions (income) resolve against the backend.
- * Actions that open a block/challenge window (foreign aid, steal, ...) belong
+ * engine. Instant gameplay actions (income) and block-window actions with
+ * minimal resolve seam (foreign aid) resolve against the backend.
+ * Actions that open a block/challenge window (steal, tax, ...) belong
  * to a later module and currently resolve to NOT_IMPLEMENTED placeholders.
  */
 export class RestGameRepository implements GameRepository {
@@ -125,6 +132,10 @@ export class RestGameRepository implements GameRepository {
   async performAction(matchId: string, intent: ActionIntent): Promise<Result<GameState>> {
     if (intent.action === "income") {
       const result = await apiClient.post<BackendGameState>(`/api/matches/${matchId}/income`);
+      return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+    }
+    if (intent.action === "foreign_aid") {
+      const result = await apiClient.post<BackendGameState>(`/api/matches/${matchId}/foreign-aid`);
       return result.ok ? { ok: true, data: toGameState(result.data) } : result;
     }
     return notImplemented();
@@ -163,5 +174,12 @@ export class RestGameRepository implements GameRepository {
       finishedAt: game.endedAt ?? new Date().toISOString(),
       turnCount: game.turnNumber,
     });
+  }
+
+  async resolveForeignAid(matchId: string, blocked: boolean): Promise<Result<GameState>> {
+    const result = await apiClient.post<BackendGameState>(
+      `/api/matches/${matchId}/foreign-aid/resolve?blocked=${blocked}`,
+    );
+    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }
 }

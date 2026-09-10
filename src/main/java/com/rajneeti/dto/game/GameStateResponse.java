@@ -55,6 +55,9 @@ public class GameStateResponse {
 
     private List<GameLogEntryDto> log;
 
+    /** Non-null when a block window is open for a pending action. */
+    private PendingActionDto pendingAction;
+
     private LocalDateTime startedAt;
 
     private LocalDateTime endedAt;

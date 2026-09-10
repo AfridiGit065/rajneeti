@@ -112,6 +112,12 @@ export interface BackendGameLogEntry {
 
 export type BackendGameStatus = "CREATED" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
 
+export interface BackendPendingAction {
+  type: string;
+  actorUserId: string;
+  startedAt: string;
+}
+
 export interface BackendGameState {
   matchId: string;
   roomId: string;
@@ -127,6 +133,7 @@ export interface BackendGameState {
   revealedCardsCount: number;
   winnerUserId?: string;
   log: BackendGameLogEntry[];
+  pendingAction?: BackendPendingAction;
   startedAt: string;
   endedAt?: string;
 }

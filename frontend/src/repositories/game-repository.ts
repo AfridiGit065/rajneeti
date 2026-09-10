@@ -17,4 +17,8 @@ export interface GameRepository {
   ): Promise<Result<GameState>>;
   endTurn(matchId: string, playerId: string): Promise<Result<GameState>>;
   getGameResult(matchId: string): Promise<Result<GameResult>>;
+  resolveForeignAid(
+    matchId: string,
+    blocked: boolean,
+  ): Promise<Result<GameState>>;
 }

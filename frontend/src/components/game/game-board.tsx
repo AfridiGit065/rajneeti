@@ -275,6 +275,18 @@ export function GameBoard({ matchId }: { matchId: string }) {
     success("কার্ড সফলভাবে উন্মোচিত হয়েছে");
   }
 
+  function handleBlockResultDismiss() {
+    if (blockResultData?.actionId === "foreign_aid" && game) {
+      const blocked =
+        blockResultData.outcome === "block_succeeds" ||
+        blockResultData.outcome === "challenger_loses_influence";
+      void GameService.resolveForeignAid(matchId, blocked).then((result) => {
+        if (result.ok) setGame(result.data);
+      });
+    }
+    setBlockResultData(null);
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-app px-4">
@@ -367,7 +379,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
           {blockResultData && (
             <BlockResult
               result={blockResultData}
-              onDismiss={() => setBlockResultData(null)}
+              onDismiss={handleBlockResultDismiss}
             />
           )}
 

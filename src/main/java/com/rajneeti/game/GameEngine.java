@@ -49,6 +49,12 @@ public class GameEngine {
     /** Income grants exactly 1 coin, unconditionally. */
     public static final int INCOME_GAIN = 1;
 
+    /** Foreign Aid grants 2 coins, but can be blocked by Minister. */
+    public static final int FOREIGN_AID_GAIN = 2;
+
+    /** Pending action type identifier for Foreign Aid. */
+    public static final String ACTION_FOREIGN_AID = "FOREIGN_AID";
+
     public static final String PHASE_SETUP = "setup";
     public static final String PHASE_IN_PROGRESS = "in_progress";
     public static final String PHASE_GAME_OVER = "game_over";
@@ -259,6 +265,135 @@ public class GameEngine {
 
         log.info("Player '{}' collected income in match {} (+{} coin), turn → {}",
                 player.getUsername(), matchId, INCOME_GAIN, match.getTurnNumber());
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Performs the Foreign Aid action for the current turn holder.
+     *
+     * <p>Foreign Aid is NOT a character claim, so it cannot be challenged, but
+     * it CAN be blocked by a Minister. A {@link PendingAction} block window is
+     * recorded in the in-memory state. The turn is NOT advanced and coins are
+     * NOT awarded until {@link #resolveForeignAid} is called with a resolution.
+     *
+     * @param matchId the match ID
+     * @param userId  the acting player's user ID
+     * @return the updated player-safe game state (with pending action visible)
+     */
+    @Transactional
+    public GameStateResponse performForeignAid(UUID matchId, UUID userId) {
+        GameState state = getOrInitialize(matchId);
+
+        if (state.getStatus() != MatchStatus.IN_PROGRESS
+                && state.getStatus() != MatchStatus.CREATED) {
+            throw new BusinessException("MATCH_NOT_ACTIVE",
+                    "Cannot perform Foreign Aid: match is not active.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Cannot perform Foreign Aid: player is not part of this match."));
+
+        if (!userId.equals(state.getCurrentTurnPlayerId())) {
+            throw new BusinessException("NOT_YOUR_TURN",
+                    "It is not your turn.");
+        }
+
+        if (player.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("PLAYER_ELIMINATED",
+                    "Eliminated players cannot perform actions.");
+        }
+
+        if (player.getCards() == null || player.getCards().isEmpty()) {
+            throw new BusinessException("NO_INFLUENCE",
+                    "You need at least one influence card to perform an action.");
+        }
+
+        if (state.isActionExecuted()) {
+            throw new BusinessException("ACTION_ALREADY_PERFORMED",
+                    "You have already performed an action this turn.");
+        }
+
+        state.setPendingAction(PendingAction.builder()
+                .type(ACTION_FOREIGN_AID)
+                .actorUserId(userId)
+                .startedAt(LocalDateTime.now())
+                .build());
+        state.setActionExecuted(true);
+        state.getLog().add(GameLogEntry.of("action",
+                player.getUsername() + " declared Foreign Aid. Block window open."));
+
+        log.info("Player '{}' declared Foreign Aid in match {} (block window open)",
+                player.getUsername(), matchId);
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Resolves a pending Foreign Aid after its block window closes.
+     *
+     * <p>If {@code blocked} is {@code true} the action is cancelled (no coins,
+     * Minister block succeeds). If {@code false} the action resolves normally
+     * and the actor receives {@value #FOREIGN_AID_GAIN} coins. The turn
+     * advances in both cases.
+     *
+     * <p>Module 19 (Block Manager) will eventually call this after processing
+     * the real block/challenge flow. This endpoint is the minimal seam so that
+     * the game can proceed today while a full Block Manager is not yet built.
+     *
+     * @param matchId the match ID
+     * @param userId  the actor's user ID (must match the pending action)
+     * @param blocked true if the block succeeded, false if no block / block failed
+     * @return the updated player-safe game state
+     */
+    @Transactional
+    public GameStateResponse resolveForeignAid(UUID matchId, UUID userId, boolean blocked) {
+        GameState state = getGameState(matchId);
+
+        if (state.getPendingAction() == null) {
+            throw new BusinessException("NO_PENDING_ACTION",
+                    "No pending action to resolve.");
+        }
+
+        if (!ACTION_FOREIGN_AID.equals(state.getPendingAction().getType())) {
+            throw new BusinessException("INVALID_PENDING_ACTION",
+                    "The pending action is not Foreign Aid.");
+        }
+
+        if (!userId.equals(state.getPendingAction().getActorUserId())) {
+            throw new BusinessException("NOT_ACTOR",
+                    "Only the action's actor can resolve the pending action.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Player is not part of this match."));
+
+        state.setPendingAction(null);
+
+        if (!blocked) {
+            player.setCoins(player.getCoins() + FOREIGN_AID_GAIN);
+            state.getLog().add(GameLogEntry.of("action",
+                    player.getUsername() + " collected Foreign Aid: +"
+                            + FOREIGN_AID_GAIN + " coins."));
+        } else {
+            state.getLog().add(GameLogEntry.of("block",
+                    "Foreign Aid by " + player.getUsername() + " was blocked."));
+        }
+
+        Match match = turnManager.advanceTurn(matchId);
+        state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
+        state.setTurnNumber(match.getTurnNumber());
+        state.setActionExecuted(false);
+        state.setPhase(PHASE_IN_PROGRESS);
+
+        log.info("Foreign Aid resolved (blocked={}) in match {}, turn → {}",
+                blocked, matchId, match.getTurnNumber());
 
         return gameStateMapper.toResponse(state, userId);
     }

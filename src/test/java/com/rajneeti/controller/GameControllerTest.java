@@ -4,6 +4,7 @@ import com.rajneeti.config.CorsProperties;
 import com.rajneeti.config.JwtProperties;
 import com.rajneeti.dto.game.GamePlayerDto;
 import com.rajneeti.dto.game.GameStateResponse;
+import com.rajneeti.dto.game.PendingActionDto;
 import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
@@ -173,5 +174,55 @@ class GameControllerTest {
                         .with(user(testPrincipal)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("NOT_YOUR_TURN"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/foreign-aid - Success (opens block window)")
+    void performForeignAid_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        response.setPendingAction(PendingActionDto.builder()
+                .type("FOREIGN_AID")
+                .actorUserId(testUserId)
+                .startedAt(java.time.LocalDateTime.now())
+                .build());
+
+        when(gameEngine.performForeignAid(eq(testMatchId), eq(testUserId))).thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/foreign-aid")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.pendingAction.type").value("FOREIGN_AID"))
+                .andExpect(jsonPath("$.data.pendingAction.actorUserId").value(testUserId.toString()));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/foreign-aid - Fails when not your turn (422)")
+    void performForeignAid_NotYourTurn() throws Exception {
+        when(gameEngine.performForeignAid(eq(testMatchId), eq(testUserId)))
+                .thenThrow(new BusinessException("NOT_YOUR_TURN", "It is not your turn."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/foreign-aid")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("NOT_YOUR_TURN"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/foreign-aid/resolve - Success")
+    void resolveForeignAid_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        response.getPlayers().get(0).setCoins(4);
+        response.setTurnNumber(2);
+
+        when(gameEngine.resolveForeignAid(eq(testMatchId), eq(testUserId), eq(false)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/foreign-aid/resolve?blocked=false")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.players[0].coins").value(4))
+                .andExpect(jsonPath("$.data.pendingAction").doesNotExist());
     }
 }

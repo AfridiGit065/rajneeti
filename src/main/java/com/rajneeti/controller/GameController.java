@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -21,8 +22,8 @@ import java.util.UUID;
  * gameplay actions.
  *
  * <p>Instant actions that resolve without a block/challenge window (income)
- * live here. Actions that open a response window (foreign aid, steal, ...)
- * arrive in a later module.
+ * and block-window actions with a minimal resolve seam (foreign aid) live
+ * here. The full Block Manager and Action Resolver arrive in later modules.
  */
 @Slf4j
 @RestController
@@ -63,6 +64,49 @@ public class GameController {
                 userPrincipal.getUsername(), matchId);
 
         GameStateResponse response = gameEngine.performIncome(matchId, userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/foreign-aid
+     * Declares Foreign Aid. Opens a block window (Minister can block).
+     * Does NOT award coins or advance the turn until resolved.
+     */
+    @PostMapping("/{matchId}/foreign-aid")
+    public ResponseEntity<ApiResponse<GameStateResponse>> performForeignAid(
+            @PathVariable UUID matchId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' performing Foreign Aid in match: {}",
+                userPrincipal.getUsername(), matchId);
+
+        GameStateResponse response = gameEngine.performForeignAid(matchId, userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/foreign-aid/resolve
+     * Resolves the pending Foreign Aid block window.
+     *
+     * <p>Minimal seam for Module 19 (Block Manager): once a full block
+     * manager exists it will call this after processing the real
+     * block/challenge flow. Today the frontend calls it when the demo
+     * block dialog is dismissed.
+     *
+     * @param blocked {@code true} if the Minister block succeeded,
+     *                {@code false} if no block or block failed
+     */
+    @PostMapping("/{matchId}/foreign-aid/resolve")
+    public ResponseEntity<ApiResponse<GameStateResponse>> resolveForeignAid(
+            @PathVariable UUID matchId,
+            @RequestParam boolean blocked,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' resolving Foreign Aid (blocked={}) in match: {}",
+                userPrincipal.getUsername(), blocked, matchId);
+
+        GameStateResponse response = gameEngine.resolveForeignAid(
+                matchId, userPrincipal.getId(), blocked);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

@@ -106,6 +106,16 @@ export class MockGameRepository implements GameRepository {
       turnCount: 11,
     });
   }
+
+  async resolveForeignAid(_matchId: string, blocked: boolean): Promise<Result<GameState>> {
+    await delay(350);
+    if (!blocked) {
+      const actor = this.state.players.find((p) => p.userId === (this.state.activeAction as { targetPlayerId?: string } | null)?.targetPlayerId) ?? this.state.players[0];
+      if (actor) actor.coins += 2;
+    }
+    this.state = { ...this.state, activeAction: null };
+    return ok(this.state);
+  }
 }
 
 function buildActionText(intent: ActionIntent): string {
