@@ -25,4 +25,8 @@ public class GameLogEntry {
     public static GameLogEntry info(String text) {
         return new GameLogEntry(UUID.randomUUID().toString(), LocalDateTime.now(), text, "info");
     }
+
+    public static GameLogEntry of(String kind, String text) {
+        return new GameLogEntry(UUID.randomUUID().toString(), LocalDateTime.now(), text, kind);
+    }
 }

@@ -5,11 +5,13 @@ import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchPlayer;
 import com.rajneeti.entity.Room;
 import com.rajneeti.entity.User;
+import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
+import com.rajneeti.service.TurnManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,9 +30,10 @@ import java.util.UUID;
  * initialization flow (Match -> GameState -> players -> coins -> cards -> ready
  * for the TurnManager) and exposes player-safe projections of the live state.
  *
- * <p>Turn progression is NOT implemented here — that is the responsibility of
- * the existing {@code TurnManager} (Module 09). Gameplay actions (income, tax,
- * steal, challenge, block, ...) are intentionally out of scope for this module.
+ * <p>Turn progression is delegated to the existing {@code TurnManager}
+ * (Module 09). Basic gameplay actions that resolve instantly (income) are
+ * implemented here; tax, steal, challenge, block, coup and the action resolver
+ * arrive in later modules.
  */
 @Slf4j
 @Service
@@ -43,6 +46,9 @@ public class GameEngine {
     /** Every player starts with 2 influence cards. */
     public static final int STARTING_INFLUENCE = CardManager.STARTING_HAND;
 
+    /** Income grants exactly 1 coin, unconditionally. */
+    public static final int INCOME_GAIN = 1;
+
     public static final String PHASE_SETUP = "setup";
     public static final String PHASE_IN_PROGRESS = "in_progress";
     public static final String PHASE_GAME_OVER = "game_over";
@@ -51,6 +57,7 @@ public class GameEngine {
     private final MatchPlayerRepository matchPlayerRepository;
     private final GameStore gameStore;
     private final CardManager cardManager;
+    private final TurnManager turnManager;
     private final GameStateMapper gameStateMapper;
 
     /**
@@ -187,5 +194,72 @@ public class GameEngine {
     public GameStateResponse getSafeGameState(UUID matchId, UUID viewerId) {
         GameState state = getOrInitialize(matchId);
         return gameStateMapper.toResponse(state, viewerId);
+    }
+
+    /**
+     * Performs the Income action for the current turn holder.
+     *
+     * <p>Income is the basic action: the player gains exactly {@value #INCOME_GAIN}
+     * coin. It claims no character, so it can never be blocked or challenged, and
+     * it resolves instantly — no response window is opened. The turn is advanced
+     * through the existing {@link TurnManager}.
+     *
+     * @param matchId the match ID
+     * @param userId  the acting player's user ID
+     * @return the updated player-safe game state
+     * @throws BusinessException with specific error codes for every rule
+     *                           violation (see implementation)
+     */
+    @Transactional
+    public GameStateResponse performIncome(UUID matchId, UUID userId) {
+        GameState state = getOrInitialize(matchId);
+
+        if (state.getStatus() != MatchStatus.IN_PROGRESS
+                && state.getStatus() != MatchStatus.CREATED) {
+            throw new BusinessException("MATCH_NOT_ACTIVE",
+                    "Cannot perform Income: match is not active.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Cannot perform Income: player is not part of this match."));
+
+        if (!userId.equals(state.getCurrentTurnPlayerId())) {
+            throw new BusinessException("NOT_YOUR_TURN",
+                    "It is not your turn.");
+        }
+
+        if (player.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("PLAYER_ELIMINATED",
+                    "Eliminated players cannot perform actions.");
+        }
+
+        if (player.getCards() == null || player.getCards().isEmpty()) {
+            throw new BusinessException("NO_INFLUENCE",
+                    "You need at least one influence card to perform an action.");
+        }
+
+        if (state.isActionExecuted()) {
+            throw new BusinessException("ACTION_ALREADY_PERFORMED",
+                    "You have already performed an action this turn.");
+        }
+
+        player.setCoins(player.getCoins() + INCOME_GAIN);
+        state.setActionExecuted(true);
+        state.getLog().add(GameLogEntry.of("action",
+                player.getUsername() + " performed Income: +" + INCOME_GAIN + " coin."));
+
+        Match match = turnManager.advanceTurn(matchId);
+        state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
+        state.setTurnNumber(match.getTurnNumber());
+        state.setActionExecuted(false);
+        state.setPhase(PHASE_IN_PROGRESS);
+
+        log.info("Player '{}' collected income in match {} (+{} coin), turn → {}",
+                player.getUsername(), matchId, INCOME_GAIN, match.getTurnNumber());
+
+        return gameStateMapper.toResponse(state, userId);
     }
 }

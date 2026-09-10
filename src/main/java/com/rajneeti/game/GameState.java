@@ -51,6 +51,13 @@ public class GameState {
     private Integer turnNumber;
 
     /**
+     * Whether the current turn holder has already performed a gameplay action
+     * (income, foreign aid, tax, ...) this turn. Reset to false on turn advance.
+     */
+    @Builder.Default
+    private boolean actionExecuted = false;
+
+    /**
      * Remaining draw deck. Server-side only: the hidden order and the remaining
      * card characters are never exposed to clients.
      */

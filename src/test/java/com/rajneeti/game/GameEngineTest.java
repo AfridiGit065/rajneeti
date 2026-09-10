@@ -10,6 +10,7 @@ import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
+import com.rajneeti.service.TurnManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class GameEngineTest {
 
     @Mock
     private MatchPlayerRepository matchPlayerRepository;
+
+    @Mock
+    private TurnManager turnManager;
 
     private final GameStore gameStore = new GameStore();
     private final CardManager cardManager = new CardManager();
@@ -70,7 +74,7 @@ class GameEngineTest {
                 .build();
 
         gameEngine = new GameEngine(
-                matchRepository, matchPlayerRepository, gameStore, cardManager, gameStateMapper);
+                matchRepository, matchPlayerRepository, gameStore, cardManager, turnManager, gameStateMapper);
     }
 
     private Match buildMatch() {

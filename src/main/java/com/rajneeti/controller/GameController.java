@@ -10,16 +10,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
 /**
- * REST controller exposing the live, player-safe game state.
+ * REST controller exposing the live, player-safe game state and instant
+ * gameplay actions.
  *
- * <p>Gameplay actions (income, tax, steal, challenge, block, coup, ...) are
- * intentionally NOT exposed here; they arrive in a later module.
+ * <p>Instant actions that resolve without a block/challenge window (income)
+ * live here. Actions that open a response window (foreign aid, steal, ...)
+ * arrive in a later module.
  */
 @Slf4j
 @RestController
@@ -43,6 +46,23 @@ public class GameController {
                 userPrincipal.getUsername(), matchId);
 
         GameStateResponse response = gameEngine.getSafeGameState(matchId, userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/income
+     * Performs the unblockable, unchallengeable Income action for the caller.
+     * Resolves instantly: +1 coin and the turn advances.
+     */
+    @PostMapping("/{matchId}/income")
+    public ResponseEntity<ApiResponse<GameStateResponse>> performIncome(
+            @PathVariable UUID matchId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' performing Income in match: {}",
+                userPrincipal.getUsername(), matchId);
+
+        GameStateResponse response = gameEngine.performIncome(matchId, userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

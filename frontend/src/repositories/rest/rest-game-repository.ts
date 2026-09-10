@@ -112,7 +112,8 @@ const notImplemented = (): Result<GameState> =>
  * REST-backed game repository.
  *
  * Reads the authoritative, player-safe game state from the backend game
- * engine. Gameplay actions (income, tax, steal, challenge, block, ...) belong
+ * engine. Instant gameplay actions (income) resolve against the backend.
+ * Actions that open a block/challenge window (foreign aid, steal, ...) belong
  * to a later module and currently resolve to NOT_IMPLEMENTED placeholders.
  */
 export class RestGameRepository implements GameRepository {
@@ -121,7 +122,11 @@ export class RestGameRepository implements GameRepository {
     return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }
 
-  async performAction(_matchId: string, _intent: ActionIntent): Promise<Result<GameState>> {
+  async performAction(matchId: string, intent: ActionIntent): Promise<Result<GameState>> {
+    if (intent.action === "income") {
+      const result = await apiClient.post<BackendGameState>(`/api/matches/${matchId}/income`);
+      return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+    }
     return notImplemented();
   }
 
