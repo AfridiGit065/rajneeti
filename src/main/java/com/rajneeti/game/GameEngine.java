@@ -41,7 +41,7 @@ public class GameEngine {
     public static final int STARTING_COINS = 2;
 
     /** Every player starts with 2 influence cards. */
-    public static final int STARTING_INFLUENCE = 2;
+    public static final int STARTING_INFLUENCE = CardManager.STARTING_HAND;
 
     public static final String PHASE_SETUP = "setup";
     public static final String PHASE_IN_PROGRESS = "in_progress";
@@ -50,7 +50,7 @@ public class GameEngine {
     private final MatchRepository matchRepository;
     private final MatchPlayerRepository matchPlayerRepository;
     private final GameStore gameStore;
-    private final DeckFactory deckFactory;
+    private final CardManager cardManager;
     private final GameStateMapper gameStateMapper;
 
     /**
@@ -88,7 +88,8 @@ public class GameEngine {
         Room room = match.getRoom();
         User host = room != null ? room.getHost() : null;
 
-        List<GameCard> deck = deckFactory.createShuffledDeck();
+        // CardManager builds and shuffles the deck, then deals the initial hands.
+        List<GameCard> deck = cardManager.createShuffledDeck();
 
         List<GamePlayerState> players = new ArrayList<>();
         List<UUID> turnOrder = new ArrayList<>();
@@ -107,10 +108,12 @@ public class GameEngine {
                     .cards(new ArrayList<>())
                     .build();
 
-            player.getCards().addAll(deckFactory.draw(deck, STARTING_INFLUENCE));
             players.add(player);
             turnOrder.add(user.getId());
         }
+
+        cardManager.dealInitialHands(deck, players);
+        cardManager.assertDeckIntegrity(deck, players);
 
         GameState state = GameState.builder()
                 .matchId(match.getId())

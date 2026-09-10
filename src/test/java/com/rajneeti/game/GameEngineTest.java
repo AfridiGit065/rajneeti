@@ -37,7 +37,7 @@ class GameEngineTest {
     private MatchPlayerRepository matchPlayerRepository;
 
     private final GameStore gameStore = new GameStore();
-    private final DeckFactory deckFactory = new DeckFactory();
+    private final CardManager cardManager = new CardManager();
     private final GameStateMapper gameStateMapper = new GameStateMapper();
 
     private GameEngine gameEngine;
@@ -70,7 +70,7 @@ class GameEngineTest {
                 .build();
 
         gameEngine = new GameEngine(
-                matchRepository, matchPlayerRepository, gameStore, deckFactory, gameStateMapper);
+                matchRepository, matchPlayerRepository, gameStore, cardManager, gameStateMapper);
     }
 
     private Match buildMatch() {
@@ -132,7 +132,7 @@ class GameEngineTest {
         int playerCards = state.getPlayers().stream()
                 .mapToInt(p -> p.getCards().size())
                 .sum();
-        assertThat(state.getDeck()).hasSize(DeckFactory.DECK_SIZE - playerCards);
+        assertThat(state.getDeck()).hasSize(CardManager.DECK_SIZE - playerCards);
         assertThat(playerCards).isEqualTo(players.size() * GameEngine.STARTING_INFLUENCE);
     }
 
@@ -152,7 +152,7 @@ class GameEngineTest {
             player.getCards().forEach(card -> assertThat(allIds.add(card.getId())).isTrue());
         }
         state.getDeck().forEach(card -> assertThat(allIds.add(card.getId())).isTrue());
-        assertThat(allIds).hasSize(DeckFactory.DECK_SIZE);
+        assertThat(allIds).hasSize(CardManager.DECK_SIZE);
     }
 
     @Test
