@@ -8,8 +8,11 @@ import com.rajneeti.entity.RoomPlayer;
 import com.rajneeti.entity.User;
 import com.rajneeti.entity.enums.RoomStatus;
 import com.rajneeti.exception.AlreadyInRoomException;
+import com.rajneeti.exception.InvalidRoomStateException;
+import com.rajneeti.exception.NotInRoomException;
 import com.rajneeti.exception.NotRoomHostException;
 import com.rajneeti.exception.RoomFullException;
+import com.rajneeti.exception.RoomNotFoundException;
 import com.rajneeti.exception.RoomNotJoinableException;
 import com.rajneeti.mapper.RoomMapper;
 import com.rajneeti.repository.RoomPlayerRepository;
@@ -107,6 +110,7 @@ class RoomServiceTest {
         assertThat(response.getCurrentPlayers()).isEqualTo(1);
         assertThat(response.getPlayers().get(0).getSeatNumber()).isEqualTo(1);
         assertThat(response.getPlayers().get(0).getIsHost()).isTrue();
+        assertThat(response.getPlayers().get(0).getReady()).isFalse();
     }
 
     @Test
@@ -143,6 +147,7 @@ class RoomServiceTest {
         assertThat(response.getCurrentPlayers()).isEqualTo(2);
         assertThat(response.getPlayers().get(1).getUsername()).isEqualTo("guestPlayer");
         assertThat(response.getPlayers().get(1).getSeatNumber()).isEqualTo(2);
+        assertThat(response.getPlayers().get(1).getReady()).isFalse();
     }
 
     @Test
@@ -235,5 +240,98 @@ class RoomServiceTest {
         assertThat(response).isNotNull();
         assertThat(player.getReady()).isTrue();
         verify(roomPlayerRepository).save(player);
+    }
+
+    @Test
+    @DisplayName("Set Ready Status - Unready works")
+    void setReadyStatus_Unready() {
+        UUID roomId = UUID.randomUUID();
+        Room room = Room.builder()
+                .id(roomId)
+                .host(hostUser)
+                .status(RoomStatus.WAITING)
+                .build();
+
+        RoomPlayer player = RoomPlayer.builder()
+                .id(UUID.randomUUID())
+                .room(room)
+                .user(hostUser)
+                .seatNumber(1)
+                .ready(true)
+                .build();
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(roomPlayerRepository.findByRoomIdAndUserId(roomId, hostId)).thenReturn(Optional.of(player));
+        when(roomPlayerRepository.findByRoomIdOrderBySeatNumberAsc(roomId)).thenReturn(List.of(player));
+
+        RoomResponse response = roomService.setReadyStatus(roomId, hostId, false);
+
+        assertThat(response).isNotNull();
+        assertThat(player.getReady()).isFalse();
+        verify(roomPlayerRepository).save(player);
+    }
+
+    @Test
+    @DisplayName("Set Ready Status - Fails if room does not exist")
+    void setReadyStatus_RoomNotFound() {
+        UUID roomId = UUID.randomUUID();
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomService.setReadyStatus(roomId, hostId, true))
+                .isInstanceOf(RoomNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Set Ready Status - Fails if match has already started")
+    void setReadyStatus_RoomNotWaiting() {
+        UUID roomId = UUID.randomUUID();
+        Room room = Room.builder()
+                .id(roomId)
+                .host(hostUser)
+                .status(RoomStatus.IN_GAME)
+                .build();
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> roomService.setReadyStatus(roomId, hostId, true))
+                .isInstanceOf(InvalidRoomStateException.class)
+                .hasMessageContaining("Cannot change readiness");
+    }
+
+    @Test
+    @DisplayName("Set Ready Status - Fails if player is not in room (ready)")
+    void setReadyStatus_NotInRoom_Ready() {
+        UUID roomId = UUID.randomUUID();
+        Room room = Room.builder()
+                .id(roomId)
+                .host(hostUser)
+                .status(RoomStatus.WAITING)
+                .build();
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(roomPlayerRepository.findByRoomIdAndUserId(roomId, playerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomService.setReadyStatus(roomId, playerId, true))
+                .isInstanceOf(NotInRoomException.class)
+                .hasMessageContaining("not seated");
+    }
+
+    @Test
+    @DisplayName("Set Ready Status - Fails if player is not in room (unready)")
+    void setReadyStatus_NotInRoom_Unready() {
+        UUID roomId = UUID.randomUUID();
+        Room room = Room.builder()
+                .id(roomId)
+                .host(hostUser)
+                .status(RoomStatus.WAITING)
+                .build();
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(room));
+        when(roomPlayerRepository.findByRoomIdAndUserId(roomId, playerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomService.setReadyStatus(roomId, playerId, false))
+                .isInstanceOf(NotInRoomException.class)
+                .hasMessageContaining("not seated");
     }
 }

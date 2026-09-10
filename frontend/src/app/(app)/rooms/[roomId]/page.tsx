@@ -55,6 +55,7 @@ export default function RoomDetailPage() {
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [readyLoading, setReadyLoading] = useState(false);
+  const [readyError, setReadyError] = useState<string | null>(null);
   const [startLoading, setStartLoading] = useState(false);
   const [startDialogOpen, setStartDialogOpen] = useState(false);
 
@@ -104,10 +105,19 @@ export default function RoomDetailPage() {
   async function toggleReady() {
     if (!room) return;
     const newReady = !(me?.isReady ?? false);
+    setReadyError(null);
     setReadyLoading(true);
     const result = await RoomService.setReady(room.roomId, newReady);
     setReadyLoading(false);
-    if (result.ok) setActiveRoom(result.data);
+    if (result.ok) {
+      setActiveRoom(result.data);
+    } else {
+      setReadyError(
+        result.error.status === 401
+          ? "Session expired. Please sign in again."
+          : result.error.message,
+      );
+    }
   }
 
   async function confirmStartMatch() {
@@ -279,6 +289,11 @@ export default function RoomDetailPage() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:w-64">
+                  {readyError ? (
+                    <p role="alert" className="text-xs text-crimson-300">
+                      {readyError}
+                    </p>
+                  ) : null}
                   <ReadyButton
                     isReady={me.isReady}
                     loading={readyLoading}

@@ -61,7 +61,7 @@ export class MockRoomRepository implements RoomRepository {
           user: MOCK_CURRENT_USER,
           seatIndex: 0,
           isHost: true,
-          isReady: true,
+          isReady: false,
           joinedAt: new Date().toISOString(),
         },
       ],

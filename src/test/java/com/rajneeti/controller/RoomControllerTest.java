@@ -8,6 +8,8 @@ import com.rajneeti.dto.room.JoinRoomRequest;
 import com.rajneeti.dto.room.RoomResponse;
 import com.rajneeti.entity.enums.RoomStatus;
 import com.rajneeti.exception.GlobalExceptionHandler;
+import com.rajneeti.exception.InvalidRoomStateException;
+import com.rajneeti.exception.NotInRoomException;
 import com.rajneeti.exception.NotRoomHostException;
 import com.rajneeti.exception.RoomNotFoundException;
 import com.rajneeti.security.JwtAuthenticationEntryPoint;
@@ -42,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = RoomController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class, JwtAuthenticationEntryPoint.class})
 class RoomControllerTest {
 
     @Autowired
@@ -53,9 +55,6 @@ class RoomControllerTest {
 
     @MockBean
     private RoomService roomService;
-
-    @MockBean
-    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @MockBean
     private UserDetailsService userDetailsService;
@@ -161,5 +160,93 @@ class RoomControllerTest {
                         .with(user(testPrincipal)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("POST /api/rooms/{roomId}/ready - Success")
+    void setReady_Success() throws Exception {
+        RoomResponse response = RoomResponse.builder()
+                .id(testRoomId)
+                .roomCode("RAJ100")
+                .status(RoomStatus.WAITING)
+                .currentPlayers(2)
+                .build();
+
+        when(roomService.setReadyStatus(eq(testRoomId), eq(testUserId), eq(true))).thenReturn(response);
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/ready")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.roomCode").value("RAJ100"));
+    }
+
+    @Test
+    @DisplayName("POST /api/rooms/{roomId}/unready - Success")
+    void setUnready_Success() throws Exception {
+        RoomResponse response = RoomResponse.builder()
+                .id(testRoomId)
+                .roomCode("RAJ100")
+                .status(RoomStatus.WAITING)
+                .currentPlayers(2)
+                .build();
+
+        when(roomService.setReadyStatus(eq(testRoomId), eq(testUserId), eq(false))).thenReturn(response);
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/unready")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.roomCode").value("RAJ100"));
+    }
+
+    @Test
+    @DisplayName("POST /api/rooms/{roomId}/ready - Unauthorized without authentication")
+    void setReady_Unauthorized() throws Exception {
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/ready"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("POST /api/rooms/{roomId}/unready - Unauthorized without authentication")
+    void setUnready_Unauthorized() throws Exception {
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/unready"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("POST /api/rooms/{roomId}/ready - Fails if player is not in room (400)")
+    void setReady_NotInRoom() throws Exception {
+        doThrow(new NotInRoomException("You are not seated in this room."))
+                .when(roomService).setReadyStatus(eq(testRoomId), eq(testUserId), eq(true));
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/ready")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("NOT_IN_ROOM"));
+    }
+
+    @Test
+    @DisplayName("POST /api/rooms/{roomId}/ready - Fails if room does not exist (404)")
+    void setReady_RoomNotFound() throws Exception {
+        doThrow(new RoomNotFoundException("Room not found"))
+                .when(roomService).setReadyStatus(eq(testRoomId), eq(testUserId), eq(true));
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/ready")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("POST /api/rooms/{roomId}/ready - Fails if match already started (400)")
+    void setReady_RoomNotWaiting() throws Exception {
+        doThrow(new InvalidRoomStateException("Cannot change readiness when room status is IN_GAME"))
+                .when(roomService).setReadyStatus(eq(testRoomId), eq(testUserId), eq(true));
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/ready")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVALID_ROOM_STATE"));
     }
 }
