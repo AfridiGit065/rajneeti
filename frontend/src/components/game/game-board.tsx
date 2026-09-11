@@ -159,7 +159,12 @@ export function GameBoard({ matchId }: { matchId: string }) {
     setBusy(actionId);
     const result = await GameService.performAction(matchId, {
       action: actionId,
-      claimedCharacter: actionId === "tax" ? ("minister" as const) : undefined,
+      claimedCharacter:
+        actionId === "tax"
+          ? ("minister" as const)
+          : actionId === "steal"
+            ? ("dalal" as const)
+            : undefined,
       targetPlayerId,
     });
     setBusy(null);

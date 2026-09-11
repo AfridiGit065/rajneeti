@@ -77,16 +77,27 @@ class MatchActionServiceTest {
     private Room room;
     private Match match;
     private MatchPlayer hostPlayer;
+    private User guestUser;
+    private UUID guestId;
+    private MatchPlayer guestPlayer;
 
     @BeforeEach
     void setUp() {
         hostId = UUID.randomUUID();
         matchId = UUID.randomUUID();
+        guestId = UUID.randomUUID();
 
         hostUser = User.builder()
                 .id(hostId)
                 .username("hostPlayer")
                 .email("host@rajneeti.com")
+                .rating(1000)
+                .build();
+
+        guestUser = User.builder()
+                .id(guestId)
+                .username("guestPlayer")
+                .email("guest@rajneeti.com")
                 .rating(1000)
                 .build();
 
@@ -116,6 +127,17 @@ class MatchActionServiceTest {
                 .playerStatus(PlayerStatus.ACTIVE)
                 .eliminated(false)
                 .build();
+
+        guestPlayer = MatchPlayer.builder()
+                .id(UUID.randomUUID())
+                .match(match)
+                .user(guestUser)
+                .seatNumber(2)
+                .coins(2)
+                .coinsAtEnd(0)
+                .playerStatus(PlayerStatus.ACTIVE)
+                .eliminated(false)
+                .build();
     }
 
     private ActionRequest taxRequest() {
@@ -123,6 +145,22 @@ class MatchActionServiceTest {
                 .action(MatchActionType.TAX)
                 .claimedCharacter(CharacterType.MINISTER)
                 .build();
+    }
+
+    private ActionRequest stealRequest() {
+        return ActionRequest.builder()
+                .action(MatchActionType.STEAL)
+                .claimedCharacter(CharacterType.DALAL)
+                .targetPlayerId(guestId)
+                .build();
+    }
+
+    private void stubStealPreconditions(MatchPlayer actor) {
+        when(matchRepository.findById(matchId)).thenReturn(Optional.of(match));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, hostId)).thenReturn(Optional.of(actor));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, guestId)).thenReturn(Optional.of(guestPlayer));
+        when(turnManager.isPlayerTurn(matchId, hostId)).thenReturn(true);
+        when(matchRepository.save(any(Match.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
@@ -280,5 +318,148 @@ class MatchActionServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo("MATCH_NOT_ACTIVE");
+    }
+
+    @Test
+    @DisplayName("Steal - current player can steal from a valid target with Dalal")
+    void performAction_Steal_Success() {
+        stubStealPreconditions(hostPlayer);
+
+        MatchActionResponse response = matchService.performAction(matchId, hostId, stealRequest());
+
+        assertThat(response).isNotNull();
+        assertThat(response.getAction()).isEqualTo(MatchActionType.STEAL);
+        assertThat(response.getClaimedCharacter()).isEqualTo(CharacterType.DALAL);
+        assertThat(response.getActorUserId()).isEqualTo(hostId);
+        assertThat(response.getTargetUserId()).isEqualTo(guestId);
+        assertThat(response.getStatus()).isEqualTo(PendingActionStatus.AWAITING_CHALLENGE);
+        assertThat(response.getCoinsToAward()).isEqualTo(2);
+
+        assertThat(match.getPendingAction()).isNotNull();
+        assertThat(match.getPendingAction().getTargetUserId()).isEqualTo(guestId);
+        verify(matchRepository).save(match);
+    }
+
+    @Test
+    @DisplayName("Steal - current player cannot target self")
+    void performAction_Steal_TargetSelf() {
+        when(matchRepository.findById(matchId)).thenReturn(Optional.of(match));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, hostId)).thenReturn(Optional.of(hostPlayer));
+        when(turnManager.isPlayerTurn(matchId, hostId)).thenReturn(true);
+
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.STEAL)
+                .claimedCharacter(CharacterType.DALAL)
+                .targetPlayerId(hostId)
+                .build();
+
+        assertThatThrownBy(() -> matchService.performAction(matchId, hostId, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo("CANNOT_TARGET_SELF");
+    }
+
+    @Test
+    @DisplayName("Steal - eliminated/inactive target rejected")
+    void performAction_Steal_EliminatedTarget() {
+        guestPlayer.setPlayerStatus(PlayerStatus.ELIMINATED);
+        guestPlayer.setEliminated(true);
+
+        when(matchRepository.findById(matchId)).thenReturn(Optional.of(match));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, hostId)).thenReturn(Optional.of(hostPlayer));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, guestId)).thenReturn(Optional.of(guestPlayer));
+        when(turnManager.isPlayerTurn(matchId, hostId)).thenReturn(true);
+
+        assertThatThrownBy(() -> matchService.performAction(matchId, hostId, stealRequest()))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo("TARGET_ELIMINATED");
+    }
+
+    @Test
+    @DisplayName("Steal - invalid target (not in match) rejected")
+    void performAction_Steal_InvalidTarget() {
+        UUID strangerId = UUID.randomUUID();
+
+        when(matchRepository.findById(matchId)).thenReturn(Optional.of(match));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, hostId)).thenReturn(Optional.of(hostPlayer));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, strangerId)).thenReturn(Optional.empty());
+        when(turnManager.isPlayerTurn(matchId, hostId)).thenReturn(true);
+
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.STEAL)
+                .claimedCharacter(CharacterType.DALAL)
+                .targetPlayerId(strangerId)
+                .build();
+
+        assertThatThrownBy(() -> matchService.performAction(matchId, hostId, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo("INVALID_TARGET");
+    }
+
+    @Test
+    @DisplayName("Steal - zero-coin target rejected (target has no valid coin state)")
+    void performAction_Steal_TargetNoCoins() {
+        guestPlayer.setCoins(0);
+
+        when(matchRepository.findById(matchId)).thenReturn(Optional.of(match));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, hostId)).thenReturn(Optional.of(hostPlayer));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, guestId)).thenReturn(Optional.of(guestPlayer));
+        when(turnManager.isPlayerTurn(matchId, hostId)).thenReturn(true);
+
+        assertThatThrownBy(() -> matchService.performAction(matchId, hostId, stealRequest()))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo("TARGET_NO_COINS");
+    }
+
+    @Test
+    @DisplayName("Steal - missing target rejected")
+    void performAction_Steal_MissingTarget() {
+        when(matchRepository.findById(matchId)).thenReturn(Optional.of(match));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, hostId)).thenReturn(Optional.of(hostPlayer));
+        when(turnManager.isPlayerTurn(matchId, hostId)).thenReturn(true);
+
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.STEAL)
+                .claimedCharacter(CharacterType.DALAL)
+                .build();
+
+        assertThatThrownBy(() -> matchService.performAction(matchId, hostId, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo("TARGET_REQUIRED");
+    }
+
+    @Test
+    @DisplayName("Steal - DALAL ownership is not required (bluff accepted)")
+    void performAction_Steal_DalalNotRequired() {
+        stubStealPreconditions(hostPlayer);
+
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.STEAL)
+                .targetPlayerId(guestId)
+                .build();
+
+        MatchActionResponse response = matchService.performAction(matchId, hostId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getClaimedCharacter()).isEqualTo(CharacterType.DALAL);
+        assertThat(response.getStatus()).isEqualTo(PendingActionStatus.AWAITING_CHALLENGE);
+    }
+
+    @Test
+    @DisplayName("Steal - no coins transferred before challenge resolution")
+    void performAction_Steal_NoTransferBeforeResolution() {
+        stubStealPreconditions(hostPlayer);
+
+        matchService.performAction(matchId, hostId, stealRequest());
+
+        assertThat(hostPlayer.getCoins()).isZero();
+        assertThat(guestPlayer.getCoins()).isEqualTo(2);
+        assertThat(match.getPendingAction().getStatus()).isEqualTo(PendingActionStatus.AWAITING_CHALLENGE);
+        verify(matchPlayerRepository, never()).save(any(MatchPlayer.class));
+        verify(turnManager, never()).advanceTurn(matchId);
     }
 }

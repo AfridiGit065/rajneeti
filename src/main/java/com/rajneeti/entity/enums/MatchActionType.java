@@ -8,7 +8,7 @@ public enum MatchActionType {
     INCOME(false, 1),
     FOREIGN_AID(false, 2),
     TAX(true, 3),
-    STEAL(true, null),
+    STEAL(true, 2),
     EXCHANGE(false, null),
     ASSASSINATE(true, null),
     COUP(false, null);
