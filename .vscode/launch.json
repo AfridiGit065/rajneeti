@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "RajneetiApplication",
+            "request": "launch",
+            "mainClass": "com.rajneeti.RajneetiApplication",
+            "projectName": "rajneeti-backend",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

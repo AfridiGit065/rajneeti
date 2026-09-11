@@ -13,6 +13,7 @@ import com.rajneeti.exception.MatchAlreadyExistsException;
 import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.exception.NotRoomHostException;
 import com.rajneeti.exception.RoomNotFoundException;
+import com.rajneeti.game.GameEngine;
 import com.rajneeti.mapper.MatchMapper;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
@@ -64,6 +65,9 @@ class MatchServiceTest {
 
     @Mock
     private TurnManager turnManager;
+
+    @Mock
+    private GameEngine gameEngine;
 
     @Spy
     private MatchMapper matchMapper = new MatchMapper();

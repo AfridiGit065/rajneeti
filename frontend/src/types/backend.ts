@@ -82,3 +82,64 @@ export interface BackendTurnInfo {
   turnOrder?: string[];
   activePlayerCount?: number;
 }
+
+export interface BackendGameCard {
+  cardId: string;
+  characterId: "minister" | "ghatok" | "dalal" | "amla" | "goyenda";
+}
+
+export interface BackendGamePlayer {
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  seatIndex: number;
+  status: "ACTIVE" | "ELIMINATED";
+  host: boolean;
+  alive: boolean;
+  turn: boolean;
+  coins: number;
+  influenceCount: number;
+  /** Present only for the requesting player's own hand; null for opponents. */
+  cards?: BackendGameCard[];
+}
+
+export interface BackendGameLogEntry {
+  id: string;
+  timestamp: string;
+  text: string;
+  kind: string;
+}
+
+export type BackendGameStatus = "CREATED" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
+
+export interface BackendPendingAction {
+  type: string;
+  actorUserId: string;
+  startedAt: string;
+  /** The claimed character (e.g. "amla" for Exchange, "ghatok" for Assassination). */
+  claimedCharacter?: string;
+  /** The exchange card pool (only present for the action's own actor). */
+  exchangePool?: BackendGameCard[];
+  /** The target player for single-target actions (e.g. Assassination). */
+  targetPlayerId?: string;
+}
+
+export interface BackendGameState {
+  matchId: string;
+  roomId: string;
+  roomCode: string;
+  status: BackendGameStatus;
+  phase: "setup" | "in_progress" | "game_over";
+  hostUserId: string;
+  players: BackendGamePlayer[];
+  currentTurnPlayerId?: string;
+  turnNumber: number;
+  turnOrder?: string[];
+  deckCount: number;
+  revealedCardsCount: number;
+  winnerUserId?: string;
+  log: BackendGameLogEntry[];
+  pendingAction?: BackendPendingAction;
+  startedAt: string;
+  endedAt?: string;
+}

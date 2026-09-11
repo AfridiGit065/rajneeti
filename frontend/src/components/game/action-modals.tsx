@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
@@ -46,8 +45,6 @@ export function ActionModals({
   setModalStep,
   onConfirm,
 }: ActionModalsProps) {
-  const [exchangeSelected, setExchangeSelected] = useState<number[]>([0, 1]);
-
   if (modalStep.type === "none") return null;
 
   return (
@@ -326,7 +323,7 @@ export function ActionModals({
           </div>
         )}
 
-        {/* 5. Exchange UI */}
+        {/* 5. Exchange UI - Intent Confirmation */}
         {modalStep.type === "exchange_ui" && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -348,52 +345,30 @@ export function ActionModals({
               </div>
             </div>
 
-            <p className="text-xs text-parchment-300 font-bengali leading-relaxed">
-              আমলা দাবি করে আপনি ডেক থেকে ২টি নতুন কার্ড তুলবেন। এরপর মোট কার্ডগুলোর মধ্য থেকে যেকোনো ২টি কার্ড রেখে বাকিগুলো ডেকে ফেরত পাঠাবেন:
-            </p>
+            <div className="rounded-xl border border-gold-500/40 bg-gradient-to-b from-deep-900 to-deep-950 p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="relative size-12 rounded-lg overflow-hidden border border-gold-400 shrink-0">
+                  <Image
+                    src="/assets/cards/amla.png"
+                    alt="Amla"
+                    fill
+                    className="object-cover object-top"
+                  />
+                </div>
+                <div>
+                  <span className="font-bengali text-xs font-bold text-gold-300">
+                    চরিত্র দাবি: আমলা (The Amla)
+                  </span>
+                  <p className="text-[11px] text-muted font-bengali">
+                    কার্ড বদলের জন্য আপনাকে প্রকাশ্যে &apos;আমলা&apos; দাবি করতে হবে।
+                  </p>
+                </div>
+              </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {["মন্ত্রী (হাত)", "ঘাতক (হাত)", "আমলা (নতুন)", "দালাল (নতুন)"].map(
-                (cardName, idx) => {
-                  const isSelected = exchangeSelected.includes(idx);
-                  return (
-                    <button
-                      key={cardName}
-                      type="button"
-                      onClick={() => {
-                        if (isSelected) {
-                          if (exchangeSelected.length > 1) {
-                            setExchangeSelected(exchangeSelected.filter((i) => i !== idx));
-                          }
-                        } else {
-                          if (exchangeSelected.length < 2) {
-                            setExchangeSelected([...exchangeSelected, idx]);
-                          } else {
-                            setExchangeSelected([exchangeSelected[1]!, idx]);
-                          }
-                        }
-                      }}
-                      className={cn(
-                        "flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer select-none",
-                        isSelected
-                          ? "border-gold-400 bg-gold-500/15 shadow-gold text-gold-300"
-                          : "border-white/10 bg-deep-900 text-muted hover:border-white/20",
-                      )}
-                    >
-                      <span className="font-cinzel text-xs font-bold">কার্ড #{idx + 1}</span>
-                      <span className="font-bengali text-xs mt-1 font-bold">{cardName}</span>
-                      <span className="text-[10px] mt-1 font-mono">
-                        {isSelected ? "✓ রাখবেন" : "ফেরত"}
-                      </span>
-                    </button>
-                  );
-                },
-              )}
+              <div className="rounded-lg border border-white/5 bg-deep-950 p-2.5 text-xs text-parchment-300 font-bengali leading-relaxed">
+                ⚠️ এটি <strong className="text-gold-300">চ্যালেঞ্জযোগ্য</strong>। ডেক থেকে ২টি নতুন কার্ড তুলে ২টি রেখে বাকিগুলো ফেরত দেবেন। চ্যালেঞ্জ সফল হলে ১টি ইনফ্লুয়েন্স হারাবেন।
+              </div>
             </div>
-
-            <p className="text-[11px] text-center text-muted font-bengali">
-              নির্বাচিত কার্ড সংখ্যা: {exchangeSelected.length}/২
-            </p>
 
             <div className="flex gap-2">
               <Button variant="ghost" fullWidth onClick={onClose}>
@@ -402,13 +377,12 @@ export function ActionModals({
               <Button
                 variant="premium"
                 fullWidth
-                disabled={exchangeSelected.length !== 2}
                 onClick={() => {
                   onConfirm("exchange");
                   onClose();
                 }}
               >
-                বদল সম্পন্ন করুন
+                আমলা দাবি করে বদল শুরু করুন
               </Button>
             </div>
           </div>

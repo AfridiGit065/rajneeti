@@ -4,17 +4,18 @@ import type { GameRepository } from "./game-repository";
 import type { MetaRepository } from "./meta-repository";
 import { RestAuthRepository } from "./rest/rest-auth-repository";
 import { RestRoomRepository } from "./rest/rest-room-repository";
-import { MockGameRepository } from "./mock/mock-game-repository";
+import { RestGameRepository } from "./rest/rest-game-repository";
 import { MockMetaRepository } from "./mock/mock-meta-repository";
 
 /**
- * Repository factory for the Phase 1 REST API. Game and meta repositories stay mock-backed
- * until their corresponding backend modules are available.
+ * Repository factory. Auth, room and match routes talk to the REST backend.
+ * The game repository reads the real backend game state; gameplay actions are
+ * still placeholders until their module lands.
  */
 export const repositories = {
   auth: new RestAuthRepository() as AuthRepository,
   room: new RestRoomRepository() as RoomRepository,
-  game: new MockGameRepository() as GameRepository,
+  game: new RestGameRepository() as GameRepository,
   meta: new MockMetaRepository() as MetaRepository,
 };
 
