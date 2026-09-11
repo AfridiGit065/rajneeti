@@ -18,7 +18,6 @@ import com.rajneeti.entity.enums.RoomStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.MatchAlreadyExistsException;
 import com.rajneeti.exception.MatchNotFoundException;
-import com.rajneeti.game.GameEngine;
 import com.rajneeti.exception.NotRoomHostException;
 import com.rajneeti.exception.RoomNotFoundException;
 import com.rajneeti.mapper.MatchMapper;
@@ -55,7 +54,6 @@ public class MatchServiceImpl implements MatchService {
     private final RoomService            roomService;
     private final MatchMapper            matchMapper;
     private final TurnManager            turnManager;
-    private final GameEngine             gameEngine;
 
     @Override
     @Transactional
@@ -121,10 +119,7 @@ public class MatchServiceImpl implements MatchService {
         savedMatch.setStartedAt(LocalDateTime.now());
         turnManager.assignFirstTurn(savedMatch, matchPlayers);
 
-        // 10. Initialize the in-memory game state (deck, coins, influence cards)
-        gameEngine.initializeMatch(savedMatch.getId());
-
-        // 11. Transition room status to IN_GAME
+        // 10. Transition room status to IN_GAME
         room.setStatus(RoomStatus.IN_GAME);
         roomRepository.save(room);
 
@@ -132,7 +127,7 @@ public class MatchServiceImpl implements MatchService {
                 savedMatch.getId(), room.getRoomCode(), matchPlayers.size(),
                 room.getHost().getUsername());
 
-        // 12. Return match response
+        // 11. Return match response
         return matchMapper.toMatchResponse(savedMatch, matchPlayers);
     }
 
@@ -224,7 +219,7 @@ public class MatchServiceImpl implements MatchService {
         MatchActionType actionType = request.getAction();
 
         // 7. Validate the action type is supported
-        if (actionType != MatchActionType.TAX) {
+        if (actionType != MatchActionType.TAX && actionType != MatchActionType.STEAL) {
             throw new BusinessException("ACTION_NOT_SUPPORTED",
                     "Action '" + actionType + "' is not implemented yet.");
         }
@@ -232,12 +227,18 @@ public class MatchServiceImpl implements MatchService {
         // 8. Validate the claimed character for the action
         CharacterType claimedCharacter = resolveClaimedCharacter(request);
 
-        // 9. Persist the pending action (challenge window). No coins awarded yet.
+        // 9. Validate the target player when the action targets another player
+        UUID targetUserId = request.getTargetPlayerId();
+        if (actionType == MatchActionType.STEAL) {
+            targetUserId = validateStealTarget(match, player, targetUserId);
+        }
+
+        // 10. Persist the pending action (challenge window). No coins awarded yet.
         PendingAction pendingAction = PendingAction.builder()
                 .actionType(actionType)
                 .claimedCharacter(claimedCharacter)
                 .actorUserId(userId)
-                .targetUserId(request.getTargetPlayerId())
+                .targetUserId(targetUserId)
                 .status(PendingActionStatus.AWAITING_CHALLENGE)
                 .coinsToAward(actionType.getGainCoins())
                 .createdAt(LocalDateTime.now())
@@ -256,6 +257,18 @@ public class MatchServiceImpl implements MatchService {
     private CharacterType resolveClaimedCharacter(ActionRequest request) {
         CharacterType claimed = request.getClaimedCharacter();
 
+        if (request.getAction() == MatchActionType.STEAL) {
+            // Steal claims the Dalal. Possession is never checked — this is a bluff game.
+            if (claimed == null) {
+                return CharacterType.DALAL;
+            }
+            if (claimed != CharacterType.DALAL) {
+                throw new BusinessException("INVALID_CLAIM",
+                        "Steal can only claim the " + CharacterType.DALAL + ".");
+            }
+            return claimed;
+        }
+
         // Tax claims the Minister; default the claim if not provided.
         if (claimed == null) {
             return CharacterType.MINISTER;
@@ -265,5 +278,34 @@ public class MatchServiceImpl implements MatchService {
                     "Tax can only claim the " + CharacterType.MINISTER + ".");
         }
         return claimed;
+    }
+
+    private UUID validateStealTarget(Match match, MatchPlayer actor, UUID targetUserId) {
+        if (targetUserId == null) {
+            throw new BusinessException("TARGET_REQUIRED",
+                    "Steal requires a target player.");
+        }
+        if (actor.getUser().getId().equals(targetUserId)) {
+            throw new BusinessException("CANNOT_TARGET_SELF",
+                    "You cannot steal from yourself.");
+        }
+
+        MatchPlayer target = matchPlayerRepository.findByMatchIdAndUserId(match.getId(), targetUserId)
+                .orElseThrow(() -> new BusinessException("INVALID_TARGET",
+                        "Target player is not in this match."));
+
+        if (target.getPlayerStatus() == PlayerStatus.ELIMINATED || Boolean.TRUE.equals(target.getEliminated())) {
+            throw new BusinessException("TARGET_ELIMINATED",
+                    "The target player is eliminated.");
+        }
+
+        // Established rule: a target with no coins cannot be stolen from.
+        Integer targetCoins = target.getCoins();
+        if (targetCoins == null || targetCoins <= 0) {
+            throw new BusinessException("TARGET_NO_COINS",
+                    "The target player has no coins to steal.");
+        }
+
+        return targetUserId;
     }
 }

@@ -264,6 +264,67 @@ class MatchControllerTest {
     }
 
     @Test
+    @DisplayName("POST /{roomId}/match/{matchId}/actions - Steal success")
+    void performAction_Steal_Success() throws Exception {
+        UUID targetId = UUID.randomUUID();
+
+        MatchActionResponse response = MatchActionResponse.builder()
+                .matchId(testMatchId)
+                .roomId(testRoomId)
+                .action(MatchActionType.STEAL)
+                .claimedCharacter(CharacterType.DALAL)
+                .actorUserId(testUserId)
+                .actorUsername("gamer1")
+                .targetUserId(targetId)
+                .status(PendingActionStatus.AWAITING_CHALLENGE)
+                .coinsToAward(2)
+                .currentTurnPlayerId(testUserId)
+                .turnNumber(1)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.STEAL)
+                .claimedCharacter(CharacterType.DALAL)
+                .targetPlayerId(targetId)
+                .build();
+
+        when(matchService.performAction(eq(testMatchId), eq(testUserId), eq(request)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/match/" + testMatchId + "/actions")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.action").value("STEAL"))
+                .andExpect(jsonPath("$.data.claimedCharacter").value("DALAL"))
+                .andExpect(jsonPath("$.data.targetUserId").value(targetId.toString()))
+                .andExpect(jsonPath("$.data.status").value("AWAITING_CHALLENGE"));
+    }
+
+    @Test
+    @DisplayName("POST /{roomId}/match/{matchId}/actions - Cannot target self (422)")
+    void performAction_Steal_CannotTargetSelf() throws Exception {
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.STEAL)
+                .claimedCharacter(CharacterType.DALAL)
+                .targetPlayerId(testUserId)
+                .build();
+
+        when(matchService.performAction(eq(testMatchId), eq(testUserId), eq(request)))
+                .thenThrow(new BusinessException("CANNOT_TARGET_SELF", "You cannot steal from yourself."));
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/match/" + testMatchId + "/actions")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("CANNOT_TARGET_SELF"));
+    }
+
+    @Test
     @DisplayName("POST /{roomId}/match/{matchId}/actions - Unauthorized (401)")
     void performAction_Unauthorized() throws Exception {
         ActionRequest request = ActionRequest.builder()
