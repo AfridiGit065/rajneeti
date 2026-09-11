@@ -97,6 +97,25 @@ public class CardManager {
     }
 
     /**
+     * Draws the bottom card of the deck (index 0).
+     *
+     * <p>Used when a card has just been returned to the deck and must not be
+     * immediately redrawn — e.g. the replacement drawn after a truthful
+     * challenge reveals a card ({@link #returnToDeck} appends to the end, so the
+     * character just revealed cannot be drawn straight back).
+     *
+     * @param deck the live deck (in {@code GameState})
+     * @return the drawn card
+     * @throws BusinessException {@code EMPTY_DECK} when the deck is exhausted
+     */
+    public GameCard drawFirst(List<GameCard> deck) {
+        if (deck == null || deck.isEmpty()) {
+            throw new BusinessException("EMPTY_DECK", "Cannot draw: the deck is empty.");
+        }
+        return deck.remove(0);
+    }
+
+    /**
      * Draws up to {@code count} cards. Stops early only if the deck runs out;
      * the caller is expected to plan draws against the known deck size.
      */

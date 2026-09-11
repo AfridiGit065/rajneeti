@@ -42,4 +42,19 @@ public class PendingActionDto {
      * Assassination. Public information; {@code null} otherwise.
      */
     private UUID targetPlayerId;
+
+    /** Module 18 — user ID of the opponent who challenged a truthful claim. */
+    private UUID challengerUserId;
+
+    /**
+     * Module 19 — user ID of the player who submitted a block claim against
+     * this pending action. {@code null} until a block is in play.
+     */
+    private UUID blockerUserId;
+
+    /**
+     * Module 19 — lower-case character id the blocker asserted (e.g.
+     * {@code "minister"}). {@code null} until a block is submitted.
+     */
+    private String blockedCharacter;
 }

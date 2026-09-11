@@ -10,6 +10,8 @@ import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.GlobalExceptionHandler;
 import com.rajneeti.exception.MatchNotFoundException;
+import com.rajneeti.game.BlockManager;
+import com.rajneeti.game.ChallengeManager;
 import com.rajneeti.game.GameEngine;
 import com.rajneeti.security.JwtAuthenticationEntryPoint;
 import com.rajneeti.security.JwtTokenProvider;
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -46,6 +49,12 @@ class GameControllerTest {
 
     @MockBean
     private GameEngine gameEngine;
+
+    @MockBean
+    private ChallengeManager challengeManager;
+
+    @MockBean
+    private BlockManager blockManager;
 
     @MockBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -389,5 +398,168 @@ class GameControllerTest {
                         .with(user(testPrincipal)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("NOT_ACTOR"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/tax - Success (opens challenge window)")
+    void performTax_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        response.setPendingAction(PendingActionDto.builder()
+                .type("TAX")
+                .actorUserId(testUserId)
+                .startedAt(java.time.LocalDateTime.now())
+                .claimedCharacter("minister")
+                .build());
+
+        when(gameEngine.performTax(eq(testMatchId), eq(testUserId))).thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/tax")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.pendingAction.type").value("TAX"))
+                .andExpect(jsonPath("$.data.pendingAction.claimedCharacter").value("minister"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/tax/resolve - Success (+3 coins)")
+    void resolveTax_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        response.getPlayers().get(0).setCoins(5);
+        response.setTurnNumber(2);
+
+        when(gameEngine.resolveTax(eq(testMatchId), eq(testUserId), eq(true)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/tax/resolve?granted=true")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.players[0].coins").value(5));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/steal - Success (claims DALAL, targets opponent)")
+    void performSteal_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        UUID targetId = UUID.randomUUID();
+        response.setPendingAction(PendingActionDto.builder()
+                .type("STEAL")
+                .actorUserId(testUserId)
+                .startedAt(java.time.LocalDateTime.now())
+                .claimedCharacter("dalal")
+                .targetPlayerId(targetId)
+                .build());
+
+        when(gameEngine.performSteal(eq(testMatchId), eq(testUserId), eq(targetId)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/steal")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"targetPlayerId\":\"" + targetId + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.pendingAction.type").value("STEAL"))
+                .andExpect(jsonPath("$.data.pendingAction.claimedCharacter").value("dalal"))
+                .andExpect(jsonPath("$.data.pendingAction.targetPlayerId").value(targetId.toString()));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/steal/resolve - Success (coins transferred)")
+    void resolveSteal_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        response.getPlayers().get(0).setCoins(4);
+        response.setTurnNumber(2);
+
+        when(gameEngine.resolveSteal(eq(testMatchId), eq(testUserId), eq(true)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/steal/resolve?granted=true")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.players[0].coins").value(4));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/challenge - Success (verdict returned as lastChallenge)")
+    void challenge_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        response.setLastChallenge(com.rajneeti.dto.game.ChallengeDto.builder()
+                .challengerId(UUID.randomUUID())
+                .claimantId(testUserId)
+                .actionType("TAX")
+                .claimedCharacter("minister")
+                .result("CLAIM_TRUE")
+                .revealedCharacterId("minister")
+                .influenceLostById(UUID.randomUUID())
+                .actionContinues(true)
+                .build());
+
+        when(challengeManager.challenge(eq(testMatchId), eq(testUserId), isNull()))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/challenge")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.lastChallenge.result").value("CLAIM_TRUE"))
+                .andExpect(jsonPath("$.data.lastChallenge.claimedCharacter").value("minister"))
+                .andExpect(jsonPath("$.data.lastChallenge.actionContinues").value(true));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/challenge - Fails when the action is not challengeable (422)")
+    void challenge_NotChallengeable() throws Exception {
+        when(challengeManager.challenge(eq(testMatchId), eq(testUserId), isNull()))
+                .thenThrow(new BusinessException("ACTION_NOT_CHALLENGEABLE",
+                        "The action 'INCOME' does not claim a character."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/challenge")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("ACTION_NOT_CHALLENGEABLE"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/block - Success (records block claim)")
+    void block_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        UUID blockerId = testUserId;
+        response.setPendingAction(PendingActionDto.builder()
+                .type("FOREIGN_AID")
+                .actorUserId(UUID.randomUUID())
+                .startedAt(java.time.LocalDateTime.now())
+                .blockerUserId(blockerId)
+                .blockedCharacter("minister")
+                .build());
+
+        when(blockManager.block(eq(testMatchId), eq(testUserId), eq("minister")))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/block")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"claimedCharacter\":\"minister\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.pendingAction.type").value("FOREIGN_AID"))
+                .andExpect(jsonPath("$.data.pendingAction.blockedCharacter").value("minister"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/block - Fails for a non-blockable action (422)")
+    void block_NotBlockable() throws Exception {
+        when(blockManager.block(eq(testMatchId), eq(testUserId), eq("minister")))
+                .thenThrow(new BusinessException("ACTION_NOT_BLOCKABLE",
+                        "The action 'INCOME' cannot be blocked."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/block")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"claimedCharacter\":\"minister\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("ACTION_NOT_BLOCKABLE"));
     }
 }

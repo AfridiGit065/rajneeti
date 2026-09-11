@@ -2,8 +2,12 @@ package com.rajneeti.controller;
 
 import com.rajneeti.dto.ApiResponse;
 import com.rajneeti.dto.game.AssassinateRequest;
+import com.rajneeti.dto.game.BlockRequest;
 import com.rajneeti.dto.game.ExchangeConfirmRequest;
 import com.rajneeti.dto.game.GameStateResponse;
+import com.rajneeti.dto.game.StealRequest;
+import com.rajneeti.game.BlockManager;
+import com.rajneeti.game.ChallengeManager;
 import com.rajneeti.game.GameEngine;
 import com.rajneeti.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +29,10 @@ import java.util.UUID;
  * gameplay actions.
  *
  * <p>Instant actions that resolve without a block/challenge window (income)
- * and block-window actions with a minimal resolve seam (foreign aid) live
- * here. The full Block Manager and Action Resolver arrive in later modules.
+ * and block-window actions with a minimal resolve seam (foreign aid, tax,
+ * steal, exchange, assassination) live here. Challenges against claim-based
+ * actions are resolved by the {@link ChallengeManager} (Module 18) and block
+ * claims by the {@link BlockManager} (Module 19).
  */
 @Slf4j
 @RestController
@@ -35,6 +41,8 @@ import java.util.UUID;
 public class GameController {
 
     private final GameEngine gameEngine;
+    private final ChallengeManager challengeManager;
+    private final BlockManager blockManager;
 
     /**
      * GET /api/matches/{matchId}/game
@@ -202,6 +210,143 @@ public class GameController {
 
         GameStateResponse response = gameEngine.resolveAssassinate(
                 matchId, userPrincipal.getId(), succeeded);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/tax
+     * Declares Tax, claiming Minister. Opens a challenge window. Coins are
+     * awarded only when the action resolves via {@code /tax/resolve}.
+     */
+    @PostMapping("/{matchId}/tax")
+    public ResponseEntity<ApiResponse<GameStateResponse>> performTax(
+            @PathVariable UUID matchId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' performing Tax in match: {}",
+                userPrincipal.getUsername(), matchId);
+
+        GameStateResponse response = gameEngine.performTax(matchId, userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/tax/resolve
+     * Resolves a pending Tax challenge window.
+     *
+     * @param granted {@code true} awards the 3 coin gain (truthful claim),
+     *                {@code false} cancels the Tax without awarding coins
+     */
+    @PostMapping("/{matchId}/tax/resolve")
+    public ResponseEntity<ApiResponse<GameStateResponse>> resolveTax(
+            @PathVariable UUID matchId,
+            @RequestParam boolean granted,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' resolving Tax (granted={}) in match: {}",
+                userPrincipal.getUsername(), granted, matchId);
+
+        GameStateResponse response = gameEngine.resolveTax(
+                matchId, userPrincipal.getId(), granted);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/steal
+     * Declares Steal, claiming Dalal, targeting an opponent. Opens a challenge
+     * window. Coins are transferred only when the action resolves via
+     * {@code /steal/resolve}.
+     *
+     * @param request body containing the {@code targetPlayerId}
+     */
+    @PostMapping("/{matchId}/steal")
+    public ResponseEntity<ApiResponse<GameStateResponse>> performSteal(
+            @PathVariable UUID matchId,
+            @RequestBody StealRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        UUID targetPlayerId = request != null ? request.getTargetPlayerId() : null;
+        log.info("Player '{}' performing Steal on '{}' in match: {}",
+                userPrincipal.getUsername(), targetPlayerId, matchId);
+
+        GameStateResponse response = gameEngine.performSteal(
+                matchId, userPrincipal.getId(), targetPlayerId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/steal/resolve
+     * Resolves a pending Steal challenge window.
+     *
+     * @param granted {@code true} transfers up to 2 coins from the target to the
+     *                actor (truthful claim), {@code false} cancels the Steal
+     *                without transferring coins
+     */
+    @PostMapping("/{matchId}/steal/resolve")
+    public ResponseEntity<ApiResponse<GameStateResponse>> resolveSteal(
+            @PathVariable UUID matchId,
+            @RequestParam boolean granted,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' resolving Steal (granted={}) in match: {}",
+                userPrincipal.getUsername(), granted, matchId);
+
+        GameStateResponse response = gameEngine.resolveSteal(
+                matchId, userPrincipal.getId(), granted);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/challenge
+     * Module 18 — resolves a challenge raised by the caller against the
+     * currently pending claim. The decision is made entirely server-side: the
+     * caller never supplies card ownership.
+     *
+     * <p>A truthful claim makes the challenger lose one influence card and lets
+     * the original action continue; a bluff makes the claimant lose one
+     * influence card and cancels the action (for an Exchange the actor's
+     * original hand is restored, for an Assassination no coins are deducted).
+     * The verdict is returned as {@code lastChallenge} on the game state and
+     * stays until the next action begins.
+     *
+     * @param loserCardId optional physical card ID the challenger loses/stakes
+     *                    if the claim turns out truthful (must belong to the
+     *                    challenger); when absent the first card is removed
+     */
+    @PostMapping("/{matchId}/challenge")
+    public ResponseEntity<ApiResponse<GameStateResponse>> challenge(
+            @PathVariable UUID matchId,
+            @RequestParam(value = "loserCardId", required = false) UUID loserCardId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' challenging the pending action in match: {}",
+                userPrincipal.getUsername(), matchId);
+
+        GameStateResponse response = challengeManager.challenge(
+                matchId, userPrincipal.getId(), loserCardId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/block
+     * Module 19 — records a block claim by the caller against the currently
+     * pending blockable action. The blocker asserts a character id; ownership
+     * of that character is verified only if the block is challenged later.
+     *
+     * @param request body containing the {@code claimedCharacter}
+     */
+    @PostMapping("/{matchId}/block")
+    public ResponseEntity<ApiResponse<GameStateResponse>> block(
+            @PathVariable UUID matchId,
+            @RequestBody BlockRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        String claimedCharacter = request != null ? request.getClaimedCharacter() : null;
+        log.info("Player '{}' claiming a block (character={}) in match: {}",
+                userPrincipal.getUsername(), claimedCharacter, matchId);
+
+        GameStateResponse response = blockManager.block(
+                matchId, userPrincipal.getId(), claimedCharacter);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

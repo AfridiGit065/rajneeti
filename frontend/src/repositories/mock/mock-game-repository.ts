@@ -1,5 +1,6 @@
 ﻿import type { GameRepository } from "../game-repository";
 import type { ActionIntent, GameResult, GameState } from "@/types/game";
+import type { CharacterId } from "@/types/character";
 import { err, ok, type Result } from "@/types/api";
 import { MOCK_FINISHED_GAME_STATE, MOCK_GAME_STATE } from "@/mocks/matches";
 
@@ -38,7 +39,7 @@ export class MockGameRepository implements GameRepository {
     return ok(this.state);
   }
 
-  async challenge(_matchId: string, _targetPlayerId: string): Promise<Result<GameState>> {
+  async challenge(matchId: string): Promise<Result<GameState>> {
     await delay(550);
     const actor = this.state.activeAction;
     if (!actor) {
@@ -48,9 +49,28 @@ export class MockGameRepository implements GameRepository {
         message: "কোনো সক্রিয় অ্যাকশন নেই।",
       });
     }
+    const isBlockChallenge = Boolean(
+      (this.state.activeAction as { blockerUserId?: string } | null)?.blockerUserId,
+    );
+    const claimantId = actor.claimedCharacter
+      ? this.state.currentTurnPlayerId ?? ""
+      : "";
     this.state = {
       ...this.state,
       phase: "challenge_resolution",
+      pendingChallenge: {
+        challengerId: matchId,
+        claimantId,
+        claimedCharacter: "minister",
+        result: "success",
+        influenceLostById: claimantId,
+        actionContinues: false,
+        blockClaim: isBlockChallenge,
+        effectApplied: false,
+      },
+      activeAction: isBlockChallenge
+        ? { ...actor, blockerUserId: undefined, blockedCharacter: undefined }
+        : actor,
       log: [
         {
           id: `log-${Date.now()}`,
@@ -64,16 +84,27 @@ export class MockGameRepository implements GameRepository {
     return ok(this.state);
   }
 
-  async block(_matchId: string, _claimedCharacter: string): Promise<Result<GameState>> {
+  async block(_matchId: string, claimedCharacter: string): Promise<Result<GameState>> {
     await delay(500);
+    const actorId = this.state.currentTurnPlayerId;
+    const blocker =
+      this.state.players.find((p) => p.id !== actorId && p.isAlive) ??
+      this.state.players[0];
     this.state = {
       ...this.state,
       phase: "block_resolution",
+      activeAction: this.state.activeAction
+        ? {
+            ...this.state.activeAction,
+            blockerUserId: blocker?.id,
+            blockedCharacter: claimedCharacter as CharacterId,
+          }
+        : this.state.activeAction,
       log: [
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toISOString(),
-          text: "ব্লক করা হয়েছে!",
+          text: `${blocker?.displayName ?? blocker?.username ?? ""} ${claimedCharacter} দাবি করে অ্যাকশন ব্লক করেছে!`,
           kind: "block",
         },
         ...this.state.log,
@@ -157,6 +188,35 @@ export class MockGameRepository implements GameRepository {
           timestamp: new Date().toISOString(),
           text: succeeded ? "সরিয়ে দেওয়া সফল হয়েছে!" : "সরিয়ে দেওয়া প্রতিহত হয়েছে!",
           kind: succeeded ? "action" : "block",
+        },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
+  }
+
+  async resolveSteal(_matchId: string, granted: boolean): Promise<Result<GameState>> {
+    await delay(450);
+    if (granted) {
+      const intent = this.state.activeAction as { targetPlayerId?: string } | null;
+      const target = this.state.players.find((p) => p.id === intent?.targetPlayerId);
+      const actor = this.state.players.find((p) => p.id === this.state.currentTurnPlayerId);
+      if (actor && target && target.coins > 0) {
+        const taken = Math.min(2, target.coins);
+        target.coins -= taken;
+        actor.coins += taken;
+      }
+    }
+    this.state = {
+      ...this.state,
+      phase: "action_selection",
+      activeAction: null,
+      log: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          text: granted ? "চুরি সফল হয়েছে!" : "চুরি ব্লক হয়েছে — কিছুই হস্তান্তর হয়নি।",
+          kind: granted ? "action" : "block",
         },
         ...this.state.log,
       ],

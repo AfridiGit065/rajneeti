@@ -58,6 +58,9 @@ public class GameStateResponse {
     /** Non-null when a block window is open for a pending action. */
     private PendingActionDto pendingAction;
 
+    /** Module 18 — non-null after a challenge was resolved for the current action. */
+    private ChallengeDto lastChallenge;
+
     private LocalDateTime startedAt;
 
     private LocalDateTime endedAt;

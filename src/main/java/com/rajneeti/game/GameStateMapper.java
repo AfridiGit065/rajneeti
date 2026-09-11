@@ -1,5 +1,6 @@
 package com.rajneeti.game;
 
+import com.rajneeti.dto.game.ChallengeDto;
 import com.rajneeti.dto.game.GameCardDto;
 import com.rajneeti.dto.game.GameLogEntryDto;
 import com.rajneeti.dto.game.GamePlayerDto;
@@ -65,6 +66,13 @@ public class GameStateMapper {
                                 .build())
                         .toList());
             }
+            if (pending.getChallengerUserId() != null) {
+                builder.challengerUserId(pending.getChallengerUserId());
+            }
+            if (pending.getBlockerUserId() != null) {
+                builder.blockerUserId(pending.getBlockerUserId());
+                builder.blockedCharacter(pending.getBlockedCharacter());
+            }
             pendingDto = builder.build();
         }
 
@@ -84,6 +92,7 @@ public class GameStateMapper {
                 .winnerUserId(state.getWinnerUserId())
                 .log(log)
                 .pendingAction(pendingDto)
+                .lastChallenge(buildChallengeDto(state.getLastChallenge()))
                 .startedAt(state.getStartedAt())
                 .endedAt(state.getEndedAt())
                 .build();
@@ -114,6 +123,24 @@ public class GameStateMapper {
                 .coins(player.getCoins())
                 .influenceCount(player.getCards() != null ? player.getCards().size() : 0)
                 .cards(cards)
+                .build();
+    }
+
+    private ChallengeDto buildChallengeDto(GameChallenge challenge) {
+        if (challenge == null) {
+            return null;
+        }
+        return ChallengeDto.builder()
+                .challengerId(challenge.getChallengerUserId())
+                .claimantId(challenge.getClaimantUserId())
+                .actionType(challenge.getActionType())
+                .claimedCharacter(challenge.getClaimedCharacter())
+                .result(challenge.isClaimTrue() ? "CLAIM_TRUE" : "CLAIM_FALSE")
+                .revealedCardId(challenge.getRevealedCardId())
+                .revealedCharacterId(challenge.getRevealedCharacterId())
+                .influenceLostById(challenge.getInfluenceLostById())
+                .actionContinues(challenge.isActionContinues())
+                .blockClaim(challenge.isBlockClaim())
                 .build();
     }
 }
