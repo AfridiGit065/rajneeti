@@ -122,6 +122,11 @@ export interface GameState {
   activeAction: ActionIntent | null;
   pendingChallenge: ChallengeResolution | null;
   pendingBlock: BlockResolution | null;
+  /**
+   * The actor's private exchange card pool. Populated only for the local
+   * player when they have a pending Exchange; undefined for everyone else.
+   */
+  exchangePool?: InfluenceCard[];
   log: GameLogEntry[];
   startedAt: string;
   endedAt?: string;

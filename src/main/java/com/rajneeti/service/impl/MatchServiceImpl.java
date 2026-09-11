@@ -18,6 +18,7 @@ import com.rajneeti.entity.enums.RoomStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.MatchAlreadyExistsException;
 import com.rajneeti.exception.MatchNotFoundException;
+import com.rajneeti.game.GameEngine;
 import com.rajneeti.exception.NotRoomHostException;
 import com.rajneeti.exception.RoomNotFoundException;
 import com.rajneeti.mapper.MatchMapper;
@@ -54,6 +55,7 @@ public class MatchServiceImpl implements MatchService {
     private final RoomService            roomService;
     private final MatchMapper            matchMapper;
     private final TurnManager            turnManager;
+    private final GameEngine             gameEngine;
 
     @Override
     @Transactional
@@ -119,7 +121,10 @@ public class MatchServiceImpl implements MatchService {
         savedMatch.setStartedAt(LocalDateTime.now());
         turnManager.assignFirstTurn(savedMatch, matchPlayers);
 
-        // 10. Transition room status to IN_GAME
+        // 10. Initialize the in-memory game state (deck, coins, influence cards)
+        gameEngine.initializeMatch(savedMatch.getId());
+
+        // 11. Transition room status to IN_GAME
         room.setStatus(RoomStatus.IN_GAME);
         roomRepository.save(room);
 
@@ -127,7 +132,7 @@ public class MatchServiceImpl implements MatchService {
                 savedMatch.getId(), room.getRoomCode(), matchPlayers.size(),
                 room.getHost().getUsername());
 
-        // 11. Return match response
+        // 12. Return match response
         return matchMapper.toMatchResponse(savedMatch, matchPlayers);
     }
 

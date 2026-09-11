@@ -106,6 +106,63 @@ export class MockGameRepository implements GameRepository {
       turnCount: 11,
     });
   }
+
+  async resolveForeignAid(_matchId: string, blocked: boolean): Promise<Result<GameState>> {
+    await delay(350);
+    if (!blocked) {
+      const actor = this.state.players.find((p) => p.userId === (this.state.activeAction as { targetPlayerId?: string } | null)?.targetPlayerId) ?? this.state.players[0];
+      if (actor) actor.coins += 2;
+    }
+    this.state = { ...this.state, activeAction: null };
+    return ok(this.state);
+  }
+
+  async confirmExchange(_matchId: string, keepCardIds: string[]): Promise<Result<GameState>> {
+    await delay(550);
+    // Simulate: keep only the selected cards, advance turn
+    const keepSet = new Set(keepCardIds);
+    this.state = {
+      ...this.state,
+      players: this.state.players.map((p) =>
+        p.userId === (this.state.activeAction as { actorUserId?: string } | null)?.actorUserId
+          ? { ...p, influenceCards: p.influenceCards.filter((c) => keepSet.has(c.id)).slice(0, 2) }
+          : p,
+      ),
+      activeAction: null,
+      log: [
+        { id: `log-${Date.now()}`, timestamp: new Date().toISOString(), text: "কার্ড বদল সম্পন্ন হয়েছে!", kind: "action" },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
+  }
+
+  async resolveAssassinate(_matchId: string, succeeded: boolean): Promise<Result<GameState>> {
+    await delay(550);
+    if (succeeded) {
+      const intent = this.state.activeAction as { targetPlayerId?: string } | null;
+      const target = this.state.players.find((p) => p.userId === intent?.targetPlayerId);
+      const actor = this.state.players.find((p) => p.isTurn) ?? this.state.players[0];
+      actor.coins = Math.max(0, actor.coins - 3);
+      if (target && target.influenceCards.length > 0) {
+        target.influenceCards = target.influenceCards.slice(1);
+      }
+    }
+    this.state = {
+      ...this.state,
+      activeAction: null,
+      log: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          text: succeeded ? "সরিয়ে দেওয়া সফল হয়েছে!" : "সরিয়ে দেওয়া প্রতিহত হয়েছে!",
+          kind: succeeded ? "action" : "block",
+        },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
+  }
 }
 
 function buildActionText(intent: ActionIntent): string {

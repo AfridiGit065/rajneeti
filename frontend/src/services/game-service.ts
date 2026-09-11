@@ -24,4 +24,13 @@ export const GameService = {
   async getGameResult(matchId: string): Promise<Result<GameResult>> {
     return repositories.game.getGameResult(matchId);
   },
+  async resolveForeignAid(matchId: string, blocked: boolean): Promise<Result<GameState>> {
+    return repositories.game.resolveForeignAid(matchId, blocked);
+  },
+  async confirmExchange(matchId: string, keepCardIds: string[]): Promise<Result<GameState>> {
+    return repositories.game.confirmExchange(matchId, keepCardIds);
+  },
+  async resolveAssassinate(matchId: string, succeeded: boolean): Promise<Result<GameState>> {
+    return repositories.game.resolveAssassinate(matchId, succeeded);
+  },
 };
