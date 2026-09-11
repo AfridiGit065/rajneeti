@@ -1,12 +1,18 @@
 package com.rajneeti.service.impl;
 
+import com.rajneeti.dto.action.ActionRequest;
+import com.rajneeti.dto.action.MatchActionResponse;
 import com.rajneeti.dto.match.MatchResponse;
 import com.rajneeti.dto.turn.TurnInfo;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchPlayer;
+import com.rajneeti.entity.PendingAction;
 import com.rajneeti.entity.Room;
 import com.rajneeti.entity.RoomPlayer;
+import com.rajneeti.entity.enums.CharacterType;
+import com.rajneeti.entity.enums.MatchActionType;
 import com.rajneeti.entity.enums.MatchStatus;
+import com.rajneeti.entity.enums.PendingActionStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.entity.enums.RoomStatus;
 import com.rajneeti.exception.BusinessException;
@@ -172,5 +178,87 @@ public class MatchServiceImpl implements MatchService {
                         .filter(p -> p.getPlayerStatus() == PlayerStatus.ACTIVE)
                         .count())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public MatchActionResponse performAction(UUID matchId, UUID userId, ActionRequest request) {
+        // 1. Validate match exists
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new MatchNotFoundException("Match with ID '" + matchId + "' not found."));
+
+        // 2. Validate match is active
+        if (match.getStatus() != MatchStatus.CREATED && match.getStatus() != MatchStatus.IN_PROGRESS) {
+            throw new BusinessException("MATCH_NOT_ACTIVE",
+                    "Action cannot be performed. Match status is " + match.getStatus() + ".");
+        }
+
+        // 3. Validate caller belongs to the match
+        MatchPlayer player = matchPlayerRepository.findByMatchIdAndUserId(matchId, userId)
+                .orElseThrow(() -> new BusinessException("NOT_IN_MATCH",
+                        "You are not a player in this match."));
+
+        // 4. Validate caller is not eliminated
+        if (player.getPlayerStatus() == PlayerStatus.ELIMINATED || Boolean.TRUE.equals(player.getEliminated())) {
+            throw new BusinessException("PLAYER_ELIMINATED",
+                    "Eliminated players cannot perform actions.");
+        }
+
+        // 5. Validate it is the caller's turn
+        if (!turnManager.isPlayerTurn(matchId, userId)) {
+            throw new BusinessException("NOT_YOUR_TURN",
+                    "It is not your turn to perform an action.");
+        }
+
+        // 6. Validate no action is already pending (one action per turn)
+        if (match.getPendingAction() != null) {
+            throw new BusinessException("ACTION_PENDING",
+                    "An action is already awaiting resolution. Complete it before performing another.");
+        }
+
+        MatchActionType actionType = request.getAction();
+
+        // 7. Validate the action type is supported
+        if (actionType != MatchActionType.TAX) {
+            throw new BusinessException("ACTION_NOT_SUPPORTED",
+                    "Action '" + actionType + "' is not implemented yet.");
+        }
+
+        // 8. Validate the claimed character for the action
+        CharacterType claimedCharacter = resolveClaimedCharacter(request);
+
+        // 9. Persist the pending action (challenge window). No coins awarded yet.
+        PendingAction pendingAction = PendingAction.builder()
+                .actionType(actionType)
+                .claimedCharacter(claimedCharacter)
+                .actorUserId(userId)
+                .targetUserId(request.getTargetPlayerId())
+                .status(PendingActionStatus.AWAITING_CHALLENGE)
+                .coinsToAward(actionType.getGainCoins())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        match.setPendingAction(pendingAction);
+        matchRepository.save(match);
+
+        log.info("Player '{}' claimed {} in match {}, pending challenge",
+                player.getUser().getUsername(), actionType, matchId);
+
+        return matchMapper.toMatchActionResponse(match, pendingAction,
+                player.getUser().getUsername());
+    }
+
+    private CharacterType resolveClaimedCharacter(ActionRequest request) {
+        CharacterType claimed = request.getClaimedCharacter();
+
+        // Tax claims the Minister; default the claim if not provided.
+        if (claimed == null) {
+            return CharacterType.MINISTER;
+        }
+        if (claimed != CharacterType.MINISTER) {
+            throw new BusinessException("INVALID_CLAIM",
+                    "Tax can only claim the " + CharacterType.MINISTER + ".");
+        }
+        return claimed;
     }
 }

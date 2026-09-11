@@ -1,10 +1,13 @@
 package com.rajneeti.controller;
 
 import com.rajneeti.dto.ApiResponse;
+import com.rajneeti.dto.action.ActionRequest;
+import com.rajneeti.dto.action.MatchActionResponse;
 import com.rajneeti.dto.match.MatchResponse;
 import com.rajneeti.dto.turn.TurnInfo;
 import com.rajneeti.security.UserPrincipal;
 import com.rajneeti.service.MatchService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -13,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -83,5 +87,25 @@ public class MatchController {
 
         TurnInfo turnInfo = matchService.getCurrentTurn(matchId);
         return ResponseEntity.ok(ApiResponse.success(turnInfo));
+    }
+
+    /**
+     * POST /api/rooms/{roomId}/match/{matchId}/actions
+     * Current player claims a gameplay action (e.g. Tax / Minister).
+     * The action enters the pending challenge window; effects are applied
+     * only when the action is resolved.
+     */
+    @PostMapping("/{roomId}/match/{matchId}/actions")
+    public ResponseEntity<ApiResponse<MatchActionResponse>> performAction(
+            @PathVariable UUID roomId,
+            @PathVariable UUID matchId,
+            @RequestBody @Valid ActionRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' claiming action {} in match ID: {}",
+                userPrincipal.getUsername(), request.getAction(), matchId);
+
+        MatchActionResponse response = matchService.performAction(matchId, userPrincipal.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Action accepted and pending resolution", response));
     }
 }

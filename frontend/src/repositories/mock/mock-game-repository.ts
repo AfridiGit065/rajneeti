@@ -115,7 +115,7 @@ function buildActionText(intent: ActionIntent): string {
     case "foreign_aid":
       return "বিদেশি অনুদান: +2 কয়েন অর্জন করল।";
     case "tax":
-      return "কর আদায়: মন্ত্রী দাবি করে +3 কয়েন অর্জন করল।";
+      return "কর আদায়: মন্ত্রী দাবি করা হয়েছে — চ্যালেঞ্জের জন্য অপেক্ষমাণ (+3 কয়েন অনুমোদন সাপেক্ষে)।";
     case "steal":
       return "চুরি: দালাল দাবি করে 2 কয়েন চুরি করল।";
     case "exchange":

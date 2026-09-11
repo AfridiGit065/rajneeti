@@ -3,8 +3,14 @@ package com.rajneeti.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rajneeti.config.CorsProperties;
 import com.rajneeti.config.JwtProperties;
+import com.rajneeti.dto.action.ActionRequest;
+import com.rajneeti.dto.action.MatchActionResponse;
 import com.rajneeti.dto.match.MatchResponse;
+import com.rajneeti.entity.enums.CharacterType;
+import com.rajneeti.entity.enums.MatchActionType;
 import com.rajneeti.entity.enums.MatchStatus;
+import com.rajneeti.entity.enums.PendingActionStatus;
+import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.GlobalExceptionHandler;
 import com.rajneeti.exception.MatchAlreadyExistsException;
 import com.rajneeti.exception.MatchNotFoundException;
@@ -37,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = MatchController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class, JwtAuthenticationEntryPoint.class})
 class MatchControllerTest {
 
     @Autowired
@@ -48,9 +54,6 @@ class MatchControllerTest {
 
     @MockBean
     private MatchService matchService;
-
-    @MockBean
-    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @MockBean
     private UserDetailsService userDetailsService;
@@ -186,5 +189,90 @@ class MatchControllerTest {
                         .with(user(testPrincipal)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("MATCH_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("POST /{roomId}/match/{matchId}/actions - Tax success")
+    void performAction_Tax_Success() throws Exception {
+        MatchActionResponse response = MatchActionResponse.builder()
+                .matchId(testMatchId)
+                .roomId(testRoomId)
+                .action(MatchActionType.TAX)
+                .claimedCharacter(CharacterType.MINISTER)
+                .actorUserId(testUserId)
+                .actorUsername("gamer1")
+                .status(PendingActionStatus.AWAITING_CHALLENGE)
+                .coinsToAward(3)
+                .currentTurnPlayerId(testUserId)
+                .turnNumber(1)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.TAX)
+                .claimedCharacter(CharacterType.MINISTER)
+                .build();
+
+        when(matchService.performAction(eq(testMatchId), eq(testUserId), eq(request)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/match/" + testMatchId + "/actions")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.action").value("TAX"))
+                .andExpect(jsonPath("$.data.claimedCharacter").value("MINISTER"))
+                .andExpect(jsonPath("$.data.status").value("AWAITING_CHALLENGE"));
+    }
+
+    @Test
+    @DisplayName("POST /{roomId}/match/{matchId}/actions - Not your turn (422)")
+    void performAction_NotYourTurn() throws Exception {
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.TAX)
+                .build();
+
+        when(matchService.performAction(eq(testMatchId), eq(testUserId), eq(request)))
+                .thenThrow(new BusinessException("NOT_YOUR_TURN", "It is not your turn."));
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/match/" + testMatchId + "/actions")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("NOT_YOUR_TURN"));
+    }
+
+    @Test
+    @DisplayName("POST /{roomId}/match/{matchId}/actions - Match not found (404)")
+    void performAction_MatchNotFound() throws Exception {
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.TAX)
+                .build();
+
+        when(matchService.performAction(eq(testMatchId), eq(testUserId), eq(request)))
+                .thenThrow(new MatchNotFoundException("Match not found."));
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/match/" + testMatchId + "/actions")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("MATCH_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("POST /{roomId}/match/{matchId}/actions - Unauthorized (401)")
+    void performAction_Unauthorized() throws Exception {
+        ActionRequest request = ActionRequest.builder()
+                .action(MatchActionType.TAX)
+                .build();
+
+        mockMvc.perform(post("/api/rooms/" + testRoomId + "/match/" + testMatchId + "/actions")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -1,9 +1,11 @@
 package com.rajneeti.mapper;
 
+import com.rajneeti.dto.action.MatchActionResponse;
 import com.rajneeti.dto.match.MatchPlayerResponse;
 import com.rajneeti.dto.match.MatchResponse;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchPlayer;
+import com.rajneeti.entity.PendingAction;
 import com.rajneeti.entity.Room;
 import com.rajneeti.entity.User;
 import org.springframework.stereotype.Component;
@@ -34,6 +36,7 @@ public class MatchMapper {
                 .seatNumber(player.getSeatNumber())
                 .playerStatus(player.getPlayerStatus())
                 .finalRank(player.getFinalRank())
+                .coins(player.getCoins())
                 .coinsAtEnd(player.getCoinsAtEnd())
                 .eliminated(player.getEliminated())
                 .eliminatedAt(player.getEliminatedAt())
@@ -72,6 +75,30 @@ public class MatchMapper {
                 .startedAt(match.getStartedAt())
                 .endedAt(match.getEndedAt())
                 .createdAt(match.getCreatedAt())
+                .build();
+    }
+
+    public MatchActionResponse toMatchActionResponse(Match match, PendingAction action,
+                                                     String actorUsername) {
+        if (match == null || action == null) {
+            return null;
+        }
+
+        Room room = match.getRoom();
+
+        return MatchActionResponse.builder()
+                .matchId(match.getId())
+                .roomId(room != null ? room.getId() : null)
+                .action(action.getActionType())
+                .claimedCharacter(action.getClaimedCharacter())
+                .actorUserId(action.getActorUserId())
+                .actorUsername(actorUsername)
+                .targetUserId(action.getTargetUserId())
+                .status(action.getStatus())
+                .coinsToAward(action.getCoinsToAward())
+                .currentTurnPlayerId(match.getCurrentTurnPlayerId())
+                .turnNumber(match.getTurnNumber())
+                .createdAt(action.getCreatedAt())
                 .build();
     }
 }

@@ -1,9 +1,11 @@
 package com.rajneeti.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.rajneeti.converter.PendingActionConverter;
 import com.rajneeti.entity.enums.MatchStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -86,6 +88,15 @@ public class Match {
     @Builder.Default
     @Column(name = "turn_number", nullable = false)
     private Integer turnNumber = 0;
+
+    /**
+     * The action currently awaiting resolution (e.g. a Tax claim sitting in the
+     * challenge window). Null while no action is pending. Effects are applied
+     * only when this action is resolved.
+     */
+    @Convert(converter = PendingActionConverter.class)
+    @Column(name = "pending_action", length = 2000)
+    private PendingAction pendingAction;
 
     @JsonIgnore
     @Builder.Default
