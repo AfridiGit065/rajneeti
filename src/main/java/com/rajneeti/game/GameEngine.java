@@ -63,6 +63,12 @@ public class GameEngine {
     /** Pending action type identifier for Assassination. */
     public static final String ACTION_ASSASSINATE = "ASSASSINATE";
 
+    /** Pending action type identifier for Tax. */
+    public static final String ACTION_TAX = "TAX";
+
+    /** Pending action type identifier for Steal. */
+    public static final String ACTION_STEAL = "STEAL";
+
     /** Exchange draws exactly 2 cards and keeps exactly 2 of the 4 available. */
     public static final int EXCHANGE_DRAW = 2;
 
@@ -71,6 +77,18 @@ public class GameEngine {
 
     /** The character claimed by an Assassination action. */
     public static final String CHARACTER_GHATOK = "ghatok";
+
+    /** The character claimed by a Tax action. */
+    public static final String CHARACTER_MINISTER = "minister";
+
+    /** The character claimed by a Steal action. */
+    public static final String CHARACTER_DALAL = "dalal";
+
+    /** Tax grants exactly 3 coins. */
+    public static final int TAX_GAIN = 3;
+
+    /** Steal takes up to 2 coins from the target. */
+    public static final int STEAL_GAIN = 2;
 
     /** Assassination costs exactly 3 coins. */
     public static final int ASSASSINATE_COST = 3;
@@ -239,6 +257,7 @@ public class GameEngine {
     @Transactional
     public GameStateResponse performIncome(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
+        state.setLastChallenge(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -304,6 +323,7 @@ public class GameEngine {
     @Transactional
     public GameStateResponse performForeignAid(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
+        state.setLastChallenge(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -441,6 +461,7 @@ public class GameEngine {
     @Transactional
     public GameStateResponse performExchange(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
+        state.setLastChallenge(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -636,6 +657,7 @@ public class GameEngine {
     @Transactional
     public GameStateResponse performAssassinate(UUID matchId, UUID userId, UUID targetPlayerId) {
         GameState state = getOrInitialize(matchId);
+        state.setLastChallenge(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -807,6 +829,307 @@ public class GameEngine {
                     "The Assassination by " + player.getUsername() + " was prevented. "
                             + "No coins paid, no influence lost."));
             log.info("Assassination cancelled in match {} (no coins paid, no influence lost)", matchId);
+        }
+
+        Match match = turnManager.advanceTurn(matchId);
+        state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
+        state.setTurnNumber(match.getTurnNumber());
+        state.setActionExecuted(false);
+        state.setPhase(PHASE_IN_PROGRESS);
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Performs the Tax action for the current turn holder.
+     *
+     * <p>Tax claims the {@code minister} character and eventually grants
+     * {@value #TAX_GAIN} coins. Ownership of a MINISTER card is NOT required —
+     * the claim may be bluffed and resolved later by the Challenge Manager
+     * (Module 18). A {@link PendingAction} challenge window is recorded in the
+     * in-memory state; nothing is awarded until {@link #resolveTax} is called
+     * with a resolution.
+     *
+     * @param matchId the match ID
+     * @param userId  the acting player's user ID
+     * @return the updated player-safe game state (with pending action visible)
+     */
+    @Transactional
+    public GameStateResponse performTax(UUID matchId, UUID userId) {
+        GameState state = getOrInitialize(matchId);
+        state.setLastChallenge(null);
+
+        if (state.getStatus() != MatchStatus.IN_PROGRESS
+                && state.getStatus() != MatchStatus.CREATED) {
+            throw new BusinessException("MATCH_NOT_ACTIVE",
+                    "Cannot perform Tax: match is not active.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Cannot perform Tax: player is not part of this match."));
+
+        if (!userId.equals(state.getCurrentTurnPlayerId())) {
+            throw new BusinessException("NOT_YOUR_TURN",
+                    "It is not your turn.");
+        }
+
+        if (player.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("PLAYER_ELIMINATED",
+                    "Eliminated players cannot perform actions.");
+        }
+
+        if (player.getCards() == null || player.getCards().isEmpty()) {
+            throw new BusinessException("NO_INFLUENCE",
+                    "You need at least one influence card to perform an action.");
+        }
+
+        if (state.isActionExecuted()) {
+            throw new BusinessException("ACTION_ALREADY_PERFORMED",
+                    "You have already performed an action this turn.");
+        }
+
+        state.setPendingAction(PendingAction.builder()
+                .type(ACTION_TAX)
+                .actorUserId(userId)
+                .startedAt(LocalDateTime.now())
+                .claimedCharacter(CHARACTER_MINISTER)
+                .build());
+        state.setActionExecuted(true);
+        state.getLog().add(GameLogEntry.of("action",
+                player.getUsername() + " declared Tax, claiming Minister. Challenge window open."));
+
+        log.info("Player '{}' declared Tax in match {} (challenge window open)",
+                player.getUsername(), matchId);
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Performs the Steal action for the current turn holder.
+     *
+     * <p>Steal claims the {@code dalal} character, targets one opponent and
+     * eventually transfers up to {@value #STEAL_GAIN} coins from the target to
+     * the actor. Ownership of a DALAL card is NOT required — the claim may be
+     * bluffed and resolved later by the Challenge Manager (Module 18). A
+     * {@link PendingAction} challenge window is recorded in the in-memory state;
+     * nothing is transferred until {@link #resolveSteal} is called with a
+     * resolution.
+     *
+     * @param matchId        the match ID
+     * @param userId         the acting player's user ID
+     * @param targetPlayerId the user ID of the targeted opponent
+     * @return the updated player-safe game state (with pending action visible)
+     */
+    @Transactional
+    public GameStateResponse performSteal(UUID matchId, UUID userId, UUID targetPlayerId) {
+        GameState state = getOrInitialize(matchId);
+        state.setLastChallenge(null);
+
+        if (state.getStatus() != MatchStatus.IN_PROGRESS
+                && state.getStatus() != MatchStatus.CREATED) {
+            throw new BusinessException("MATCH_NOT_ACTIVE",
+                    "Cannot perform Steal: match is not active.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Cannot perform Steal: player is not part of this match."));
+
+        if (!userId.equals(state.getCurrentTurnPlayerId())) {
+            throw new BusinessException("NOT_YOUR_TURN",
+                    "It is not your turn.");
+        }
+
+        if (player.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("PLAYER_ELIMINATED",
+                    "Eliminated players cannot perform actions.");
+        }
+
+        if (player.getCards() == null || player.getCards().isEmpty()) {
+            throw new BusinessException("NO_INFLUENCE",
+                    "You need at least one influence card to perform an action.");
+        }
+
+        if (state.isActionExecuted()) {
+            throw new BusinessException("ACTION_ALREADY_PERFORMED",
+                    "You have already performed an action this turn.");
+        }
+
+        if (targetPlayerId == null) {
+            throw new BusinessException("TARGET_REQUIRED",
+                    "You must target another player to perform a Steal.");
+        }
+
+        if (userId.equals(targetPlayerId)) {
+            throw new BusinessException("TARGET_SELF",
+                    "You cannot steal from yourself.");
+        }
+
+        GamePlayerState target = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(targetPlayerId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("TARGET_NOT_IN_MATCH",
+                        "Cannot perform Steal: the target is not part of this match."));
+
+        if (target.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("TARGET_ELIMINATED",
+                    "Cannot steal from an eliminated player.");
+        }
+
+        if (target.getCoins() <= 0) {
+            throw new BusinessException("TARGET_NO_COINS",
+                    "The target has no coins to steal.");
+        }
+
+        state.setPendingAction(PendingAction.builder()
+                .type(ACTION_STEAL)
+                .actorUserId(userId)
+                .startedAt(LocalDateTime.now())
+                .claimedCharacter(CHARACTER_DALAL)
+                .targetPlayerId(targetPlayerId)
+                .build());
+        state.setActionExecuted(true);
+        state.getLog().add(GameLogEntry.of("action",
+                player.getUsername() + " declared a Steal on " + target.getUsername()
+                        + ", claiming DALAL. Challenge window open."));
+
+        log.info("Player '{}' declared a Steal on '{}' in match {} (challenge window open)",
+                player.getUsername(), target.getUsername(), matchId);
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Resolves a pending Tax after its challenge window closes.
+     *
+     * <p>A truthful claim (unchallenged, or a challenge that was won) grants the
+     * actor {@value #TAX_GAIN} coins. If the claim was exposed as a bluff the
+     * Challenge Manager already cancelled the pending action, so {@code granted}
+     * only reaches this seam as {@code true}. {@code false} is tolerated for
+     * completeness and simply resolves without awarding coins.
+     *
+     * @param matchId the match ID
+     * @param userId  the actor's user ID (must match the pending action)
+     * @param granted true if the Tax is rewarded, false if it is cancelled
+     * @return the updated player-safe game state
+     */
+    @Transactional
+    public GameStateResponse resolveTax(UUID matchId, UUID userId, boolean granted) {
+        GameState state = getGameState(matchId);
+
+        if (state.getPendingAction() == null) {
+            throw new BusinessException("NO_PENDING_ACTION",
+                    "No pending action to resolve.");
+        }
+
+        if (!ACTION_TAX.equals(state.getPendingAction().getType())) {
+            throw new BusinessException("INVALID_PENDING_ACTION",
+                    "The pending action is not Tax.");
+        }
+
+        if (!userId.equals(state.getPendingAction().getActorUserId())) {
+            throw new BusinessException("NOT_ACTOR",
+                    "Only the action's actor can resolve the pending action.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Player is not part of this match."));
+
+        state.setPendingAction(null);
+
+        if (granted) {
+            player.setCoins(player.getCoins() + TAX_GAIN);
+            state.getLog().add(GameLogEntry.of("action",
+                    player.getUsername() + " collected Taxes: +" + TAX_GAIN + " coins."));
+            log.info("Tax resolved in match {}: player '{}' gained {} coins",
+                    matchId, player.getUsername(), TAX_GAIN);
+        } else {
+            state.getLog().add(GameLogEntry.of("block",
+                    "The Tax by " + player.getUsername() + " was cancelled."));
+            log.info("Tax cancelled in match {} (no coins awarded)", matchId);
+        }
+
+        Match match = turnManager.advanceTurn(matchId);
+        state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
+        state.setTurnNumber(match.getTurnNumber());
+        state.setActionExecuted(false);
+        state.setPhase(PHASE_IN_PROGRESS);
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Resolves a pending Steal after its challenge window closes.
+     *
+     * <p>A truthful claim transfers up to {@value #STEAL_GAIN} coins from the
+     * target to the actor (capped by the target's current balance). If the claim
+     * was exposed as a bluff the Challenge Manager already cancelled the pending
+     * action, so {@code granted} only reaches this seam as {@code true}.
+     * {@code false} is tolerated for completeness and simply resolves without
+     * transferring any coins.
+     *
+     * @param matchId the match ID
+     * @param userId  the actor's user ID (must match the pending action)
+     * @param granted true if the Steal is rewarded, false if it is cancelled
+     * @return the updated player-safe game state
+     */
+    @Transactional
+    public GameStateResponse resolveSteal(UUID matchId, UUID userId, boolean granted) {
+        GameState state = getGameState(matchId);
+
+        if (state.getPendingAction() == null) {
+            throw new BusinessException("NO_PENDING_ACTION",
+                    "No pending action to resolve.");
+        }
+
+        if (!ACTION_STEAL.equals(state.getPendingAction().getType())) {
+            throw new BusinessException("INVALID_PENDING_ACTION",
+                    "The pending action is not a Steal.");
+        }
+
+        if (!userId.equals(state.getPendingAction().getActorUserId())) {
+            throw new BusinessException("NOT_ACTOR",
+                    "Only the action's actor can resolve the pending action.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "The actor is no longer part of this match."));
+
+        UUID targetId = state.getPendingAction().getTargetPlayerId();
+        GamePlayerState target = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(targetId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("TARGET_NOT_IN_MATCH",
+                        "The target is no longer part of this match."));
+
+        state.setPendingAction(null);
+
+        if (granted) {
+            int stolen = Math.min(STEAL_GAIN, target.getCoins());
+            if (stolen > 0) {
+                target.setCoins(target.getCoins() - stolen);
+                player.setCoins(player.getCoins() + stolen);
+                state.getLog().add(GameLogEntry.of("action",
+                        player.getUsername() + " stole " + stolen + " coin(s) from "
+                                + target.getUsername() + "."));
+                log.info("Steal resolved in match {}: '{}' stole {} coins from '{}'",
+                        matchId, player.getUsername(), stolen, target.getUsername());
+            }
+        } else {
+            state.getLog().add(GameLogEntry.of("block",
+                    "The Steal by " + player.getUsername() + " was cancelled."));
+            log.info("Steal cancelled in match {} (no coins transferred)", matchId);
         }
 
         Match match = turnManager.advanceTurn(matchId);

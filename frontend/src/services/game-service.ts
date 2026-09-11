@@ -12,8 +12,8 @@ export const GameService = {
   ): Promise<Result<GameState>> {
     return repositories.game.performAction(matchId, intent);
   },
-  async challenge(matchId: string, targetPlayerId: string): Promise<Result<GameState>> {
-    return repositories.game.challenge(matchId, targetPlayerId);
+  async challenge(matchId: string): Promise<Result<GameState>> {
+    return repositories.game.challenge(matchId);
   },
   async block(matchId: string, claimedCharacter: string): Promise<Result<GameState>> {
     return repositories.game.block(matchId, claimedCharacter);
