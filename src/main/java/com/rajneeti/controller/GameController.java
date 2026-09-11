@@ -2,10 +2,12 @@ package com.rajneeti.controller;
 
 import com.rajneeti.dto.ApiResponse;
 import com.rajneeti.dto.game.AssassinateRequest;
+import com.rajneeti.dto.game.BlockRequest;
 import com.rajneeti.dto.game.CoupRequest;
 import com.rajneeti.dto.game.ExchangeConfirmRequest;
 import com.rajneeti.dto.game.GameStateResponse;
 import com.rajneeti.dto.game.StealRequest;
+import com.rajneeti.game.BlockManager;
 import com.rajneeti.game.ChallengeManager;
 import com.rajneeti.game.GameEngine;
 import com.rajneeti.security.UserPrincipal;
@@ -30,8 +32,8 @@ import java.util.UUID;
  * <p>Instant actions that resolve without a block/challenge window (income)
  * and block-window actions with a minimal resolve seam (foreign aid, tax,
  * steal, exchange, assassination) live here. Challenges against claim-based
- * actions are resolved by the {@link ChallengeManager} (Module 18); the full
- * Block Manager arrives in a later module.
+ * actions are resolved by the {@link ChallengeManager} (Module 18) and block
+ * claims by the {@link BlockManager} (Module 19).
  */
 @Slf4j
 @RestController
@@ -41,6 +43,7 @@ public class GameController {
 
     private final GameEngine gameEngine;
     private final ChallengeManager challengeManager;
+    private final BlockManager blockManager;
 
     /**
      * GET /api/matches/{matchId}/game
@@ -344,6 +347,29 @@ public class GameController {
 
         GameStateResponse response = challengeManager.challenge(
                 matchId, userPrincipal.getId(), loserCardId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/block
+     * Module 19 — records a block claim by the caller against the currently
+     * pending blockable action. The blocker asserts a character id; ownership
+     * of that character is verified only if the block is challenged later.
+     *
+     * @param request body containing the {@code claimedCharacter}
+     */
+    @PostMapping("/{matchId}/block")
+    public ResponseEntity<ApiResponse<GameStateResponse>> block(
+            @PathVariable UUID matchId,
+            @RequestBody BlockRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        String claimedCharacter = request != null ? request.getClaimedCharacter() : null;
+        log.info("Player '{}' claiming a block (character={}) in match: {}",
+                userPrincipal.getUsername(), claimedCharacter, matchId);
+
+        GameStateResponse response = blockManager.block(
+                matchId, userPrincipal.getId(), claimedCharacter);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
