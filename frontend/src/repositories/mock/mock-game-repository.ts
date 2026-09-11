@@ -38,7 +38,7 @@ export class MockGameRepository implements GameRepository {
     return ok(this.state);
   }
 
-  async challenge(_matchId: string, _targetPlayerId: string): Promise<Result<GameState>> {
+  async challenge(matchId: string): Promise<Result<GameState>> {
     await delay(550);
     const actor = this.state.activeAction;
     if (!actor) {
@@ -48,9 +48,21 @@ export class MockGameRepository implements GameRepository {
         message: "কোনো সক্রিয় অ্যাকশন নেই।",
       });
     }
+    const claimantId = actor.claimedCharacter
+      ? this.state.currentTurnPlayerId ?? ""
+      : "";
     this.state = {
       ...this.state,
       phase: "challenge_resolution",
+      pendingChallenge: {
+        challengerId: matchId,
+        claimantId,
+        claimedCharacter: "minister",
+        result: "success",
+        influenceLostById: claimantId,
+        actionContinues: false,
+        effectApplied: false,
+      },
       log: [
         {
           id: `log-${Date.now()}`,

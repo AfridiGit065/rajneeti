@@ -56,4 +56,11 @@ public class PendingAction {
      * it is cancelled or fails. {@code null} for actions with no reserved cost.
      */
     private final Integer reservedCoins;
+
+    /**
+     * Module 18 — the user ID of the opponent who successfully challenged
+     * this pending action while the claim was truthful. Once set, any second
+     * challenge against the same pending action is rejected.
+     */
+    private final UUID challengerUserId;
 }

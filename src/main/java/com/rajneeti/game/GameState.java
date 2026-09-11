@@ -79,6 +79,14 @@ public class GameState {
 
     private UUID winnerUserId;
 
+    /**
+     * Module 18 — non-null after a challenge was resolved for the current or
+     * most recent pending action. Cleared whenever a brand-new action is
+     * declared so stale verdict data does not linger.
+     */
+    @Builder.Default
+    private GameChallenge lastChallenge = null;
+
     @Builder.Default
     private List<GameLogEntry> log = new ArrayList<>();
 

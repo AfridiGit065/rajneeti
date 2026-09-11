@@ -7,10 +7,7 @@ export interface GameRepository {
     matchId: string,
     intent: ActionIntent,
   ): Promise<Result<GameState>>;
-  challenge(
-    matchId: string,
-    targetPlayerId: string,
-  ): Promise<Result<GameState>>;
+  challenge(matchId: string): Promise<Result<GameState>>;
   block(
     matchId: string,
     claimedCharacter: string,
