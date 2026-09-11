@@ -46,4 +46,11 @@ public class GameChallenge {
      * {@code false} when the bluff was exposed and the action is cancelled.
      */
     private final boolean actionContinues;
+
+    /**
+     * Module 19 — {@code true} when this challenge targets a BLOCK claim
+     * (the claimant is the blocker) rather than the action's character claim.
+     * Exposed so the frontend can tell the two verdicts apart.
+     */
+    private final boolean blockClaim;
 }

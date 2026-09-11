@@ -63,4 +63,26 @@ public class PendingAction {
      * challenge against the same pending action is rejected.
      */
     private final UUID challengerUserId;
+
+    /**
+     * Module 19 — the user ID of the player who submitted a block claim
+     * against this pending action. {@code null} while no block is in play.
+     * The blocker does NOT need to own the claimed character (a bluff is
+     * allowed); a later block challenge decides the truth.
+     */
+    private final UUID blockerUserId;
+
+    /**
+     * Module 19 — the lower-case character id the blocker asserted to stop
+     * this action, e.g. {@code "minister"} for a Foreign Aid block.
+     * {@code null} until a block is submitted.
+     */
+    private final String blockedCharacter;
+
+    /**
+     * Module 19 — the user ID of the opponent who challenged the pending
+     * block claim. Once set, any second block challenge against the same
+     * block is rejected.
+     */
+    private final UUID blockChallengerUserId;
 }

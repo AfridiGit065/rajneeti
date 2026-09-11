@@ -29,6 +29,10 @@ export type ActionIntent = {
   claimedCharacter?: CharacterId;
   /** Target player id, when the action targets another player */
   targetPlayerId?: string;
+  /** Module 19 — set when another player submitted a block on this action. */
+  blockerUserId?: string;
+  /** Module 19 — character the blocker claimed (e.g. "minister"). */
+  blockedCharacter?: CharacterId;
 };
 
 export type ChallengeResult = "success" | "failed";
@@ -44,6 +48,8 @@ export interface ChallengeResolution {
   influenceLostById?: string;
   /** Whether the original action continues after the challenge. */
   actionContinues?: boolean;
+  /** Module 19 — true when the challenge targeted a block claim. */
+  blockClaim?: boolean;
   effectApplied: boolean;
 }
 

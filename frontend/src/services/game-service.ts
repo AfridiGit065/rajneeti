@@ -33,4 +33,7 @@ export const GameService = {
   async resolveAssassinate(matchId: string, succeeded: boolean): Promise<Result<GameState>> {
     return repositories.game.resolveAssassinate(matchId, succeeded);
   },
+  async resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>> {
+    return repositories.game.resolveSteal(matchId, granted);
+  },
 };

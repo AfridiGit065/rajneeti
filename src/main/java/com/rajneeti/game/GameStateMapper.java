@@ -69,6 +69,10 @@ public class GameStateMapper {
             if (pending.getChallengerUserId() != null) {
                 builder.challengerUserId(pending.getChallengerUserId());
             }
+            if (pending.getBlockerUserId() != null) {
+                builder.blockerUserId(pending.getBlockerUserId());
+                builder.blockedCharacter(pending.getBlockedCharacter());
+            }
             pendingDto = builder.build();
         }
 
@@ -136,6 +140,7 @@ public class GameStateMapper {
                 .revealedCharacterId(challenge.getRevealedCharacterId())
                 .influenceLostById(challenge.getInfluenceLostById())
                 .actionContinues(challenge.isActionContinues())
+                .blockClaim(challenge.isBlockClaim())
                 .build();
     }
 }

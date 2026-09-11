@@ -131,27 +131,33 @@ export function BlockResult({
   );
 }
 
-/** 2. BlockDialog: Interactive modal when a block occurs */
+/** 2. BlockDialog: Modal shown when a block is active */
 export function BlockDialog({
   event,
   currentPlayer,
   open,
+  busy = false,
   onClose,
-  onResolve,
+  onAllowBlock,
+  onChallenge,
 }: {
   event: BlockEvent;
   currentPlayer: GamePlayer;
   open: boolean;
+  busy?: boolean;
   onClose: () => void;
-  onResolve: (outcome: BlockOutcome) => void;
+  /** Actor accepting the block — resolves the pending action as blocked. */
+  onAllowBlock: () => void;
+  /** Any alive non-blocker challenging the block claim. */
+  onChallenge: () => void;
 }) {
-  const [mockOutcomeSelect, setMockOutcomeSelect] = useState<BlockOutcome | null>(null);
-
   if (!open) return null;
 
   const character = CHARACTER_MAP[event.claimedCharacter];
   const action = getAction(event.actionId);
   const isSelfBlocker = currentPlayer.id === event.blocker.id;
+  const isActor = currentPlayer.id === event.targetOrActor.id;
+  const canChallenge = !isSelfBlocker && currentPlayer.isAlive;
 
   return (
     <div
@@ -217,86 +223,46 @@ export function BlockDialog({
           </div>
         </div>
 
-        {/* Mock outcome simulation helper for testing */}
-        <div className="rounded-xl border border-white/10 bg-deep-900/60 p-3 space-y-2 text-xs">
-          <p className="font-cinzel text-[10px] uppercase tracking-wider text-muted font-bold">
-            Simulate Mock Outcome:
+        {isSelfBlocker ? (
+          <p className="text-center text-xs text-muted font-bengali">
+            আপনি নিজের ব্লক চ্যালেঞ্জ করতে পারবেন না।
           </p>
-          <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-            <button
-              type="button"
-              onClick={() => setMockOutcomeSelect("block_succeeds")}
-              className={cn(
-                "p-2 rounded-lg border text-left transition-colors cursor-pointer",
-                mockOutcomeSelect === "block_succeeds"
-                  ? "border-forest-400 bg-forest-900/30 text-forest-200"
-                  : "border-white/5 bg-deep-950 text-muted hover:border-white/20",
-              )}
-            >
-              ✓ Block Succeeds
-            </button>
-            <button
-              type="button"
-              onClick={() => setMockOutcomeSelect("block_claim_is_bluff")}
-              className={cn(
-                "p-2 rounded-lg border text-left transition-colors cursor-pointer",
-                mockOutcomeSelect === "block_claim_is_bluff"
-                  ? "border-crimson-400 bg-crimson-900/30 text-crimson-200"
-                  : "border-white/5 bg-deep-950 text-muted hover:border-white/20",
-              )}
-            >
-              ✕ Caught Bluffing
-            </button>
-            <button
-              type="button"
-              onClick={() => setMockOutcomeSelect("challenger_loses_influence")}
-              className={cn(
-                "p-2 rounded-lg border text-left transition-colors cursor-pointer",
-                mockOutcomeSelect === "challenger_loses_influence"
-                  ? "border-crimson-400 bg-crimson-900/30 text-crimson-200"
-                  : "border-white/5 bg-deep-950 text-muted hover:border-white/20",
-              )}
-            >
-              ☠️ Challenger Loses Influence
-            </button>
-            <button
-              type="button"
-              onClick={() => setMockOutcomeSelect("blocker_loses_influence")}
-              className={cn(
-                "p-2 rounded-lg border text-left transition-colors cursor-pointer",
-                mockOutcomeSelect === "blocker_loses_influence"
-                  ? "border-crimson-400 bg-crimson-900/30 text-crimson-200"
-                  : "border-white/5 bg-deep-950 text-muted hover:border-white/20",
-              )}
-            >
-              ☠️ Blocker Loses Influence
-            </button>
-          </div>
-        </div>
+        ) : !isActor ? (
+          <p className="text-center text-xs text-muted font-bengali">
+            অ্যাকশনের কর্তা ছাড়া অন্যরা চ্যালেঞ্জ করতে পারে — ব্লক সত্য হলে চ্যালেঞ্জকারী ১টি ইনফ্লুয়েন্স হারাবে।
+          </p>
+        ) : null}
 
-        {/* Action Buttons: CHALLENGE BLOCK / ALLOW */}
+        {/* Action Buttons: ALLOW BLOCK (actor) / CHALLENGE BLOCK */}
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
           <Button
             variant="outline"
             fullWidth
-            onClick={() => {
-              onResolve(mockOutcomeSelect ?? "block_succeeds");
-              onClose();
-            }}
+            onClick={onClose}
             className="gap-1.5 font-cinzel font-semibold text-xs tracking-wider uppercase"
           >
-            <CheckCircle className="size-4 text-forest-400" />
-            Allow Block
+            <XCircle className="size-4 text-muted" />
+            Close
           </Button>
+
+          {isActor ? (
+            <Button
+              variant="premium"
+              fullWidth
+              disabled={busy}
+              onClick={onAllowBlock}
+              className="gap-1.5 shadow-gold font-cinzel font-semibold text-xs tracking-wider uppercase"
+            >
+              <CheckCircle className="size-4 text-forest-400" />
+              Allow Block
+            </Button>
+          ) : null}
 
           <Button
             variant="danger"
             fullWidth
-            disabled={isSelfBlocker}
-            onClick={() => {
-              onResolve(mockOutcomeSelect ?? "block_claim_is_bluff");
-              onClose();
-            }}
+            disabled={!canChallenge || busy}
+            onClick={onChallenge}
             className="gap-1.5 shadow-crimson font-cinzel font-semibold text-xs tracking-wider uppercase"
           >
             <Gavel className="size-4" />
@@ -304,6 +270,183 @@ export function BlockDialog({
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** 2b. BlockOffer: Banner inviting a non-actor to block a blockable action. */
+export function BlockOffer({
+  action,
+  busy = false,
+  onBlock,
+}: {
+  action: GameActionId;
+  busy?: boolean;
+  onBlock: (claimed: CharacterId) => void;
+}) {
+  const [choosing, setChoosing] = useState(false);
+  const act = getAction(action);
+  const claimants = (act.blockableBy ?? []) as readonly CharacterId[];
+
+  if (choosing) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="relative w-full max-w-md rounded-3xl border-2 border-crimson-500/50 bg-surface panel-emboss panel-texture p-6 sm:p-7 shadow-2xl space-y-5">
+          <button
+            type="button"
+            onClick={() => setChoosing(false)}
+            className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full border border-white/10 bg-deep-950/80 text-muted hover:text-ivory transition-all cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+
+          <div className="text-center space-y-2">
+            <div className="inline-flex size-14 items-center justify-center rounded-2xl border-2 border-crimson-500/50 bg-crimson-950/60 text-crimson-400 shadow-crimson">
+              <ShieldAlert className="size-8" />
+            </div>
+            <div>
+              <span className="font-cinzel text-xs font-bold uppercase tracking-[0.25em] text-crimson-400">
+                Block Opportunity
+              </span>
+              <h2 className="font-display text-2xl font-bold text-ivory mt-0.5">
+                React to {act.nameEn} ({act.nameBn})
+              </h2>
+            </div>
+          </div>
+
+          <p className="text-xs text-parchment-300 font-bengali leading-relaxed">
+            কোন চরিত্রের মালিকানা দাবি করে {act.nameBn} অ্যাকশনটি ব্লক করবেন? ব্লাফ করাও
+            বৈধ — হাতে কার্ড না থাকলেও দাবি করতে পারেন, তবে চ্যালেঞ্জ করে ফাঁস করলে ১টি
+            ইনফ্লুয়েন্স হারাবেন।
+          </p>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            {claimants.map((id) => {
+              const ch = CHARACTER_MAP[id]!;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onBlock(id)}
+                  className="flex items-center gap-3 rounded-xl border border-crimson-500/30 bg-deep-950 p-3 text-left transition-all cursor-pointer hover:border-gold-400 hover:bg-deep-900 disabled:opacity-50"
+                >
+                  <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border border-gold-500/40 bg-deep-900">
+                    <Image
+                      src={ch.imagePath}
+                      alt={ch.nameBn}
+                      fill
+                      className="object-cover object-top"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bengali text-sm font-bold text-gold-300">
+                      {ch.nameBn}
+                    </p>
+                    <p className="font-cinzel text-[10px] text-muted uppercase tracking-wider">
+                      {ch.nameEn}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={() => setChoosing(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-crimson-500/50 bg-gradient-to-r from-crimson-950/70 via-deep-900 to-deep-950 p-4 shadow-crimson animate-fade-in">
+      <div className="flex items-center gap-3">
+        <span className="flex size-10 items-center justify-center rounded-xl border border-crimson-500/50 bg-crimson-600/20 text-crimson-300">
+          <ShieldAlert className="size-5" />
+        </span>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-ivory">Block Opportunity</span>
+            <Badge tone="crimson">Can React</Badge>
+          </div>
+          <p className="text-xs text-muted mt-0.5">
+            {act.nameEn} ({act.nameBn}) — claim{" "}
+            <span className="text-gold-300 font-semibold">
+              {claimants.map((id) => CHARACTER_MAP[id]?.nameBn ?? id).join(" / ")}
+            </span>{" "}
+            to block.
+          </p>
+        </div>
+      </div>
+
+      <Button
+        variant="premium"
+        size="sm"
+        disabled={busy}
+        onClick={() => setChoosing(true)}
+        className="gap-2 font-cinzel font-semibold text-xs tracking-wider uppercase"
+      >
+        <ShieldAlert className="size-3.5" />
+        Block
+      </Button>
+    </div>
+  );
+}
+
+/** 2c. BlockWindowPanel: Actor resolve control while their blockable action is pending. */
+export function BlockWindowPanel({
+  action,
+  busy = false,
+  onResolve,
+}: {
+  action: GameActionId;
+  busy?: boolean;
+  onResolve: () => void;
+}) {
+  const act = getAction(action);
+  const claimants = (act.blockableBy ?? []) as readonly CharacterId[];
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-gold-500/40 bg-gradient-to-r from-deep-950 via-deep-900 to-deep-950 p-4 shadow-gold animate-fade-in">
+      <div className="flex items-center gap-3">
+        <span className="flex size-10 items-center justify-center rounded-xl border border-gold-500/50 bg-gold-500/10 text-gold-300">
+          <ShieldAlert className="size-5" />
+        </span>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-ivory">Block Window Open</span>
+            <Badge tone="gold">Waiting</Badge>
+          </div>
+          <p className="text-xs text-muted mt-0.5">
+            {act.nameEn} ({act.nameBn}) pending — blockable by{" "}
+            <span className="text-gold-300 font-semibold">
+              {claimants.map((id) => CHARACTER_MAP[id]?.nameBn ?? id).join(" / ")}
+            </span>
+            . Resolve now (no block submitted yet)?
+          </p>
+        </div>
+      </div>
+
+      <Button
+        variant="premium"
+        size="sm"
+        disabled={busy}
+        onClick={onResolve}
+        className="gap-2 font-cinzel font-semibold text-xs tracking-wider uppercase"
+      >
+        <CheckCircle className="size-3.5 text-forest-400" />
+        Resolve Action
+      </Button>
     </div>
   );
 }

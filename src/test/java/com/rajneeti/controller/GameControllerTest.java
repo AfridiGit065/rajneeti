@@ -10,6 +10,7 @@ import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.GlobalExceptionHandler;
 import com.rajneeti.exception.MatchNotFoundException;
+import com.rajneeti.game.BlockManager;
 import com.rajneeti.game.ChallengeManager;
 import com.rajneeti.game.GameEngine;
 import com.rajneeti.security.JwtAuthenticationEntryPoint;
@@ -51,6 +52,9 @@ class GameControllerTest {
 
     @MockBean
     private ChallengeManager challengeManager;
+
+    @MockBean
+    private BlockManager blockManager;
 
     @MockBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -516,5 +520,46 @@ class GameControllerTest {
                         .with(user(testPrincipal)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("ACTION_NOT_CHALLENGEABLE"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/block - Success (records block claim)")
+    void block_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        UUID blockerId = testUserId;
+        response.setPendingAction(PendingActionDto.builder()
+                .type("FOREIGN_AID")
+                .actorUserId(UUID.randomUUID())
+                .startedAt(java.time.LocalDateTime.now())
+                .blockerUserId(blockerId)
+                .blockedCharacter("minister")
+                .build());
+
+        when(blockManager.block(eq(testMatchId), eq(testUserId), eq("minister")))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/block")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"claimedCharacter\":\"minister\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.pendingAction.type").value("FOREIGN_AID"))
+                .andExpect(jsonPath("$.data.pendingAction.blockedCharacter").value("minister"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/block - Fails for a non-blockable action (422)")
+    void block_NotBlockable() throws Exception {
+        when(blockManager.block(eq(testMatchId), eq(testUserId), eq("minister")))
+                .thenThrow(new BusinessException("ACTION_NOT_BLOCKABLE",
+                        "The action 'INCOME' cannot be blocked."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/block")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"claimedCharacter\":\"minister\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("ACTION_NOT_BLOCKABLE"));
     }
 }

@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import type { BackendGameState, BackendGamePlayer, BackendPendingAction } from "@/types/backend";
+import type { BackendBlockRequest, BackendGameState, BackendGamePlayer, BackendPendingAction } from "@/types/backend";
 import type { GameRepository } from "../game-repository";
 import { MatchStatus, type ActionIntent, type ChallengeResolution, type GameActionId, type GameResult, type GameState, type GamePhase, type InfluenceCard, type GameLogEntry } from "@/types/game";
 import { err, ok, type Result } from "@/types/api";
@@ -10,6 +10,23 @@ type CharacterId = (typeof CHARACTER_IDS)[number];
 
 function toCharacterId(value: string): CharacterId {
   return CHARACTER_IDS.includes(value as CharacterId) ? (value as CharacterId) : "minister";
+}
+
+function toActionId(type: string): GameActionId {
+  switch (type) {
+    case "EXCHANGE":
+      return "exchange";
+    case "FOREIGN_AID":
+      return "foreign_aid";
+    case "ASSASSINATE":
+      return "assassinate";
+    case "TAX":
+      return "tax";
+    case "STEAL":
+      return "steal";
+    default:
+      return "income";
+  }
 }
 
 function mapStatus(status: BackendGameState["status"]): MatchStatus {
@@ -63,6 +80,7 @@ function mapChallengeResolution(backend: BackendGameState): ChallengeResolution 
       : undefined,
     influenceLostById: challenge.influenceLostById,
     actionContinues: challenge.actionContinues,
+    blockClaim: challenge.blockClaim,
     effectApplied: challenge.actionContinues,
   };
 }
@@ -141,27 +159,21 @@ function toGameState(backend: BackendGameState): GameState {
   };
 }
 
-/** A resolved challenge is surfaced until the next action begins. */
+/**
+ * Module 19 — derives the frontend phase (and the block state) from the server
+ * response. A pending block claim puts the game in the block window; a block
+ * that has not been challenged yet keeps the action pending.
+ */
 function toPhase(backend: BackendGameState): GamePhase {
   if (backend.lastChallenge) return "challenge_resolution";
+  if (backend.pendingAction?.blockerUserId) return "block_resolution";
   if (backend.pendingAction?.claimedCharacter) return "action_resolution";
   return mapPhase(backend.phase);
 }
 
 function mapPendingAction(pending: BackendPendingAction | undefined): ActionIntent | null {
   if (!pending) return null;
-  const action: GameActionId =
-    pending.type === "EXCHANGE"
-      ? "exchange"
-      : pending.type === "FOREIGN_AID"
-      ? "foreign_aid"
-      : pending.type === "ASSASSINATE"
-      ? "assassinate"
-      : pending.type === "TAX"
-      ? "tax"
-      : pending.type === "STEAL"
-      ? "steal"
-      : "income";
+  const action = toActionId(pending.type);
   const intent: ActionIntent = {
     action,
     claimedCharacter: pending.claimedCharacter
@@ -174,6 +186,12 @@ function mapPendingAction(pending: BackendPendingAction | undefined): ActionInte
   };
   if (pending.targetPlayerId) {
     intent.targetPlayerId = pending.targetPlayerId;
+  }
+  if (pending.blockerUserId) {
+    intent.blockerUserId = pending.blockerUserId;
+    intent.blockedCharacter = pending.blockedCharacter
+      ? toCharacterId(pending.blockedCharacter)
+      : undefined;
   }
   return intent;
 }
@@ -190,9 +208,10 @@ const notImplemented = (): Result<GameState> =>
  *
  * <p>Reads the authoritative, player-safe game state from the backend game
  * engine. Instant and block-window gameplay actions (income, foreign aid,
- * tax, steal, exchange, assassination) resolve against the backend, and
- * challenges are resolved server-side by the Challenge Manager (Module 18).
- * Blocking is not implemented in this build yet.
+ * tax, steal, exchange, assassination) resolve against the backend. Action
+ * claims are resolved server-side by the Challenge Manager (Module 18) and
+ * block claims by the Block Manager (Module 19); a block itself can be
+ * challenged through the same <code>/challenge</code> seam.
  */
 export class RestGameRepository implements GameRepository {
   async getGameState(matchId: string): Promise<Result<GameState>> {
@@ -241,8 +260,13 @@ export class RestGameRepository implements GameRepository {
     return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }
 
-  async block(_matchId: string, _claimedCharacter: string): Promise<Result<GameState>> {
-    return notImplemented();
+  async block(matchId: string, claimedCharacter: string): Promise<Result<GameState>> {
+    const payload: BackendBlockRequest = { claimedCharacter };
+    const result = await apiClient.post<BackendGameState>(
+      `/api/matches/${matchId}/block`,
+      payload,
+    );
+    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }
 
   async endTurn(_matchId: string, _playerId: string): Promise<Result<GameState>> {
@@ -290,6 +314,13 @@ export class RestGameRepository implements GameRepository {
   async resolveAssassinate(matchId: string, succeeded: boolean): Promise<Result<GameState>> {
     const result = await apiClient.post<BackendGameState>(
       `/api/matches/${matchId}/assassinate/resolve?succeeded=${succeeded}`,
+    );
+    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+  }
+
+  async resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>> {
+    const result = await apiClient.post<BackendGameState>(
+      `/api/matches/${matchId}/steal/resolve?granted=${granted}`,
     );
     return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }

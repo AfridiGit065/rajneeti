@@ -45,4 +45,10 @@ public class ChallengeDto {
 
     /** Whether the original action continues after a truthful claim. */
     private boolean actionContinues;
+
+    /**
+     * Module 19 — {@code true} when this challenge was raised against a block
+     * claim rather than the action's own character claim.
+     */
+    private boolean blockClaim;
 }

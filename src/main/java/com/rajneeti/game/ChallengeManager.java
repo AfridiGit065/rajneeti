@@ -45,6 +45,13 @@ import java.util.UUID;
  * <p>Only one challenge is accepted per pending action; a second challenge is
  * rejected with {@code DUPLICATE_CHALLENGE}. A challenger must be an eligible,
  * non-eliminated opponent of the claimant.
+ *
+ * <p>Module 19 (Block Manager): a block claim opens its own challenge window.
+ * When a block is pending, {@code challenge()} resolves the BLOCK claim instead:
+ * a truthful block costs the challenger one influence and the block stands
+ * (the action is stopped at resolution); a bluff block costs the blocker one
+ * influence, the block is removed and the action proceeds. Block challenges
+ * never advance the turn — the action is still pending for the actor to resolve.
  */
 @Slf4j
 @Service
@@ -99,16 +106,33 @@ public class ChallengeManager {
                     "No pending action to challenge.");
         }
 
+        GamePlayerState challenger = findPlayer(state, challengerId, "PLAYER_NOT_IN_MATCH");
+
+        requireActive(challenger, "PLAYER_ELIMINATED",
+                "Eliminated players cannot challenge.");
+
+        if (challenger.getCards() == null || challenger.getCards().isEmpty()) {
+            throw new BusinessException("NO_INFLUENCE",
+                    "You need at least one influence card to challenge.");
+        }
+
+        // Module 19 — a block claim opens its own challenge window before the
+        // action window is considered: the challenge then targets the blocker's
+        // claim rather than the action's character claim.
+        boolean isBlockChallenge = pending.getBlockerUserId() != null
+                && pending.getBlockChallengerUserId() == null;
+
+        if (isBlockChallenge) {
+            return resolveBlockChallenge(state, pending, challenger, loserCardId);
+        }
+
         if (!CHALLENGEABLE_ACTIONS.contains(pending.getType())) {
             throw new BusinessException("ACTION_NOT_CHALLENGEABLE",
                     "The action '" + pending.getType() + "' does not claim a character and cannot be challenged.");
         }
 
-        GamePlayerState challenger = findPlayer(state, challengerId, "PLAYER_NOT_IN_MATCH");
         GamePlayerState claimant = findPlayer(state, pending.getActorUserId(), "CLAIMANT_NOT_IN_MATCH");
 
-        requireActive(challenger, "PLAYER_ELIMINATED",
-                "Eliminated players cannot challenge.");
         requireActive(claimant, "CLAIMANT_ELIMINATED",
                 "The claimant is no longer active and their action cannot be challenged.");
 
@@ -120,11 +144,6 @@ public class ChallengeManager {
         if (pending.getChallengerUserId() != null) {
             throw new BusinessException("DUPLICATE_CHALLENGE",
                     "This action has already been challenged. Only one challenge is allowed per action.");
-        }
-
-        if (challenger.getCards() == null || challenger.getCards().isEmpty()) {
-            throw new BusinessException("NO_INFLUENCE",
-                    "You need at least one influence card to challenge.");
         }
 
         CharacterType claimed = parseClaimedCharacter(pending.getClaimedCharacter());
@@ -156,6 +175,182 @@ public class ChallengeManager {
                 challenge.getInfluenceLostById(), challenge.isActionContinues());
 
         return gameEngine.getSafeGameState(matchId, challengerId);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Block challenge branch (Module 19)                                */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Resolves a challenge against the pending block claim rather than the
+     * action claim.
+     *
+     * <ul>
+     *   <li>TRUTHFUL block (the blocker owns the claimed character): the
+     *       challenger loses exactly one influence, the blocker reveals the
+     *       card (returns to the deck, replacement drawn), the block stands and
+     *       the action is stopped at resolution ({@code actionContinues=false}).
+     *       The pending action stays open — marked with {@code blockChallengerUserId}
+     *       — so the actor can resolve it as blocked.</li>
+     *   <li>BLUFF block (the blocker does not own the character): the blocker
+     *       loses exactly one influence, the block is removed
+     *       ({@code blockerUserId} cleared) and the action proceeds
+     *       ({@code actionContinues=true}).</li>
+     * </ul>
+     *
+     * <p>Neither branch advances the turn: the action is still pending and the
+     * actor resolves it afterwards through the existing resolve* seams.
+     */
+    private GameStateResponse resolveBlockChallenge(
+            GameState state, PendingAction pending,
+            GamePlayerState challenger, UUID loserCardId) {
+
+        UUID blockerId = pending.getBlockerUserId();
+        GamePlayerState blocker = findPlayer(state, blockerId, "BLOCKER_NOT_IN_MATCH");
+        requireActive(blocker, "BLOCKER_ELIMINATED",
+                "An eliminated player cannot hold a block claim.");
+
+        if (challenger.getUserId().equals(blockerId)) {
+            throw new BusinessException("CANNOT_CHALLENGE_SELF",
+                    "A player cannot challenge their own block claim.");
+        }
+
+        CharacterType blocked = parseBlockedCharacter(pending.getBlockedCharacter());
+        boolean blockTrue = blocker.getCards().stream()
+                .anyMatch(card -> card.getCharacter() == blocked);
+
+        GameChallenge.GameChallengeBuilder result = GameChallenge.builder()
+                .challengerUserId(challenger.getUserId())
+                .claimantUserId(blockerId)
+                .actionType(pending.getType())
+                .claimedCharacter(pending.getBlockedCharacter())
+                .blockClaim(true);
+
+        if (blockTrue) {
+            result = resolveTruthfulBlockChallenge(state, pending, challenger,
+                    blocker, blocked, loserCardId, result);
+        } else {
+            result = resolveBluffBlockChallenge(state, pending, challenger,
+                    blocker, blocked, result);
+        }
+
+        GameChallenge challenge = result.build();
+        state.setLastChallenge(challenge);
+        state.getLog().add(GameLogEntry.of("challenge",
+                describe(challenge, challenger.getUsername(),
+                        blocker.getUsername())));
+
+        log.info("Block challenge on '{}' resolved in match {}: claim={} loser={} blockStands={}",
+                pending.getType(), state.getMatchId(),
+                challenge.isClaimTrue() ? "TRUE" : "FALSE",
+                challenge.getInfluenceLostById(),
+                challenge.isActionContinues() ? "NO" : "YES");
+
+        return gameEngine.getSafeGameState(state.getMatchId(), challenger.getUserId());
+    }
+
+    /**
+     * Truthful block: the challenger loses one influence and the blocker proves
+     * the claim by revealing the blocked card (back to the deck, replacement
+     * drawn). The block stands on the pending action for the actor's resolution.
+     */
+    private GameChallenge.GameChallengeBuilder resolveTruthfulBlockChallenge(
+            GameState state, PendingAction pending,
+            GamePlayerState challenger, GamePlayerState blocker,
+            CharacterType blocked, UUID loserCardId,
+            GameChallenge.GameChallengeBuilder result) {
+
+        // 1. Challenger loses exactly one influence (uses staked card if valid).
+        GameCard lost = removeCard(challenger, loserCardId);
+        state.getLog().add(GameLogEntry.of("reveal",
+                challenger.getUsername() + " revealed " + cardName(lost)
+                        + " and lost 1 influence for a failed block challenge."));
+        if (challenger.getCards().isEmpty()) {
+            eliminate(state, challenger,
+                    "after losing their last influence card to a failed block challenge.");
+        }
+
+        // 2. Blocker proves the block, exactly like a truthful action claim.
+        GameCard blockedCard = blocker.getCards().stream()
+                .filter(card -> card.getCharacter() == blocked)
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("INVALID_GAME_STATE",
+                        "Block verified as truthful but the blocked character is missing from the blocker's hand."));
+        blocker.getCards().remove(blockedCard);
+        cardManager.returnToDeck(state.getDeck(), blockedCard);
+        GameCard replacement = cardManager.drawFirst(state.getDeck());
+        blocker.getCards().add(replacement);
+        state.setRevealedCardsCount(state.getRevealedCardsCount() + 1);
+        state.getLog().add(GameLogEntry.of("reveal",
+                blocker.getUsername() + " proved the block and revealed " + cardName(blockedCard)
+                        + ". The card returns to the deck and a replacement is drawn."));
+
+        // 3. The block stands. Mark the block as challenged so a second block
+        //    challenge is rejected; the actor still resolves the action next.
+        PendingAction updated = PendingAction.builder()
+                .type(pending.getType())
+                .actorUserId(pending.getActorUserId())
+                .startedAt(pending.getStartedAt())
+                .claimedCharacter(pending.getClaimedCharacter())
+                .exchangePool(pending.getExchangePool())
+                .originalHandCardIds(pending.getOriginalHandCardIds())
+                .targetPlayerId(pending.getTargetPlayerId())
+                .reservedCoins(pending.getReservedCoins())
+                .challengerUserId(pending.getChallengerUserId())
+                .blockerUserId(pending.getBlockerUserId())
+                .blockedCharacter(pending.getBlockedCharacter())
+                .blockChallengerUserId(challenger.getUserId())
+                .build();
+        state.setPendingAction(updated);
+
+        return result
+                .claimTrue(true)
+                .influenceLostById(challenger.getUserId())
+                .revealedCardId(blockedCard.getId())
+                .revealedCharacterId(blocked.name().toLowerCase())
+                .actionContinues(false);
+    }
+
+    /**
+     * Bluff block: the blocker loses exactly one influence and the block claim
+     * is removed. The action stays pending but unblocked, so the actor resolves
+     * it as proceeding.
+     */
+    private GameChallenge.GameChallengeBuilder resolveBluffBlockChallenge(
+            GameState state, PendingAction pending,
+            GamePlayerState challenger, GamePlayerState blocker,
+            CharacterType blocked, GameChallenge.GameChallengeBuilder result) {
+
+        GameCard lost = removeCard(blocker, null);
+        state.getLog().add(GameLogEntry.of("reveal",
+                blocker.getUsername() + " was caught bluffing a block and revealed "
+                        + cardName(lost) + " (lost 1 influence)."));
+        if (blocker.getCards().isEmpty()) {
+            eliminate(state, blocker,
+                    "after losing their last influence card to a successful block challenge.");
+        }
+
+        // Remove the block: the action continues unblocked for the actor's resolution.
+        PendingAction updated = PendingAction.builder()
+                .type(pending.getType())
+                .actorUserId(pending.getActorUserId())
+                .startedAt(pending.getStartedAt())
+                .claimedCharacter(pending.getClaimedCharacter())
+                .exchangePool(pending.getExchangePool())
+                .originalHandCardIds(pending.getOriginalHandCardIds())
+                .targetPlayerId(pending.getTargetPlayerId())
+                .reservedCoins(pending.getReservedCoins())
+                .challengerUserId(pending.getChallengerUserId())
+                .blockChallengerUserId(challenger.getUserId())
+                .build();
+        state.setPendingAction(updated);
+
+        return result
+                .claimTrue(false)
+                .influenceLostById(blocker.getUserId())
+                .revealedCardId(lost.getId())
+                .revealedCharacterId(lost.getCharacter().name().toLowerCase())
+                .actionContinues(true);
     }
 
     /* ------------------------------------------------------------------ */
@@ -322,6 +517,18 @@ public class ChallengeManager {
     }
 
     private String describe(GameChallenge challenge, String challengerName, String claimantName) {
+        if (challenge.isBlockClaim()) {
+            if (challenge.isClaimTrue()) {
+                return challengerName + " challenged " + claimantName
+                        + "'s block of " + challenge.getClaimedCharacter()
+                        + " — the block was TRUE. " + challengerName
+                        + " lost 1 influence; the block stands and the action is stopped.";
+            }
+            return challengerName + " challenged " + claimantName
+                    + "'s block of " + challenge.getClaimedCharacter()
+                    + " — the block was a BLUFF. " + claimantName
+                    + " lost 1 influence; the block is removed and the action proceeds.";
+        }
         StringBuilder sb = new StringBuilder();
         if (challenge.isClaimTrue()) {
             sb.append(challengerName).append(" challenged ").append(claimantName)
@@ -351,6 +558,24 @@ public class ChallengeManager {
         } catch (IllegalArgumentException ex) {
             throw new BusinessException("INVALID_CLAIM",
                     "Unknown claimed character '" + claimedCharacter + "'.");
+        }
+    }
+
+    /**
+     * Module 19 — parses the character asserted by a block claim. A block
+     * carries a real character id (never an arbitrary string), so an unknown
+     * value is a server-side state corruption rather than a client mistake.
+     */
+    private CharacterType parseBlockedCharacter(String blockedCharacter) {
+        if (blockedCharacter == null || blockedCharacter.isBlank()) {
+            throw new BusinessException("INVALID_GAME_STATE",
+                    "The pending action does not carry a blocked character claim.");
+        }
+        try {
+            return CharacterType.valueOf(blockedCharacter.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("INVALID_GAME_STATE",
+                    "Unknown blocked character '" + blockedCharacter + "'.");
         }
     }
 

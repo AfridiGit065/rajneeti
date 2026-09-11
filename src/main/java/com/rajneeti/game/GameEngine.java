@@ -84,6 +84,9 @@ public class GameEngine {
     /** The character claimed by a Steal action. */
     public static final String CHARACTER_DALAL = "dalal";
 
+    /** The character that can block an Assassination. */
+    public static final String CHARACTER_GOYENDA = "goyenda";
+
     /** Tax grants exactly 3 coins. */
     public static final int TAX_GAIN = 3;
 
