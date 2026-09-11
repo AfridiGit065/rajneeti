@@ -76,6 +76,10 @@ public class MatchPlayer {
     private Integer finalRank;
 
     @Builder.Default
+    @Column(name = "coins", nullable = false)
+    private Integer coins = 0;
+
+    @Builder.Default
     @Column(name = "coins_at_end", nullable = false)
     private Integer coinsAtEnd = 0;
 

@@ -27,6 +27,7 @@ public class MatchPlayerResponse {
     private Integer seatNumber;
     private PlayerStatus playerStatus;
     private Integer finalRank;
+    private Integer coins;
     private Integer coinsAtEnd;
     private Boolean eliminated;
     private LocalDateTime eliminatedAt;
