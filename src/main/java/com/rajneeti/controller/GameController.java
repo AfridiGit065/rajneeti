@@ -1,6 +1,7 @@
 package com.rajneeti.controller;
 
 import com.rajneeti.dto.ApiResponse;
+import com.rajneeti.dto.game.ExchangeConfirmRequest;
 import com.rajneeti.dto.game.GameStateResponse;
 import com.rajneeti.game.GameEngine;
 import com.rajneeti.security.UserPrincipal;
@@ -11,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -107,6 +109,48 @@ public class GameController {
 
         GameStateResponse response = gameEngine.resolveForeignAid(
                 matchId, userPrincipal.getId(), blocked);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/exchange
+     * Declares Exchange, claiming Amla. Draws 2 cards into the actor's hand
+     * (private pool) and opens a challenge window. No card swap and no turn
+     * advance until the actor confirms via {@code /exchange/confirm}.
+     */
+    @PostMapping("/{matchId}/exchange")
+    public ResponseEntity<ApiResponse<GameStateResponse>> performExchange(
+            @PathVariable UUID matchId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' performing Exchange in match: {}",
+                userPrincipal.getUsername(), matchId);
+
+        GameStateResponse response = gameEngine.performExchange(matchId, userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/exchange/confirm
+     * Resolves a pending Exchange: the actor keeps exactly 2 cards from the
+     * server-side private pool and the rest return to the deck.
+     *
+     * @param request body containing the {@code keepCardIds} to keep
+     */
+    @PostMapping("/{matchId}/exchange/confirm")
+    public ResponseEntity<ApiResponse<GameStateResponse>> confirmExchange(
+            @PathVariable UUID matchId,
+            @RequestBody ExchangeConfirmRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' resolving Exchange in match: {} (keeping {} cards)",
+                userPrincipal.getUsername(), matchId,
+                request != null && request.getKeepCardIds() != null
+                        ? request.getKeepCardIds().size() : 0);
+
+        GameStateResponse response = gameEngine.confirmExchange(
+                matchId, userPrincipal.getId(),
+                request != null ? request.getKeepCardIds() : null);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

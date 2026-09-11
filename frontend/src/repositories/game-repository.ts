@@ -21,4 +21,8 @@ export interface GameRepository {
     matchId: string,
     blocked: boolean,
   ): Promise<Result<GameState>>;
+  confirmExchange(
+    matchId: string,
+    keepCardIds: string[],
+  ): Promise<Result<GameState>>;
 }

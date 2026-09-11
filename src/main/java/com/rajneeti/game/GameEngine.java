@@ -20,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -54,6 +56,15 @@ public class GameEngine {
 
     /** Pending action type identifier for Foreign Aid. */
     public static final String ACTION_FOREIGN_AID = "FOREIGN_AID";
+
+    /** Pending action type identifier for Exchange. */
+    public static final String ACTION_EXCHANGE = "EXCHANGE";
+
+    /** Exchange draws exactly 2 cards and keeps exactly 2 of the 4 available. */
+    public static final int EXCHANGE_DRAW = 2;
+
+    /** The character claimed by an Exchange action. */
+    public static final String CHARACTER_AMLA = "amla";
 
     public static final String PHASE_SETUP = "setup";
     public static final String PHASE_IN_PROGRESS = "in_progress";
@@ -394,6 +405,202 @@ public class GameEngine {
 
         log.info("Foreign Aid resolved (blocked={}) in match {}, turn → {}",
                 blocked, matchId, match.getTurnNumber());
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Performs the Exchange action for the current turn holder.
+     *
+     * <p>Exchange claims the {@code amla} character. The actor draws
+     * {@value #EXCHANGE_DRAW} cards from the deck into their hand, temporarily
+     * holding the initial 2 plus the 2 drawn cards (the private pool). The hand
+     * is replaced by the pool so the 15-card single-location invariant holds
+     * throughout. A {@link PendingAction} challenge window is recorded in the
+     * in-memory state; the cards themselves are NOT swapped until
+     * {@link #confirmExchange} resolves the action.
+     *
+     * <p>Module 16 (Challenge Manager) will eventually decide challenges during
+     * this window and restore the original hand via {@code originalHandCardIds}
+     * if the amla claim is overturned. Today this endpoint is the authoritative
+     * seam that opens the window.
+     *
+     * @param matchId the match ID
+     * @param userId  the acting player's user ID
+     * @return the updated player-safe game state (actor sees the private pool)
+     */
+    @Transactional
+    public GameStateResponse performExchange(UUID matchId, UUID userId) {
+        GameState state = getOrInitialize(matchId);
+
+        if (state.getStatus() != MatchStatus.IN_PROGRESS
+                && state.getStatus() != MatchStatus.CREATED) {
+            throw new BusinessException("MATCH_NOT_ACTIVE",
+                    "Cannot perform Exchange: match is not active.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Cannot perform Exchange: player is not part of this match."));
+
+        if (!userId.equals(state.getCurrentTurnPlayerId())) {
+            throw new BusinessException("NOT_YOUR_TURN",
+                    "It is not your turn.");
+        }
+
+        if (player.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("PLAYER_ELIMINATED",
+                    "Eliminated players cannot perform actions.");
+        }
+
+        if (player.getCards() == null || player.getCards().size() < STARTING_INFLUENCE) {
+            throw new BusinessException("NO_INFLUENCE",
+                    "You need at least " + STARTING_INFLUENCE
+                            + " influence cards to perform an Exchange.");
+        }
+
+        if (state.isActionExecuted()) {
+            throw new BusinessException("ACTION_ALREADY_PERFORMED",
+                    "You have already performed an action this turn.");
+        }
+
+        List<GameCard> deck = state.getDeck();
+        if (deck == null || deck.size() < EXCHANGE_DRAW) {
+            throw new BusinessException("INSUFFICIENT_DECK",
+                    "Not enough cards in the deck to perform Exchange.");
+        }
+
+        // Draw 2 into the actor's hand so deck integrity holds at every step.
+        List<GameCard> drawn = cardManager.drawMany(deck, EXCHANGE_DRAW);
+        List<GameCard> originalHand = new ArrayList<>(player.getCards());
+        List<UUID> originalHandCardIds = originalHand.stream()
+                .map(GameCard::getId)
+                .toList();
+        player.getCards().addAll(drawn);
+
+        List<GameCard> pool = new ArrayList<>();
+        pool.addAll(originalHand);
+        pool.addAll(drawn);
+
+        state.setPendingAction(PendingAction.builder()
+                .type(ACTION_EXCHANGE)
+                .actorUserId(userId)
+                .startedAt(LocalDateTime.now())
+                .claimedCharacter(CHARACTER_AMLA)
+                .exchangePool(pool)
+                .originalHandCardIds(originalHandCardIds)
+                .build());
+        state.setActionExecuted(true);
+        state.getLog().add(GameLogEntry.of("action",
+                player.getUsername() + " declared Exchange, claiming Amla. Challenge window open."));
+
+        log.info("Player '{}' declared Exchange in match {} (drew {}, challenge window open)",
+                player.getUsername(), matchId, drawn.size());
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Resolves a pending Exchange: the actor keeps exactly 2 cards from the
+     * temporary private pool and the remaining pool cards are returned to the
+     * deck. The selection is validated entirely server-side — the client never
+     * supplies card objects, only the card IDs to keep, and they must match the
+     * pool recorded when the Exchange was declared.
+     *
+     * <p>Deck integrity is re-verified after the swap, the pending action is
+     * cleared, and the turn advances.
+     *
+     * @param matchId     the match ID
+     * @param userId      the actor's user ID (must match the pending action)
+     * @param keepCardIds the exactly {@value #EXCHANGE_DRAW} unique card IDs to keep
+     * @return the updated player-safe game state
+     */
+    @Transactional
+    public GameStateResponse confirmExchange(UUID matchId, UUID userId, List<UUID> keepCardIds) {
+        GameState state = getGameState(matchId);
+
+        if (state.getPendingAction() == null) {
+            throw new BusinessException("NO_PENDING_ACTION",
+                    "No pending action to resolve.");
+        }
+
+        if (!ACTION_EXCHANGE.equals(state.getPendingAction().getType())) {
+            throw new BusinessException("INVALID_PENDING_ACTION",
+                    "The pending action is not an Exchange.");
+        }
+
+        if (!userId.equals(state.getPendingAction().getActorUserId())) {
+            throw new BusinessException("NOT_ACTOR",
+                    "Only the exchange's actor can keep cards.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Player is not part of this match."));
+
+        List<GameCard> pool = state.getPendingAction().getExchangePool();
+        if (pool == null || pool.size() != STARTING_INFLUENCE * 2) {
+            throw new BusinessException("INVALID_GAME_STATE",
+                    "Exchange pool is missing or corrupt: cannot resolve.");
+        }
+
+        // The actor's current hand must still be exactly the recorded pool.
+        if (player.getCards().size() != pool.size()
+                || !new HashSet<>(player.getCards().stream()
+                        .map(GameCard::getId).toList())
+                .equals(new HashSet<>(pool.stream().map(GameCard::getId).toList()))) {
+            throw new BusinessException("INVALID_GAME_STATE",
+                    "The actor's hand no longer matches the exchange pool.");
+        }
+
+        if (keepCardIds == null || keepCardIds.size() != EXCHANGE_DRAW) {
+            throw new BusinessException("INVALID_CARD_SELECTION",
+                    "You must keep exactly " + EXCHANGE_DRAW + " cards.");
+        }
+
+        Set<UUID> unique = new HashSet<>(keepCardIds);
+        if (unique.size() != keepCardIds.size()) {
+            throw new BusinessException("DUPLICATE_CARD_SELECTION",
+                    "The same card cannot be kept twice.");
+        }
+
+        List<GameCard> kept = new ArrayList<>(EXCHANGE_DRAW);
+        for (UUID cardId : keepCardIds) {
+            GameCard card = pool.stream()
+                    .filter(c -> c.getId().equals(cardId))
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException("INVALID_CARD_SELECTION",
+                            "Card '" + cardId + "' was not part of the exchange pool."));
+            kept.add(card);
+        }
+
+        List<GameCard> returned = pool.stream()
+                .filter(card -> !keepCardIds.contains(card.getId()))
+                .toList();
+
+        player.setCards(kept);
+        for (GameCard card : returned) {
+            cardManager.returnToDeck(state.getDeck(), card);
+        }
+        cardManager.assertDeckIntegrity(state.getDeck(), state.getPlayers());
+
+        state.setPendingAction(null);
+        state.setActionExecuted(true);
+        state.getLog().add(GameLogEntry.of("action",
+                player.getUsername() + " completed an Exchange (kept 2 cards, returned 2 to the deck)."));
+
+        Match match = turnManager.advanceTurn(matchId);
+        state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
+        state.setTurnNumber(match.getTurnNumber());
+        state.setActionExecuted(false);
+        state.setPhase(PHASE_IN_PROGRESS);
+
+        log.info("Exchange resolved in match {} (kept {} returned {}), turn → {}",
+                matchId, kept.size(), returned.size(), match.getTurnNumber());
 
         return gameStateMapper.toResponse(state, userId);
     }

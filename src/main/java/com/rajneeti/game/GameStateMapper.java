@@ -48,11 +48,23 @@ public class GameStateMapper {
 
         PendingActionDto pendingDto = null;
         if (state.getPendingAction() != null) {
-            pendingDto = PendingActionDto.builder()
-                    .type(state.getPendingAction().getType())
-                    .actorUserId(state.getPendingAction().getActorUserId())
-                    .startedAt(state.getPendingAction().getStartedAt())
-                    .build();
+            PendingAction pending = state.getPendingAction();
+            boolean isActor = viewerId != null && viewerId.equals(pending.getActorUserId());
+            PendingActionDto.PendingActionDtoBuilder builder = PendingActionDto.builder()
+                    .type(pending.getType())
+                    .actorUserId(pending.getActorUserId())
+                    .startedAt(pending.getStartedAt())
+                    .claimedCharacter(pending.getClaimedCharacter());
+
+            if ("EXCHANGE".equals(pending.getType()) && isActor && pending.getExchangePool() != null) {
+                builder.exchangePool(pending.getExchangePool().stream()
+                        .map(card -> GameCardDto.builder()
+                                .cardId(card.getId())
+                                .characterId(card.getCharacter().name().toLowerCase())
+                                .build())
+                        .toList());
+            }
+            pendingDto = builder.build();
         }
 
         return GameStateResponse.builder()

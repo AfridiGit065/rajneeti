@@ -27,4 +27,7 @@ export const GameService = {
   async resolveForeignAid(matchId: string, blocked: boolean): Promise<Result<GameState>> {
     return repositories.game.resolveForeignAid(matchId, blocked);
   },
+  async confirmExchange(matchId: string, keepCardIds: string[]): Promise<Result<GameState>> {
+    return repositories.game.confirmExchange(matchId, keepCardIds);
+  },
 };

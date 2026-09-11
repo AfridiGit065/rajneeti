@@ -75,6 +75,15 @@ function toGameState(backend: BackendGameState): GameState {
     seatIndex: player.seatIndex,
   }));
 
+  const exchangePool: InfluenceCard[] | undefined =
+    backend.pendingAction?.type === "EXCHANGE" && backend.pendingAction.exchangePool
+      ? backend.pendingAction.exchangePool.map((card) => ({
+          id: card.cardId,
+          characterId: toCharacterId(card.characterId),
+          revealed: false,
+        }))
+      : undefined;
+
   return {
     matchId: backend.matchId,
     roomId: backend.roomId,
@@ -90,6 +99,7 @@ function toGameState(backend: BackendGameState): GameState {
     activeAction: mapPendingAction(backend.pendingAction),
     pendingChallenge: null,
     pendingBlock: null,
+    exchangePool,
     log: backend.log.map((entry) => ({
       id: entry.id,
       timestamp: entry.timestamp,
@@ -103,8 +113,18 @@ function toGameState(backend: BackendGameState): GameState {
 
 function mapPendingAction(pending: BackendPendingAction | undefined): ActionIntent | null {
   if (!pending) return null;
-  const action: GameActionId = pending.type === "FOREIGN_AID" ? "foreign_aid" : "income";
-  return { action };
+  const action: GameActionId =
+    pending.type === "EXCHANGE"
+      ? "exchange"
+      : pending.type === "FOREIGN_AID"
+      ? "foreign_aid"
+      : "income";
+  return {
+    action,
+    ...(pending.claimedCharacter
+      ? { claimedCharacter: toCharacterId(pending.claimedCharacter) }
+      : {}),
+  };
 }
 
 const notImplemented = (): Result<GameState> =>
@@ -136,6 +156,10 @@ export class RestGameRepository implements GameRepository {
     }
     if (intent.action === "foreign_aid") {
       const result = await apiClient.post<BackendGameState>(`/api/matches/${matchId}/foreign-aid`);
+      return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+    }
+    if (intent.action === "exchange") {
+      const result = await apiClient.post<BackendGameState>(`/api/matches/${matchId}/exchange`);
       return result.ok ? { ok: true, data: toGameState(result.data) } : result;
     }
     return notImplemented();
@@ -179,6 +203,14 @@ export class RestGameRepository implements GameRepository {
   async resolveForeignAid(matchId: string, blocked: boolean): Promise<Result<GameState>> {
     const result = await apiClient.post<BackendGameState>(
       `/api/matches/${matchId}/foreign-aid/resolve?blocked=${blocked}`,
+    );
+    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+  }
+
+  async confirmExchange(matchId: string, keepCardIds: string[]): Promise<Result<GameState>> {
+    const result = await apiClient.post<BackendGameState>(
+      `/api/matches/${matchId}/exchange/confirm`,
+      { keepCardIds },
     );
     return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }

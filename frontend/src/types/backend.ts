@@ -116,6 +116,10 @@ export interface BackendPendingAction {
   type: string;
   actorUserId: string;
   startedAt: string;
+  /** The claimed character (e.g. "amla" for Exchange). */
+  claimedCharacter?: string;
+  /** The exchange card pool (only present for the action's own actor). */
+  exchangePool?: BackendGameCard[];
 }
 
 export interface BackendGameState {

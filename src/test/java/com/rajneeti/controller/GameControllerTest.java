@@ -225,4 +225,83 @@ class GameControllerTest {
                 .andExpect(jsonPath("$.data.players[0].coins").value(4))
                 .andExpect(jsonPath("$.data.pendingAction").doesNotExist());
     }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/exchange - Success (declares Amla, opens challenge window)")
+    void performExchange_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        response.setPendingAction(PendingActionDto.builder()
+                .type("EXCHANGE")
+                .actorUserId(testUserId)
+                .startedAt(java.time.LocalDateTime.now())
+                .claimedCharacter("amla")
+                .exchangePool(List.of(
+                        com.rajneeti.dto.game.GameCardDto.builder()
+                                .cardId(UUID.randomUUID()).characterId("amla").build(),
+                        com.rajneeti.dto.game.GameCardDto.builder()
+                                .cardId(UUID.randomUUID()).characterId("goyenda").build(),
+                        com.rajneeti.dto.game.GameCardDto.builder()
+                                .cardId(UUID.randomUUID()).characterId("minister").build(),
+                        com.rajneeti.dto.game.GameCardDto.builder()
+                                .cardId(UUID.randomUUID()).characterId("ghatok").build()))
+                .build());
+        response.getPlayers().get(0).setInfluenceCount(4);
+
+        when(gameEngine.performExchange(eq(testMatchId), eq(testUserId))).thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/exchange")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.pendingAction.type").value("EXCHANGE"))
+                .andExpect(jsonPath("$.data.pendingAction.claimedCharacter").value("amla"))
+                .andExpect(jsonPath("$.data.pendingAction.exchangePool.length()").value(4))
+                .andExpect(jsonPath("$.data.players[0].influenceCount").value(4));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/exchange - Fails when it is not the player's turn (422)")
+    void performExchange_NotYourTurn() throws Exception {
+        when(gameEngine.performExchange(eq(testMatchId), eq(testUserId)))
+                .thenThrow(new BusinessException("NOT_YOUR_TURN", "It is not your turn."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/exchange")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("NOT_YOUR_TURN"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/exchange/confirm - Success")
+    void confirmExchange_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        response.setTurnNumber(2);
+
+        List<java.util.UUID> keep = List.of(UUID.randomUUID(), UUID.randomUUID());
+        when(gameEngine.confirmExchange(eq(testMatchId), eq(testUserId), eq(keep)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/exchange/confirm")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"keepCardIds\":[\"" + keep.get(0) + "\",\"" + keep.get(1) + "\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.turnNumber").value(2));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/exchange/confirm - Fails for an invalid selection (422)")
+    void confirmExchange_InvalidSelection() throws Exception {
+        when(gameEngine.confirmExchange(eq(testMatchId), eq(testUserId), org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new BusinessException("INVALID_CARD_SELECTION",
+                        "You must keep exactly 2 cards."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/exchange/confirm")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"keepCardIds\":[\"" + UUID.randomUUID() + "\"]}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("INVALID_CARD_SELECTION"));
+    }
 }

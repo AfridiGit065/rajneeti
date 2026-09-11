@@ -116,6 +116,26 @@ export class MockGameRepository implements GameRepository {
     this.state = { ...this.state, activeAction: null };
     return ok(this.state);
   }
+
+  async confirmExchange(_matchId: string, keepCardIds: string[]): Promise<Result<GameState>> {
+    await delay(550);
+    // Simulate: keep only the selected cards, advance turn
+    const keepSet = new Set(keepCardIds);
+    this.state = {
+      ...this.state,
+      players: this.state.players.map((p) =>
+        p.userId === (this.state.activeAction as { actorUserId?: string } | null)?.actorUserId
+          ? { ...p, influenceCards: p.influenceCards.filter((c) => keepSet.has(c.id)).slice(0, 2) }
+          : p,
+      ),
+      activeAction: null,
+      log: [
+        { id: `log-${Date.now()}`, timestamp: new Date().toISOString(), text: "কার্ড বদল সম্পন্ন হয়েছে!", kind: "action" },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
+  }
 }
 
 function buildActionText(intent: ActionIntent): string {
