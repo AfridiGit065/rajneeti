@@ -13,7 +13,6 @@ import { OpponentSeat } from "./opponent-seat";
 import { OwnCards } from "./own-cards";
 import { ActionPanel } from "./action-panel";
 import { ChallengeFlow } from "./challenge";
-import { ExchangeSelection } from "./exchange-selection";
 import { GameLog } from "./game-log";
 import {
   BlockPanel,
@@ -126,10 +125,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const [influenceLostReason, setInfluenceLostReason] = useState("");
   const [eliminationPlayer, setEliminationPlayer] = useState<GamePlayer | null>(null);
 
-  // Exchange selection overlay (Module 15) — opens while the local player has
-  // a pending Exchange. `game.exchangePool` is only populated for the actor.
-  const [exchangeOpen, setExchangeOpen] = useState(false);
-
   const load = useCallback(async () => GameService.getGameState(matchId), [matchId]);
 
   useEffect(() => {
@@ -138,7 +133,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
       if (cancelled) return;
       if (result.ok) {
         setGame(result.data);
-        if (result.data.exchangePool) setExchangeOpen(true);
       } else {
         setError(result.error.message);
       }
@@ -155,7 +149,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
     const result = await load();
     if (result.ok) {
       setGame(result.data);
-      if (result.data.exchangePool) setExchangeOpen(true);
     } else {
       setError(result.error.message);
     }
@@ -166,7 +159,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     setBusy(actionId);
     const result = await GameService.performAction(matchId, {
       action: actionId,
-claimedCharacter:
+      claimedCharacter:
         actionId === "tax"
           ? ("minister" as const)
           : actionId === "steal"
@@ -178,7 +171,6 @@ claimedCharacter:
 
     if (result.ok) {
       setGame(result.data);
-      if (result.data.exchangePool) setExchangeOpen(true);
       success(`${getAction(actionId).nameBn} — অ্যাকশন চলছে`);
 
       // Mock block opportunity triggers for F20 demonstration
@@ -289,27 +281,6 @@ claimedCharacter:
     success("কার্ড সফলভাবে উন্মোচিত হয়েছে");
   }
 
-  function handleBlockResultDismiss() {
-    if (blockResultData?.actionId === "foreign_aid" && game) {
-      const blocked =
-        blockResultData.outcome === "block_succeeds" ||
-        blockResultData.outcome === "challenger_loses_influence";
-      void GameService.resolveForeignAid(matchId, blocked).then((result) => {
-        if (result.ok) setGame(result.data);
-      });
-    } else if (blockResultData?.actionId === "assassinate" && game) {
-      // Any outcome that is not a successful block means the assassination
-      // goes through (pay 3 coins, target loses one influence card).
-      const succeeded =
-        blockResultData.outcome !== "block_succeeds" &&
-        blockResultData.outcome !== "challenger_loses_influence";
-      void GameService.resolveAssassinate(matchId, succeeded).then((result) => {
-        if (result.ok) setGame(result.data);
-      });
-    }
-    setBlockResultData(null);
-  }
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-app px-4">
@@ -402,7 +373,7 @@ claimedCharacter:
           {blockResultData && (
             <BlockResult
               result={blockResultData}
-              onDismiss={handleBlockResultDismiss}
+              onDismiss={() => setBlockResultData(null)}
             />
           )}
 
@@ -470,16 +441,6 @@ claimedCharacter:
           onFinish={() => setEliminationPlayer(null)}
         />
       )}
-
-      {/* Module 15: Exchange Selection Overlay */}
-      {game.exchangePool && exchangeOpen ? (
-        <ExchangeSelection
-          matchId={matchId}
-          cards={game.exchangePool}
-          onResolved={(next) => setGame(next)}
-          onClose={() => setExchangeOpen(false)}
-        />
-      ) : null}
     </div>
   );
 }
