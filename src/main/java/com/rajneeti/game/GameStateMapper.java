@@ -54,7 +54,8 @@ public class GameStateMapper {
                     .type(pending.getType())
                     .actorUserId(pending.getActorUserId())
                     .startedAt(pending.getStartedAt())
-                    .claimedCharacter(pending.getClaimedCharacter());
+                    .claimedCharacter(pending.getClaimedCharacter())
+                    .targetPlayerId(pending.getTargetPlayerId());
 
             if ("EXCHANGE".equals(pending.getType()) && isActor && pending.getExchangePool() != null) {
                 builder.exchangePool(pending.getExchangePool().stream()

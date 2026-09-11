@@ -42,4 +42,18 @@ public class PendingAction {
      * challenge resolution can restore the original hand.
      */
     private final List<UUID> originalHandCardIds;
+
+    /**
+     * The target player's user ID for single-target actions such as an
+     * Assassination. Public information once the action is pending;
+     * {@code null} for actions without a target.
+     */
+    private final UUID targetPlayerId;
+
+    /**
+     * The coins reserved from the actor when the action was declared. Deducted
+     * from the actor only when the action succeeds; returned to the actor when
+     * it is cancelled or fails. {@code null} for actions with no reserved cost.
+     */
+    private final Integer reservedCoins;
 }

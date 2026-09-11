@@ -136,6 +136,33 @@ export class MockGameRepository implements GameRepository {
     };
     return ok(this.state);
   }
+
+  async resolveAssassinate(_matchId: string, succeeded: boolean): Promise<Result<GameState>> {
+    await delay(550);
+    if (succeeded) {
+      const intent = this.state.activeAction as { targetPlayerId?: string } | null;
+      const target = this.state.players.find((p) => p.userId === intent?.targetPlayerId);
+      const actor = this.state.players.find((p) => p.isTurn) ?? this.state.players[0];
+      actor.coins = Math.max(0, actor.coins - 3);
+      if (target && target.influenceCards.length > 0) {
+        target.influenceCards = target.influenceCards.slice(1);
+      }
+    }
+    this.state = {
+      ...this.state,
+      activeAction: null,
+      log: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          text: succeeded ? "সরিয়ে দেওয়া সফল হয়েছে!" : "সরিয়ে দেওয়া প্রতিহত হয়েছে!",
+          kind: succeeded ? "action" : "block",
+        },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
+  }
 }
 
 function buildActionText(intent: ActionIntent): string {

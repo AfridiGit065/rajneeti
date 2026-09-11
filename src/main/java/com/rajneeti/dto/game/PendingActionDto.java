@@ -36,4 +36,10 @@ public class PendingActionDto {
      * actor; always {@code null} (and absent from JSON) for opponents.
      */
     private List<GameCardDto> exchangePool;
+
+    /**
+     * The target player's user ID for single-target actions such as an
+     * Assassination. Public information; {@code null} otherwise.
+     */
+    private UUID targetPlayerId;
 }

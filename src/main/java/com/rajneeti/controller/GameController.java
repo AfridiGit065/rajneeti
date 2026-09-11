@@ -1,6 +1,7 @@
 package com.rajneeti.controller;
 
 import com.rajneeti.dto.ApiResponse;
+import com.rajneeti.dto.game.AssassinateRequest;
 import com.rajneeti.dto.game.ExchangeConfirmRequest;
 import com.rajneeti.dto.game.GameStateResponse;
 import com.rajneeti.game.GameEngine;
@@ -151,6 +152,56 @@ public class GameController {
         GameStateResponse response = gameEngine.confirmExchange(
                 matchId, userPrincipal.getId(),
                 request != null ? request.getKeepCardIds() : null);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/assassinate
+     * Declares an Assassination, claiming GHATOK and targeting an opponent.
+     * Opens a block/challenge window. The 3-coin cost is only reserved on the
+     * pending action and is deducted on successful resolution, never up front.
+     *
+     * @param request body containing the {@code targetPlayerId}
+     */
+    @PostMapping("/{matchId}/assassinate")
+    public ResponseEntity<ApiResponse<GameStateResponse>> performAssassinate(
+            @PathVariable UUID matchId,
+            @RequestBody AssassinateRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        UUID targetPlayerId = request != null ? request.getTargetPlayerId() : null;
+        log.info("Player '{}' performing Assassination on '{}' in match: {}",
+                userPrincipal.getUsername(), targetPlayerId, matchId);
+
+        GameStateResponse response = gameEngine.performAssassinate(
+                matchId, userPrincipal.getId(), targetPlayerId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/assassinate/resolve
+     * Resolves the pending Assassination block/challenge window.
+     *
+     * <p>Minimal seam for the future Block/Challenge Manager: once those
+     * managers exist they will call this after processing the real flow.
+     * Today the frontend calls it when the demo block dialog is dismissed
+     * (succeeded = no block / block failed, failed = block succeeded).
+     *
+     * @param succeeded {@code true} if the Assassination goes through (pay 3
+     *                  coins, target loses one influence card), {@code false}
+     *                  if it was prevented (no payment, no card loss)
+     */
+    @PostMapping("/{matchId}/assassinate/resolve")
+    public ResponseEntity<ApiResponse<GameStateResponse>> resolveAssassinate(
+            @PathVariable UUID matchId,
+            @RequestParam boolean succeeded,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' resolving Assassination (succeeded={}) in match: {}",
+                userPrincipal.getUsername(), succeeded, matchId);
+
+        GameStateResponse response = gameEngine.resolveAssassinate(
+                matchId, userPrincipal.getId(), succeeded);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

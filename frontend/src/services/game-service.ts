@@ -30,4 +30,7 @@ export const GameService = {
   async confirmExchange(matchId: string, keepCardIds: string[]): Promise<Result<GameState>> {
     return repositories.game.confirmExchange(matchId, keepCardIds);
   },
+  async resolveAssassinate(matchId: string, succeeded: boolean): Promise<Result<GameState>> {
+    return repositories.game.resolveAssassinate(matchId, succeeded);
+  },
 };

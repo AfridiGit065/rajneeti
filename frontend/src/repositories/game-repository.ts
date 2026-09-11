@@ -25,4 +25,8 @@ export interface GameRepository {
     matchId: string,
     keepCardIds: string[],
   ): Promise<Result<GameState>>;
+  resolveAssassinate(
+    matchId: string,
+    succeeded: boolean,
+  ): Promise<Result<GameState>>;
 }

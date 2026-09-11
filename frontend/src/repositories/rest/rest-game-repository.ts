@@ -118,13 +118,23 @@ function mapPendingAction(pending: BackendPendingAction | undefined): ActionInte
       ? "exchange"
       : pending.type === "FOREIGN_AID"
       ? "foreign_aid"
+      : pending.type === "ASSASSINATE"
+      ? "assassinate"
       : "income";
-  return {
+  const intent: ActionIntent = {
     action,
-    ...(pending.claimedCharacter
-      ? { claimedCharacter: toCharacterId(pending.claimedCharacter) }
-      : {}),
+    claimedCharacter: pending.claimedCharacter
+      ? toCharacterId(pending.claimedCharacter)
+      : action === "exchange"
+      ? "amla"
+      : action === "assassinate"
+      ? "ghatok"
+      : undefined,
   };
+  if (pending.targetPlayerId) {
+    intent.targetPlayerId = pending.targetPlayerId;
+  }
+  return intent;
 }
 
 const notImplemented = (): Result<GameState> =>
@@ -160,6 +170,13 @@ export class RestGameRepository implements GameRepository {
     }
     if (intent.action === "exchange") {
       const result = await apiClient.post<BackendGameState>(`/api/matches/${matchId}/exchange`);
+      return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+    }
+    if (intent.action === "assassinate") {
+      const result = await apiClient.post<BackendGameState>(
+        `/api/matches/${matchId}/assassinate`,
+        { targetPlayerId: intent.targetPlayerId },
+      );
       return result.ok ? { ok: true, data: toGameState(result.data) } : result;
     }
     return notImplemented();
@@ -211,6 +228,13 @@ export class RestGameRepository implements GameRepository {
     const result = await apiClient.post<BackendGameState>(
       `/api/matches/${matchId}/exchange/confirm`,
       { keepCardIds },
+    );
+    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+  }
+
+  async resolveAssassinate(matchId: string, succeeded: boolean): Promise<Result<GameState>> {
+    const result = await apiClient.post<BackendGameState>(
+      `/api/matches/${matchId}/assassinate/resolve?succeeded=${succeeded}`,
     );
     return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }

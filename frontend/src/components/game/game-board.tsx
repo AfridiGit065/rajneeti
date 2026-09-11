@@ -292,6 +292,15 @@ export function GameBoard({ matchId }: { matchId: string }) {
       void GameService.resolveForeignAid(matchId, blocked).then((result) => {
         if (result.ok) setGame(result.data);
       });
+    } else if (blockResultData?.actionId === "assassinate" && game) {
+      // Any outcome that is not a successful block means the assassination
+      // goes through (pay 3 coins, target loses one influence card).
+      const succeeded =
+        blockResultData.outcome !== "block_succeeds" &&
+        blockResultData.outcome !== "challenger_loses_influence";
+      void GameService.resolveAssassinate(matchId, succeeded).then((result) => {
+        if (result.ok) setGame(result.data);
+      });
     }
     setBlockResultData(null);
   }

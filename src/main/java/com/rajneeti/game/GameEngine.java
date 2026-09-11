@@ -60,11 +60,20 @@ public class GameEngine {
     /** Pending action type identifier for Exchange. */
     public static final String ACTION_EXCHANGE = "EXCHANGE";
 
+    /** Pending action type identifier for Assassination. */
+    public static final String ACTION_ASSASSINATE = "ASSASSINATE";
+
     /** Exchange draws exactly 2 cards and keeps exactly 2 of the 4 available. */
     public static final int EXCHANGE_DRAW = 2;
 
     /** The character claimed by an Exchange action. */
     public static final String CHARACTER_AMLA = "amla";
+
+    /** The character claimed by an Assassination action. */
+    public static final String CHARACTER_GHATOK = "ghatok";
+
+    /** Assassination costs exactly 3 coins. */
+    public static final int ASSASSINATE_COST = 3;
 
     public static final String PHASE_SETUP = "setup";
     public static final String PHASE_IN_PROGRESS = "in_progress";
@@ -601,6 +610,210 @@ public class GameEngine {
 
         log.info("Exchange resolved in match {} (kept {} returned {}), turn → {}",
                 matchId, kept.size(), returned.size(), match.getTurnNumber());
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Performs the Assassination action for the current turn holder.
+     *
+     * <p>Assassination claims the {@code ghatok} character, targets one
+     * opponent and costs {@value #ASSASSINATE_COST} coins. Ownership of a
+     * GHATOK card is NOT required — the claim may be bluffed and resolved later
+     * by the Challenge Manager. The cost is only reserved on the pending action
+     * and is never deducted up front, so a failed challenge or successful block
+     * costs the actor nothing and the balance can never go negative.
+     *
+     * <p>A {@link PendingAction} block/challenge window is recorded in the
+     * in-memory state. Nothing is deducted and the turn does NOT advance until
+     * {@link #resolveAssassinate} is called with a resolution.
+     *
+     * @param matchId the match ID
+     * @param userId  the acting player's user ID
+     * @param targetPlayerId the user ID of the targeted opponent
+     * @return the updated player-safe game state (with pending action visible)
+     */
+    @Transactional
+    public GameStateResponse performAssassinate(UUID matchId, UUID userId, UUID targetPlayerId) {
+        GameState state = getOrInitialize(matchId);
+
+        if (state.getStatus() != MatchStatus.IN_PROGRESS
+                && state.getStatus() != MatchStatus.CREATED) {
+            throw new BusinessException("MATCH_NOT_ACTIVE",
+                    "Cannot perform Assassination: match is not active.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Cannot perform Assassination: player is not part of this match."));
+
+        if (!userId.equals(state.getCurrentTurnPlayerId())) {
+            throw new BusinessException("NOT_YOUR_TURN",
+                    "It is not your turn.");
+        }
+
+        if (player.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("PLAYER_ELIMINATED",
+                    "Eliminated players cannot perform actions.");
+        }
+
+        if (player.getCards() == null || player.getCards().isEmpty()) {
+            throw new BusinessException("NO_INFLUENCE",
+                    "You need at least one influence card to perform an action.");
+        }
+
+        if (state.isActionExecuted()) {
+            throw new BusinessException("ACTION_ALREADY_PERFORMED",
+                    "You have already performed an action this turn.");
+        }
+
+        if (player.getCoins() < ASSASSINATE_COST) {
+            throw new BusinessException("INSUFFICIENT_COINS",
+                    "Assassination costs " + ASSASSINATE_COST
+                            + " coins, but you only have " + player.getCoins() + ".");
+        }
+
+        if (targetPlayerId == null) {
+            throw new BusinessException("TARGET_REQUIRED",
+                    "You must target another player to perform an Assassination.");
+        }
+
+        if (userId.equals(targetPlayerId)) {
+            throw new BusinessException("TARGET_SELF",
+                    "You cannot assassinate yourself.");
+        }
+
+        GamePlayerState target = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(targetPlayerId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("TARGET_NOT_IN_MATCH",
+                        "Cannot perform Assassination: the target is not part of this match."));
+
+        if (target.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("TARGET_ELIMINATED",
+                    "Cannot assassinate an eliminated player.");
+        }
+
+        if (target.getCards() == null || target.getCards().isEmpty()) {
+            throw new BusinessException("TARGET_NO_INFLUENCE",
+                    "The target has no influence cards left to lose.");
+        }
+
+        state.setPendingAction(PendingAction.builder()
+                .type(ACTION_ASSASSINATE)
+                .actorUserId(userId)
+                .startedAt(LocalDateTime.now())
+                .claimedCharacter(CHARACTER_GHATOK)
+                .targetPlayerId(targetPlayerId)
+                .reservedCoins(ASSASSINATE_COST)
+                .build());
+        state.setActionExecuted(true);
+        state.getLog().add(GameLogEntry.of("action",
+                player.getUsername() + " declared an Assassination on "
+                        + target.getUsername() + ", claiming GHATOK ("
+                        + ASSASSINATE_COST + " coins reserved). Block/challenge window open."));
+
+        log.info("Player '{}' declared an Assassination on '{}' in match {} ({} coins reserved)",
+                player.getUsername(), target.getUsername(), matchId, ASSASSINATE_COST);
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Resolves a pending Assassination after its block/challenge window closes.
+     *
+     * <p>If {@code succeeded} is {@code true} the {@value #ASSASSINATE_COST}
+     * reserved coins are deducted from the actor and the target loses one
+     * influence card (the first card of their hand). If that was the target's
+     * last card the target is eliminated. If {@code false} the action is
+     * cancelled: nothing is deducted and the target keeps every card. The turn
+     * advances in both cases.
+     *
+     * @param matchId   the match ID
+     * @param userId    the actor's user ID (must match the pending action)
+     * @param succeeded true if the Assassination succeeded and must be paid for
+     * @return the updated player-safe game state
+     */
+    @Transactional
+    public GameStateResponse resolveAssassinate(UUID matchId, UUID userId, boolean succeeded) {
+        GameState state = getGameState(matchId);
+
+        if (state.getPendingAction() == null) {
+            throw new BusinessException("NO_PENDING_ACTION",
+                    "No pending action to resolve.");
+        }
+
+        if (!ACTION_ASSASSINATE.equals(state.getPendingAction().getType())) {
+            throw new BusinessException("INVALID_PENDING_ACTION",
+                    "The pending action is not an Assassination.");
+        }
+
+        if (!userId.equals(state.getPendingAction().getActorUserId())) {
+            throw new BusinessException("NOT_ACTOR",
+                    "Only the action's actor can resolve the pending action.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "The actor is no longer part of this match."));
+
+        UUID targetId = state.getPendingAction().getTargetPlayerId();
+        GamePlayerState target = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(targetId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("TARGET_NOT_IN_MATCH",
+                        "The target is no longer part of this match."));
+
+        state.setPendingAction(null);
+
+        if (succeeded) {
+            if (player.getCoins() < ASSASSINATE_COST) {
+                throw new BusinessException("INSUFFICIENT_COINS",
+                        "The actor no longer has the " + ASSASSINATE_COST
+                                + " coins required to pay for the Assassination.");
+            }
+            if (target.getCards() == null || target.getCards().isEmpty()) {
+                throw new BusinessException("TARGET_NO_INFLUENCE",
+                        "The target has no influence cards left to lose.");
+            }
+
+            player.setCoins(player.getCoins() - ASSASSINATE_COST);
+
+            List<GameCard> remaining = new ArrayList<>(target.getCards());
+            remaining.remove(0);
+            target.setCards(remaining);
+            state.setRevealedCardsCount(state.getRevealedCardsCount() + 1);
+
+            if (remaining.isEmpty()) {
+                target.setStatus(PlayerStatus.ELIMINATED);
+                state.getLog().add(GameLogEntry.of("elimination",
+                        target.getUsername() + " lost their last influence card and was eliminated."));
+            } else {
+                state.getLog().add(GameLogEntry.of("action",
+                        player.getUsername() + " assassinated an influence card of "
+                                + target.getUsername() + " (" + ASSASSINATE_COST
+                                + " coins paid)."));
+            }
+
+            log.info("Assassination succeeded in match {}: '{}' lost one influence card, "
+                            + "'{}' paid {} coins",
+                    matchId, target.getUsername(), player.getUsername(), ASSASSINATE_COST);
+        } else {
+            state.getLog().add(GameLogEntry.of("block",
+                    "The Assassination by " + player.getUsername() + " was prevented. "
+                            + "No coins paid, no influence lost."));
+            log.info("Assassination cancelled in match {} (no coins paid, no influence lost)", matchId);
+        }
+
+        Match match = turnManager.advanceTurn(matchId);
+        state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
+        state.setTurnNumber(match.getTurnNumber());
+        state.setActionExecuted(false);
+        state.setPhase(PHASE_IN_PROGRESS);
 
         return gameStateMapper.toResponse(state, userId);
     }
