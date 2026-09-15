@@ -33,8 +33,8 @@ import java.util.UUID;
  * for the TurnManager) and exposes player-safe projections of the live state.
  *
  * <p>Turn progression is delegated to the existing {@code TurnManager}
- * (Module 09). Basic gameplay actions that resolve instantly (income) are
- * implemented here; tax, steal, challenge, block, coup and the action resolver
+ * (Module 09). Basic gameplay actions that resolve instantly (income, coup)
+ * are implemented here; tax, steal, challenge, block and the action resolver
  * arrive in later modules.
  */
 @Slf4j
@@ -74,6 +74,12 @@ public class GameEngine {
 
     /** Assassination costs exactly 3 coins. */
     public static final int ASSASSINATE_COST = 3;
+
+    /** Coup costs exactly 7 coins. */
+    public static final int COUP_COST = 7;
+
+    /** A player holding 10 or more coins must Coup on their next turn. */
+    public static final int FORCED_COUP_THRESHOLD = 10;
 
     public static final String PHASE_SETUP = "setup";
     public static final String PHASE_IN_PROGRESS = "in_progress";
@@ -262,6 +268,8 @@ public class GameEngine {
                     "Eliminated players cannot perform actions.");
         }
 
+        enforceMandatoryCoup(player);
+
         if (player.getCards() == null || player.getCards().isEmpty()) {
             throw new BusinessException("NO_INFLUENCE",
                     "You need at least one influence card to perform an action.");
@@ -326,6 +334,8 @@ public class GameEngine {
             throw new BusinessException("PLAYER_ELIMINATED",
                     "Eliminated players cannot perform actions.");
         }
+
+        enforceMandatoryCoup(player);
 
         if (player.getCards() == null || player.getCards().isEmpty()) {
             throw new BusinessException("NO_INFLUENCE",
@@ -463,6 +473,8 @@ public class GameEngine {
             throw new BusinessException("PLAYER_ELIMINATED",
                     "Eliminated players cannot perform actions.");
         }
+
+        enforceMandatoryCoup(player);
 
         if (player.getCards() == null || player.getCards().size() < STARTING_INFLUENCE) {
             throw new BusinessException("NO_INFLUENCE",
@@ -659,6 +671,8 @@ public class GameEngine {
                     "Eliminated players cannot perform actions.");
         }
 
+        enforceMandatoryCoup(player);
+
         if (player.getCards() == null || player.getCards().isEmpty()) {
             throw new BusinessException("NO_INFLUENCE",
                     "You need at least one influence card to perform an action.");
@@ -816,5 +830,148 @@ public class GameEngine {
         state.setPhase(PHASE_IN_PROGRESS);
 
         return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Performs the Coup action for the current turn holder (Module 17).
+     *
+     * <p>Coup is the most expensive action ({@value #COUP_COST} coins) and
+     * cannot be blocked or challenged. It resolves instantly — no
+     * {@link PendingAction} window is ever opened — so the coin cost is paid
+     * immediately and the target loses exactly one influence card here, not on
+     * a later resolution call. If the target loses their final influence card
+     * they are marked {@link PlayerStatus#ELIMINATED}.
+     *
+     * <p>The mandatory Coup rule is enforced independently of the frontend: a
+     * player holding {@value #FORCED_COUP_THRESHOLD} or more coins is rejected
+     * from every non-Coup action route and may only launch a Coup on their
+     * turn (see {@link #enforceMandatoryCoup}).
+     *
+     * @param matchId        the match ID
+     * @param userId         the acting player's user ID
+     * @param targetPlayerId the user ID of the targeted opponent
+     * @return the updated player-safe game state
+     * @throws BusinessException with specific error codes for every rule
+     *                           violation (see implementation)
+     */
+    @Transactional
+    public GameStateResponse performCoup(UUID matchId, UUID userId, UUID targetPlayerId) {
+        GameState state = getOrInitialize(matchId);
+
+        if (state.getStatus() != MatchStatus.IN_PROGRESS
+                && state.getStatus() != MatchStatus.CREATED) {
+            throw new BusinessException("MATCH_NOT_ACTIVE",
+                    "Cannot perform Coup: match is not active.");
+        }
+
+        GamePlayerState player = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                        "Cannot perform Coup: player is not part of this match."));
+
+        if (!userId.equals(state.getCurrentTurnPlayerId())) {
+            throw new BusinessException("NOT_YOUR_TURN",
+                    "It is not your turn.");
+        }
+
+        if (player.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("PLAYER_ELIMINATED",
+                    "Eliminated players cannot perform actions.");
+        }
+
+        if (player.getCards() == null || player.getCards().isEmpty()) {
+            throw new BusinessException("NO_INFLUENCE",
+                    "You need at least one influence card to perform an action.");
+        }
+
+        if (state.isActionExecuted()) {
+            throw new BusinessException("ACTION_ALREADY_PERFORMED",
+                    "You have already performed an action this turn.");
+        }
+
+        if (player.getCoins() < COUP_COST) {
+            throw new BusinessException("INSUFFICIENT_COINS",
+                    "Coup costs " + COUP_COST
+                            + " coins, but you only have " + player.getCoins() + ".");
+        }
+
+        if (targetPlayerId == null) {
+            throw new BusinessException("TARGET_REQUIRED",
+                    "You must target another player to perform a Coup.");
+        }
+
+        if (userId.equals(targetPlayerId)) {
+            throw new BusinessException("TARGET_SELF",
+                    "You cannot launch a Coup on yourself.");
+        }
+
+        GamePlayerState target = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(targetPlayerId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("TARGET_NOT_IN_MATCH",
+                        "Cannot perform Coup: the target is not part of this match."));
+
+        if (target.getStatus() != PlayerStatus.ACTIVE) {
+            throw new BusinessException("TARGET_ELIMINATED",
+                    "Cannot launch a Coup on an eliminated player.");
+        }
+
+        if (target.getCards() == null || target.getCards().isEmpty()) {
+            throw new BusinessException("TARGET_NO_INFLUENCE",
+                    "The target has no influence cards left to lose.");
+        }
+
+        // Coup resolves instantly: no challenge/block window, no pending action.
+        player.setCoins(player.getCoins() - COUP_COST);
+
+        List<GameCard> remaining = new ArrayList<>(target.getCards());
+        remaining.remove(0);
+        target.setCards(remaining);
+        state.setRevealedCardsCount(state.getRevealedCardsCount() + 1);
+
+        if (remaining.isEmpty()) {
+            target.setStatus(PlayerStatus.ELIMINATED);
+            state.getLog().add(GameLogEntry.of("elimination",
+                    target.getUsername() + " lost their last influence card to a Coup"
+                            + " and was eliminated."));
+        } else {
+            state.getLog().add(GameLogEntry.of("action",
+                    player.getUsername() + " launched a Coup on "
+                            + target.getUsername() + " (" + COUP_COST
+                            + " coins paid, 1 influence lost)."));
+        }
+
+        state.setActionExecuted(true);
+
+        Match match = turnManager.advanceTurn(matchId);
+        state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
+        state.setTurnNumber(match.getTurnNumber());
+        state.setActionExecuted(false);
+        state.setPhase(PHASE_IN_PROGRESS);
+
+        log.info("Player '{}' launched a Coup on '{}' in match {} ({} coins paid, "
+                        + "current turn -> {})",
+                player.getUsername(), target.getUsername(), matchId, COUP_COST,
+                match.getTurnNumber());
+
+        return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Enforces the mandatory Coup rule (Module 17): a player holding
+     * {@value #FORCED_COUP_THRESHOLD} or more coins may only choose Coup on
+     * their next turn. Every non-Coup action route rejects such a player so the
+     * rule holds even if the frontend never disables the other action buttons.
+     *
+     * @param player the acting player (their turn, active)
+     * @throws BusinessException {@code MANDATORY_COUP} when a Coup is required
+     */
+    private void enforceMandatoryCoup(GamePlayerState player) {
+        if (player.getCoins() >= FORCED_COUP_THRESHOLD) {
+            throw new BusinessException("MANDATORY_COUP",
+                    "You hold " + FORCED_COUP_THRESHOLD
+                            + " or more coins. A Coup is mandatory this turn.");
+        }
     }
 }

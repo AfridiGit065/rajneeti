@@ -20,6 +20,7 @@ import com.rajneeti.exception.MatchAlreadyExistsException;
 import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.exception.NotRoomHostException;
 import com.rajneeti.exception.RoomNotFoundException;
+import com.rajneeti.game.GameEngine;
 import com.rajneeti.mapper.MatchMapper;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
@@ -214,6 +215,14 @@ public class MatchServiceImpl implements MatchService {
         if (match.getPendingAction() != null) {
             throw new BusinessException("ACTION_PENDING",
                     "An action is already awaiting resolution. Complete it before performing another.");
+        }
+
+        // 6b. Mandatory coup: a player holding 10 or more coins may only Coup.
+        Integer playerCoins = player.getCoins();
+        if (playerCoins != null && playerCoins >= GameEngine.FORCED_COUP_THRESHOLD) {
+            throw new BusinessException("MANDATORY_COUP",
+                    "You hold " + GameEngine.FORCED_COUP_THRESHOLD
+                            + " or more coins. A Coup is mandatory this turn.");
         }
 
         MatchActionType actionType = request.getAction();

@@ -179,6 +179,13 @@ export class RestGameRepository implements GameRepository {
       );
       return result.ok ? { ok: true, data: toGameState(result.data) } : result;
     }
+    if (intent.action === "coup") {
+      const result = await apiClient.post<BackendGameState>(
+        `/api/matches/${matchId}/coup`,
+        { targetPlayerId: intent.targetPlayerId },
+      );
+      return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+    }
     return notImplemented();
   }
 

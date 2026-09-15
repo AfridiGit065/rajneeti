@@ -2,6 +2,7 @@ package com.rajneeti.controller;
 
 import com.rajneeti.dto.ApiResponse;
 import com.rajneeti.dto.game.AssassinateRequest;
+import com.rajneeti.dto.game.CoupRequest;
 import com.rajneeti.dto.game.ExchangeConfirmRequest;
 import com.rajneeti.dto.game.GameStateResponse;
 import com.rajneeti.game.GameEngine;
@@ -202,6 +203,29 @@ public class GameController {
 
         GameStateResponse response = gameEngine.resolveAssassinate(
                 matchId, userPrincipal.getId(), succeeded);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/coup
+     * Launches a Coup against an opponent. Coup cannot be blocked or
+     * challenged: after validation it deducts 7 coins, removes one influence
+     * card from the target and advances the turn instantly (no pending window).
+     *
+     * @param request body containing the {@code targetPlayerId}
+     */
+    @PostMapping("/{matchId}/coup")
+    public ResponseEntity<ApiResponse<GameStateResponse>> performCoup(
+            @PathVariable UUID matchId,
+            @RequestBody CoupRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        UUID targetPlayerId = request != null ? request.getTargetPlayerId() : null;
+        log.info("Player '{}' launching a Coup on '{}' in match: {}",
+                userPrincipal.getUsername(), targetPlayerId, matchId);
+
+        GameStateResponse response = gameEngine.performCoup(
+                matchId, userPrincipal.getId(), targetPlayerId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

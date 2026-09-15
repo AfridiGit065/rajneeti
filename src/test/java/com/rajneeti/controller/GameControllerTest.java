@@ -390,4 +390,56 @@ class GameControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("NOT_ACTOR"));
     }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/coup - Success (resolves instantly, -7 coins, -1 influence)")
+    void performCoup_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        UUID targetId = UUID.randomUUID();
+        response.getPlayers().get(0).setCoins(3);
+        response.setTurnNumber(2);
+
+        when(gameEngine.performCoup(eq(testMatchId), eq(testUserId), eq(targetId)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/coup")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"targetPlayerId\":\"" + targetId + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.players[0].coins").value(3))
+                .andExpect(jsonPath("$.data.turnNumber").value(2))
+                .andExpect(jsonPath("$.data.pendingAction").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/coup - Fails with insufficient coins (422)")
+    void performCoup_InsufficientCoins() throws Exception {
+        when(gameEngine.performCoup(eq(testMatchId), eq(testUserId), org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new BusinessException("INSUFFICIENT_COINS",
+                        "Coup costs 7 coins, but you only have 6."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/coup")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"targetPlayerId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("INSUFFICIENT_COINS"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/coup - Fails when a forced Coup is ignored (422)")
+    void performCoup_MandatoryCoup() throws Exception {
+        when(gameEngine.performCoup(eq(testMatchId), eq(testUserId), org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new BusinessException("MANDATORY_COUP",
+                        "You hold 10 or more coins. A Coup is mandatory this turn."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/coup")
+                        .with(user(testPrincipal))
+                        .contentType("application/json")
+                        .content("{\"targetPlayerId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("MANDATORY_COUP"));
+    }
 }

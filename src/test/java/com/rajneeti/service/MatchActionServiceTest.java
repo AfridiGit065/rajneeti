@@ -462,4 +462,27 @@ class MatchActionServiceTest {
         verify(matchPlayerRepository, never()).save(any(MatchPlayer.class));
         verify(turnManager, never()).advanceTurn(matchId);
     }
+
+    @Test
+    @DisplayName("Coup - a player holding 10+ coins is rejected from Tax/Steal (mandatory Coup, Module 17)")
+    void performAction_MandatoryCoup() {
+        hostPlayer.setCoins(10);
+
+        when(matchRepository.findById(matchId)).thenReturn(Optional.of(match));
+        when(matchPlayerRepository.findByMatchIdAndUserId(matchId, hostId)).thenReturn(Optional.of(hostPlayer));
+        when(turnManager.isPlayerTurn(matchId, hostId)).thenReturn(true);
+
+        assertThatThrownBy(() -> matchService.performAction(matchId, hostId, taxRequest()))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo("MANDATORY_COUP");
+
+        assertThatThrownBy(() -> matchService.performAction(matchId, hostId, stealRequest()))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo("MANDATORY_COUP");
+
+        verify(matchRepository, never()).save(any(Match.class));
+        verify(turnManager, never()).advanceTurn(matchId);
+    }
 }
