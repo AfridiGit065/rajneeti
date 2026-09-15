@@ -18,9 +18,10 @@ import {
   BlockPanel,
   BlockDialog,
   BlockResult,
-  type BlockEvent,
-  type BlockResultData,
+  BlockOffer,
+  BlockWindowPanel,
   type BlockOutcome,
+  type BlockResultData,
 } from "./block-system";
 import {
   InfluenceLostModal,
@@ -33,6 +34,8 @@ import { MOCK_CURRENT_USER } from "@/mocks/users";
 import { useAuthStore } from "@/store/auth-store";
 import { useToast } from "@/hooks/use-toast";
 import { MatchStatus, type GameActionId, type GamePhase, type GamePlayer, type GameState } from "@/types/game";
+import type { Result } from "@/types/api";
+import type { CharacterId } from "@/types/character";
 
 const PHASE_LABEL: Record<GamePhase, string> = {
   setup: "Setup",
@@ -43,6 +46,17 @@ const PHASE_LABEL: Record<GamePhase, string> = {
   card_reveal: "Card Reveal",
   game_over: "Game Over",
 };
+
+/** Actions that open a block window (Module 19). */
+const BLOCKABLE_ACTIONS: readonly GameActionId[] = [
+  "foreign_aid",
+  "steal",
+  "assassinate",
+];
+
+function isBlockable(id: GameActionId): boolean {
+  return BLOCKABLE_ACTIONS.includes(id);
+}
 
 function DeckDiscard({ game }: { game: GameState }) {
   return (
@@ -115,10 +129,10 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const { success, error: notifyError } = useToast();
   const selfId = useAuthStore((s) => s.user)?.id ?? MOCK_CURRENT_USER.id;
 
-  // Block System State (Module F20)
-  const [activeBlock, setActiveBlock] = useState<BlockEvent | null>(null);
+  // Block System State (Module F20 / Module 19 backend)
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockResultData, setBlockResultData] = useState<BlockResultData | null>(null);
+  const [blockBusy, setBlockBusy] = useState(false);
 
   // Card Reveal & Elimination State (Module F21)
   const [influenceLostOpen, setInfluenceLostOpen] = useState(false);
@@ -173,35 +187,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
       setGame(result.data);
       success(`${getAction(actionId).nameBn} — অ্যাকশন চলছে`);
 
-      // Mock block opportunity triggers for F20 demonstration
-      if (actionId === "foreign_aid" || actionId === "steal" || actionId === "assassinate") {
-        const potentialBlocker =
-          (targetPlayerId ? result.data.players.find((p) => p.id === targetPlayerId) : null) ??
-          result.data.players.find((p) => p.userId !== selfId && p.isAlive);
-
-        if (potentialBlocker) {
-          const claimedCharacter =
-            actionId === "foreign_aid"
-              ? "minister"
-              : actionId === "steal"
-              ? "amla"
-              : "goyenda";
-
-          const actor =
-            result.data.players.find((p) => p.userId === selfId) ?? result.data.players[0]!;
-
-          const newBlockEvent: BlockEvent = {
-            blocker: potentialBlocker,
-            targetOrActor: actor,
-            actionId,
-            claimedCharacter,
-          };
-
-          setActiveBlock(newBlockEvent);
-          setBlockDialogOpen(true);
-        }
-      }
-
       // If action is Coup, trigger card loss for the target player (F21 simulation)
       if (actionId === "coup" && targetPlayerId) {
         const target = result.data.players.find((p) => p.id === targetPlayerId);
@@ -215,33 +200,75 @@ export function GameBoard({ matchId }: { matchId: string }) {
     }
   }
 
-  function handleBlockResolution(outcome: BlockOutcome) {
-    if (!activeBlock || !game) return;
+  async function handleBlockSubmit(claimed: CharacterId) {
+    setBlockBusy(true);
+    const result = await GameService.block(matchId, claimed);
+    setBlockBusy(false);
+    if (result.ok) {
+      setGame(result.data);
+      success("ব্লক দাবি জমা হয়েছে — অ্যাকশনটি ব্লক করা হয়েছে");
+    } else {
+      notifyError(result.error.message);
+    }
+  }
 
-    const challenger =
-      game.players.find((p) => p.userId === selfId) ?? game.players[0]!;
+  async function handleBlockChallenge() {
+    if (!game) return;
+    setBlockBusy(true);
+    const result = await GameService.challenge(matchId);
+    setBlockBusy(false);
+    if (result.ok) {
+      setGame(result.data);
+      const res = result.data.pendingChallenge;
+      if (res?.blockClaim) {
+        const challenger =
+          result.data.players.find((p) => p.userId === selfId) ??
+          result.data.players[0]!;
+        const blocker = blockEvent?.blocker ?? challenger;
+        const outcome: BlockOutcome =
+          res.result === "failed"
+            ? "challenger_loses_influence"
+            : "block_claim_is_bluff";
+        setBlockResultData({
+          outcome,
+          blocker,
+          challenger,
+          claimedCharacter: res.claimedCharacter,
+          actionId: blockEvent?.actionId ?? result.data.activeAction?.action ?? "income",
+        });
+        if (outcome === "challenger_loses_influence") {
+          setInfluenceLostReason("ব্লকের বিরুদ্ধে করা চ্যালেঞ্জে ব্যর্থ হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
+        } else {
+          setInfluenceLostReason("ব্লকের মিথ্যা দাবি ফাঁস হওয়ায় ব্লকার ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
+        }
+        setInfluenceLostOpen(true);
+      }
+      setBlockDialogOpen(false);
+      success("ব্লক চ্যালেঞ্জ সম্পন্ন হয়েছে");
+    } else {
+      notifyError(result.error.message);
+    }
+  }
 
-    const resultData: BlockResultData = {
-      outcome,
-      blocker: activeBlock.blocker,
-      challenger,
-      claimedCharacter: activeBlock.claimedCharacter,
-      actionId: activeBlock.actionId,
-    };
-
-    setBlockResultData(resultData);
-    setActiveBlock(null);
-
-    // If challenger or blocker loses influence, trigger F21 Card Reveal
-    if (outcome === "challenger_loses_influence") {
-      setInfluenceLostReason("ব্লকের বিরুদ্ধে করা চ্যালেঞ্জে ব্যর্থ হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
-      setInfluenceLostOpen(true);
-    } else if (
-      outcome === "blocker_loses_influence" ||
-      outcome === "block_claim_is_bluff"
-    ) {
-      setInfluenceLostReason("ব্লকের মিথ্যা দাবি ফাঁস হওয়ায় ব্লকার ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
-      setInfluenceLostOpen(true);
+  async function resolvePendingAction(blocked: boolean) {
+    if (!game?.activeAction) return;
+    const act = game.activeAction;
+    setBlockBusy(true);
+    let result: Result<GameState>;
+    if (act.action === "foreign_aid") {
+      result = await GameService.resolveForeignAid(matchId, blocked);
+    } else if (act.action === "steal") {
+      result = await GameService.resolveSteal(matchId, !blocked);
+    } else {
+      result = await GameService.resolveAssassinate(matchId, !blocked);
+    }
+    setBlockBusy(false);
+    if (result.ok) {
+      setGame(result.data);
+      setBlockDialogOpen(false);
+      success(blocked ? "ব্লক গৃহীত হয়েছে — অ্যাকশন বাতিল" : "অ্যাকশন সমাধান সম্পন্ন হয়েছে");
+    } else {
+      notifyError(result.error.message);
     }
   }
 
@@ -280,6 +307,27 @@ export function GameBoard({ matchId }: { matchId: string }) {
 
     success("কার্ড সফলভাবে উন্মোচিত হয়েছে");
   }
+
+  /** Module 19 — the active block claim from the backend pending action. */
+  const blockEvent = (() => {
+    const act = game?.activeAction;
+    if (!game?.currentTurnPlayerId || !act?.blockerUserId) return null;
+    const blocker = game.players.find((p) => p.id === act.blockerUserId);
+    const actor = game.players.find((p) => p.id === game.currentTurnPlayerId);
+    if (!blocker || !actor) return null;
+    const fallback: CharacterId =
+      act.action === "foreign_aid"
+        ? "minister"
+        : act.action === "assassinate"
+          ? "goyenda"
+          : "dalal";
+    return {
+      blocker,
+      targetOrActor: actor,
+      actionId: act.action,
+      claimedCharacter: act.blockedCharacter ?? fallback,
+    };
+  })();
 
   if (loading) {
     return (
@@ -332,6 +380,23 @@ export function GameBoard({ matchId }: { matchId: string }) {
     ? game.players.find((p) => p.id === game.winnerPlayerId)
     : null;
 
+  // Module 19 — block window state driven by the backend pending action.
+  const blockWindowAction: GameActionId | null =
+    game.activeAction && isBlockable(game.activeAction.action)
+      ? game.activeAction.action
+      : null;
+  const isActorOfPending = game.currentTurnPlayerId === currentPlayer.id;
+  const showBlockOffer =
+    blockWindowAction !== null &&
+    !game.activeAction!.blockerUserId &&
+    !game.pendingChallenge &&
+    currentPlayer.isAlive &&
+    !isActorOfPending;
+  const showActorResolve =
+    blockWindowAction !== null &&
+    isActorOfPending &&
+    !game.activeAction!.blockerUserId;
+
   return (
     <div className="flex min-h-screen flex-col">
       <GameHeader game={game} selfId={selfId} />
@@ -378,13 +443,31 @@ export function GameBoard({ matchId }: { matchId: string }) {
           )}
 
           {/* Active Block Indicator */}
-          {activeBlock && (
+          {blockEvent && (
             <BlockPanel
-              activeBlock={activeBlock}
+              activeBlock={blockEvent}
               currentPlayer={currentPlayer}
               onOpenDialog={() => setBlockDialogOpen(true)}
             />
           )}
+
+          {/* Block opportunity for non-actor players (Module 19) */}
+          {showBlockOffer && blockWindowAction ? (
+            <BlockOffer
+              action={blockWindowAction}
+              busy={blockBusy}
+              onBlock={handleBlockSubmit}
+            />
+          ) : null}
+
+          {/* Actor resolve control when their blockable action is unblocked */}
+          {showActorResolve && blockWindowAction ? (
+            <BlockWindowPanel
+              action={blockWindowAction}
+              busy={blockBusy}
+              onResolve={() => void resolvePendingAction(false)}
+            />
+          ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
             <ActiveAction game={game} />
@@ -415,13 +498,15 @@ export function GameBoard({ matchId }: { matchId: string }) {
       </main>
 
       {/* Module F20: Block Dialog Modal */}
-      {activeBlock && (
+      {blockEvent && (
         <BlockDialog
-          event={activeBlock}
+          event={blockEvent}
           currentPlayer={currentPlayer}
           open={blockDialogOpen}
+          busy={blockBusy}
           onClose={() => setBlockDialogOpen(false)}
-          onResolve={handleBlockResolution}
+          onAllowBlock={() => void resolvePendingAction(true)}
+          onChallenge={() => void handleBlockChallenge()}
         />
       )}
 

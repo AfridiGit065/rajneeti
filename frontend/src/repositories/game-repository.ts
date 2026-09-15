@@ -26,4 +26,5 @@ export interface GameRepository {
     matchId: string,
     succeeded: boolean,
   ): Promise<Result<GameState>>;
+  resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>>;
 }
