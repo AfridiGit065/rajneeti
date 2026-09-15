@@ -42,4 +42,7 @@ public class PendingActionDto {
      * Assassination. Public information; {@code null} otherwise.
      */
     private UUID targetPlayerId;
+
+    /** Module 18 — user ID of the opponent who challenged a truthful claim. */
+    private UUID challengerUserId;
 }

@@ -39,7 +39,11 @@ export interface ChallengeResolution {
   claimedCharacter: CharacterId;
   result: ChallengeResult;
   revealedCardId?: string;
+  /** Lower-case character id of the card that was revealed face-up. */
+  revealedCharacterId?: string;
   influenceLostById?: string;
+  /** Whether the original action continues after the challenge. */
+  actionContinues?: boolean;
   effectApplied: boolean;
 }
 

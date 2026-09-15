@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { canChallenge } from "@/lib/game/actions";
-import { simulateChallenge, type ChallengeSimulation } from "@/lib/game/challenge";
+import { challengeToSimulation, simulateChallenge, type ChallengeSimulation } from "@/lib/game/challenge";
 import { GameService } from "@/services/game-service";
 import { Loader2, Gavel } from "@/components/ui/icons";
 import { ChallengePanel } from "./challenge-panel";
@@ -10,6 +10,7 @@ import { ChallengeDialog } from "./challenge-dialog";
 import { ChallengeResult } from "./challenge-result";
 import { CardReveal } from "./card-reveal";
 import type { GameState } from "@/types/game";
+import type { CharacterId } from "@/types/character";
 
 type FlowStage =
   | "idle"
@@ -42,9 +43,9 @@ const STAGE_NEXT: Partial<Record<FlowStage, FlowStage>> = {
 };
 
 /**
- * Drives the challenge system for claims made by opponents. The verdict is a
- * mock (derived deterministically from the claimant's hand); nothing about the
- * hidden cards is rendered until the reveal step.
+ * Drives the challenge system for claims made by opponents. The verdict comes
+ * from the backend Challenge Manager (returned as `lastChallenge`); the local
+ * mock is kept only as a fallback when the server response is unavailable.
  */
 export function ChallengeFlow({ game, selfId, onResolved }: ChallengeFlowProps) {
   const [stage, setStage] = useState<FlowStage>("idle");
@@ -102,12 +103,30 @@ export function ChallengeFlow({ game, selfId, onResolved }: ChallengeFlowProps) 
   }
 
   function confirmChallenge() {
-    if (!activeClaim?.claimedCharacter || !claimant) return;
-    void GameService.challenge(game.matchId, claimant.id).then((result) => {
-      if (result.ok) onResolved?.(result.data);
+    if (!activeClaim?.claimedCharacter) return;
+    void GameService.challenge(game.matchId).then((result) => {
+      if (!result.ok) {
+        setStage("panel");
+        return;
+      }
+      const next = result.data;
+      const verdict = next.pendingChallenge;
+      setSimulation(
+        verdict
+          ? challengeToSimulation(verdict)
+          : {
+              verdict: "bluff",
+              revealedCharacterId: (activeClaim.claimedCharacter ?? "minister") as CharacterId,
+            },
+      );
+      onResolved?.(next);
     });
     setStage("resolving");
   }
+
+  const sim = simulation;
+  const claimantName = claimant?.displayName ?? claimant?.username ?? "দাবিকারী";
+  const challengerName = self?.displayName ?? self?.username ?? "চ্যালেঞ্জকারী";
 
   return (
     <>
@@ -121,11 +140,11 @@ export function ChallengeFlow({ game, selfId, onResolved }: ChallengeFlowProps) 
         />
       ) : null}
 
-      {view === "confirm" && simulation ? (
+      {view === "confirm" && sim ? (
         <ChallengeDialog
           open
-          claimantName={claimant?.displayName ?? claimant?.username ?? ""}
-          claimedCharacter={simulation.revealedCharacterId}
+          claimantName={claimantName}
+          claimedCharacter={sim.revealedCharacterId}
           onConfirm={confirmChallenge}
           onCancel={() => setStage("panel")}
         />
@@ -146,24 +165,25 @@ export function ChallengeFlow({ game, selfId, onResolved }: ChallengeFlowProps) 
         </div>
       ) : null}
 
-      {view === "result" && simulation ? (
+      {view === "result" && sim ? (
         <ChallengeResult
-          verdict={simulation.verdict}
-          challengerName={self?.displayName ?? self?.username ?? "চ্যালেঞ্জকারী"}
-          claimantName={claimant?.displayName ?? claimant?.username ?? "দাবিকারী"}
+          verdict={sim.verdict}
+          challengerName={challengerName}
+          claimantName={claimantName}
         />
       ) : null}
 
-      {view === "reveal" && simulation ? (
-        <CardReveal characterId={simulation.revealedCharacterId} variant="reveal" />
+      {view === "reveal" && sim ? (
+        <CardReveal characterId={sim.revealedCharacterId} variant="reveal" />
       ) : null}
 
-      {view === "replacement" && simulation ? (
+      {view === "replacement" && sim ? (
         <CardReveal
-          characterId={simulation.revealedCharacterId}
+          characterId={sim.revealedCharacterId}
           variant="replacement"
         />
       ) : null}
     </>
   );
 }
+

@@ -122,6 +122,24 @@ export interface BackendPendingAction {
   exchangePool?: BackendGameCard[];
   /** The target player for single-target actions (e.g. Assassination). */
   targetPlayerId?: string;
+  /** Module 18 — the opponent who challenged a truthful claim (blocks a second challenge). */
+  challengerUserId?: string;
+}
+
+export interface BackendChallenge {
+  challengerId: string;
+  claimantId: string;
+  actionType: string;
+  /** Lower-case character id the claimant asserted, e.g. "minister". */
+  claimedCharacter?: string;
+  /** "CLAIM_TRUE" when the claimant owned the card, "CLAIM_FALSE" when bluffing. */
+  result: "CLAIM_TRUE" | "CLAIM_FALSE";
+  /** Physical card id revealed face-up during the challenge. */
+  revealedCardId?: string;
+  revealedCharacterId?: string;
+  influenceLostById: string;
+  /** Whether the original action continues after a truthful claim. */
+  actionContinues: boolean;
 }
 
 export interface BackendGameState {
@@ -140,6 +158,8 @@ export interface BackendGameState {
   winnerUserId?: string;
   log: BackendGameLogEntry[];
   pendingAction?: BackendPendingAction;
+  /** Module 18 — non-null after a challenge resolved for the current action. */
+  lastChallenge?: BackendChallenge;
   startedAt: string;
   endedAt?: string;
 }
