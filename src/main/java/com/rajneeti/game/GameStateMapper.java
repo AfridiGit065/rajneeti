@@ -1,5 +1,6 @@
 package com.rajneeti.game;
 
+import com.rajneeti.dto.game.ActionResultDto;
 import com.rajneeti.dto.game.ChallengeDto;
 import com.rajneeti.dto.game.GameCardDto;
 import com.rajneeti.dto.game.GameLogEntryDto;
@@ -52,6 +53,7 @@ public class GameStateMapper {
             PendingAction pending = state.getPendingAction();
             boolean isActor = viewerId != null && viewerId.equals(pending.getActorUserId());
             PendingActionDto.PendingActionDtoBuilder builder = PendingActionDto.builder()
+                    .id(pending.getId())
                     .type(pending.getType())
                     .actorUserId(pending.getActorUserId())
                     .startedAt(pending.getStartedAt())
@@ -73,6 +75,9 @@ public class GameStateMapper {
                 builder.blockerUserId(pending.getBlockerUserId());
                 builder.blockedCharacter(pending.getBlockedCharacter());
             }
+            if (pending.getBlockChallengerUserId() != null) {
+                builder.blockChallengerUserId(pending.getBlockChallengerUserId());
+            }
             pendingDto = builder.build();
         }
 
@@ -93,6 +98,7 @@ public class GameStateMapper {
                 .log(log)
                 .pendingAction(pendingDto)
                 .lastChallenge(buildChallengeDto(state.getLastChallenge()))
+                .lastActionResult(buildActionResultDto(state.getLastActionResult()))
                 .startedAt(state.getStartedAt())
                 .endedAt(state.getEndedAt())
                 .build();
@@ -141,6 +147,26 @@ public class GameStateMapper {
                 .influenceLostById(challenge.getInfluenceLostById())
                 .actionContinues(challenge.isActionContinues())
                 .blockClaim(challenge.isBlockClaim())
+                .build();
+    }
+
+    private ActionResultDto buildActionResultDto(GameActionResult result) {
+        if (result == null) {
+            return null;
+        }
+        return ActionResultDto.builder()
+                .actionType(result.getActionType())
+                .result(result.getResult())
+                .actorUserId(result.getActorUserId())
+                .coinsGained(result.getCoinsGained())
+                .coinsLost(result.getCoinsLost())
+                .blockedByUserId(result.getBlockedByUserId())
+                .blockedCharacter(result.getBlockedCharacter())
+                .claimChallenged(result.isClaimChallenged())
+                .influenceLostById(result.getInfluenceLostById())
+                .eliminated(result.isEliminated())
+                .nextTurnPlayerId(result.getNextTurnPlayerId())
+                .nextTurnNumber(result.getNextTurnNumber())
                 .build();
     }
 }

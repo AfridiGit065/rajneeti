@@ -288,6 +288,7 @@ public class ChallengeManager {
         // 3. The block stands. Mark the block as challenged so a second block
         //    challenge is rejected; the actor still resolves the action next.
         PendingAction updated = PendingAction.builder()
+                .id(pending.getId())
                 .type(pending.getType())
                 .actorUserId(pending.getActorUserId())
                 .startedAt(pending.getStartedAt())
@@ -332,6 +333,7 @@ public class ChallengeManager {
 
         // Remove the block: the action continues unblocked for the actor's resolution.
         PendingAction updated = PendingAction.builder()
+                .id(pending.getId())
                 .type(pending.getType())
                 .actorUserId(pending.getActorUserId())
                 .startedAt(pending.getStartedAt())
@@ -397,6 +399,7 @@ public class ChallengeManager {
         //    challenge (blocks a second challenge) and refresh the private
         //    exchange pool so the exchange's later confirm step sees the new hand.
         PendingAction updated = PendingAction.builder()
+                .id(pending.getId())
                 .type(pending.getType())
                 .actorUserId(pending.getActorUserId())
                 .startedAt(pending.getStartedAt())

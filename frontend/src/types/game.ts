@@ -61,6 +61,24 @@ export interface BlockResolution {
   challenged: boolean;
 }
 
+/** Module 20 — the authoritative verdict produced by the Action Resolver. */
+export type ActionResultStatus = "RESOLVED" | "CANCELLED";
+
+export interface ActionResult {
+  actionType: GameActionId;
+  result: ActionResultStatus;
+  actorUserId: string;
+  coinsGained: number;
+  coinsLost: number;
+  blockedByUserId?: string;
+  blockedCharacter?: CharacterId;
+  claimChallenged: boolean;
+  influenceLostById?: string;
+  eliminated: boolean;
+  nextTurnPlayerId: string;
+  nextTurnNumber: number;
+}
+
 export enum MatchStatus {
   WAITING = "WAITING",
   IN_PROGRESS = "IN_PROGRESS",
@@ -132,6 +150,8 @@ export interface GameState {
   activeAction: ActionIntent | null;
   pendingChallenge: ChallengeResolution | null;
   pendingBlock: BlockResolution | null;
+  /** Module 20 — the verdict of the most recent resolved/cancelled action. */
+  lastActionResult: ActionResult | null;
   /**
    * The actor's private exchange card pool. Populated only for the local
    * player when they have a pending Exchange; undefined for everyone else.

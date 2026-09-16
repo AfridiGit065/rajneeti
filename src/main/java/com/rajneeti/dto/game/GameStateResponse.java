@@ -61,6 +61,9 @@ public class GameStateResponse {
     /** Module 18 — non-null after a challenge was resolved for the current action. */
     private ChallengeDto lastChallenge;
 
+    /** Module 20 — non-null after the Action Resolver closed the most recent action. */
+    private ActionResultDto lastActionResult;
+
     private LocalDateTime startedAt;
 
     private LocalDateTime endedAt;

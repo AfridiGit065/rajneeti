@@ -116,6 +116,7 @@ public class BlockManager {
         }
 
         PendingAction updated = PendingAction.builder()
+                .id(pending.getId())
                 .type(pending.getType())
                 .actorUserId(pending.getActorUserId())
                 .startedAt(pending.getStartedAt())

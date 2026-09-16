@@ -7,6 +7,7 @@ import com.rajneeti.dto.game.CoupRequest;
 import com.rajneeti.dto.game.ExchangeConfirmRequest;
 import com.rajneeti.dto.game.GameStateResponse;
 import com.rajneeti.dto.game.StealRequest;
+import com.rajneeti.game.ActionResolver;
 import com.rajneeti.game.BlockManager;
 import com.rajneeti.game.ChallengeManager;
 import com.rajneeti.game.GameEngine;
@@ -44,6 +45,7 @@ public class GameController {
     private final GameEngine gameEngine;
     private final ChallengeManager challengeManager;
     private final BlockManager blockManager;
+    private final ActionResolver actionResolver;
 
     /**
      * GET /api/matches/{matchId}/game
@@ -370,6 +372,31 @@ public class GameController {
 
         GameStateResponse response = blockManager.block(
                 matchId, userPrincipal.getId(), claimedCharacter);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * POST /api/matches/{matchId}/resolve
+     * Module 20 — resolves the currently pending action for the actor, closing
+     * the block/challenge window and awarding (or cancelling) the action's
+     * effect entirely server-side. No client-supplied boolean is accepted for
+     * the decision; the Action Resolver reads the flags that the Challenge
+     * Manager (Module 18) and the Block Manager (Module 19) recorded on the
+     * pending action and derives the outcome server-side.
+     *
+     * <p>The single verdict is returned as {@code lastActionResult} on the
+     * game state and persists until the next action is declared.
+     */
+    @PostMapping("/{matchId}/resolve")
+    public ResponseEntity<ApiResponse<GameStateResponse>> resolveAction(
+            @PathVariable UUID matchId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Player '{}' resolving the pending action in match: {}",
+                userPrincipal.getUsername(), matchId);
+
+        GameStateResponse response = actionResolver.resolve(
+                matchId, userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

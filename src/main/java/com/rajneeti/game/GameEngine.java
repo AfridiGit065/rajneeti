@@ -267,6 +267,7 @@ public class GameEngine {
     public GameStateResponse performIncome(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -335,6 +336,7 @@ public class GameEngine {
     public GameStateResponse performForeignAid(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -371,6 +373,7 @@ public class GameEngine {
         }
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_FOREIGN_AID)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -475,6 +478,7 @@ public class GameEngine {
     public GameStateResponse performExchange(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -530,6 +534,7 @@ public class GameEngine {
         pool.addAll(drawn);
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_EXCHANGE)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -673,6 +678,7 @@ public class GameEngine {
     public GameStateResponse performAssassinate(UUID matchId, UUID userId, UUID targetPlayerId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -741,6 +747,7 @@ public class GameEngine {
         }
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_ASSASSINATE)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -875,6 +882,7 @@ public class GameEngine {
     public GameStateResponse performTax(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -911,6 +919,7 @@ public class GameEngine {
         }
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_TAX)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -946,6 +955,7 @@ public class GameEngine {
     public GameStateResponse performSteal(UUID matchId, UUID userId, UUID targetPlayerId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -1008,6 +1018,7 @@ public class GameEngine {
         }
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_STEAL)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -1187,6 +1198,7 @@ public class GameEngine {
     @Transactional
     public GameStateResponse performCoup(UUID matchId, UUID userId, UUID targetPlayerId) {
         GameState state = getOrInitialize(matchId);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {

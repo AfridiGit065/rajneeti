@@ -36,4 +36,8 @@ export const GameService = {
   async resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>> {
     return repositories.game.resolveSteal(matchId, granted);
   },
+  /** Module 20 — resolves the pending action authoritatively (no boolean). */
+  async resolve(matchId: string): Promise<Result<GameState>> {
+    return repositories.game.resolve(matchId);
+  },
 };

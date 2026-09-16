@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 import type { BackendBlockRequest, BackendGameState, BackendGamePlayer, BackendPendingAction } from "@/types/backend";
 import type { GameRepository } from "../game-repository";
-import { MatchStatus, type ActionIntent, type ChallengeResolution, type GameActionId, type GameResult, type GameState, type GamePhase, type InfluenceCard, type GameLogEntry } from "@/types/game";
+import { MatchStatus, type ActionIntent, type ActionResult, type ChallengeResolution, type GameActionId, type GameResult, type GameState, type GamePhase, type InfluenceCard, type GameLogEntry } from "@/types/game";
 import { err, ok, type Result } from "@/types/api";
 
 const CHARACTER_IDS = ["minister", "ghatok", "dalal", "amla", "goyenda"] as const;
@@ -87,6 +87,31 @@ function mapChallengeResolution(backend: BackendGameState): ChallengeResolution 
 
 const LOG_KINDS: GameLogEntry["kind"][] = ["info", "action", "challenge", "block", "reveal", "elimination"];
 
+/**
+ * Module 20 — projects the authoritative Action Resolver verdict onto the
+ * frontend model (null when no action has been closed yet).
+ */
+function mapActionResult(backend: BackendGameState["lastActionResult"]): ActionResult | null {
+  if (!backend) return null;
+
+  return {
+    actionType: toActionId(backend.actionType),
+    result: backend.result,
+    actorUserId: backend.actorUserId,
+    coinsGained: backend.coinsGained,
+    coinsLost: backend.coinsLost,
+    blockedByUserId: backend.blockedByUserId,
+    blockedCharacter: backend.blockedCharacter
+      ? toCharacterId(backend.blockedCharacter)
+      : undefined,
+    claimChallenged: backend.claimChallenged,
+    influenceLostById: backend.influenceLostById,
+    eliminated: backend.eliminated,
+    nextTurnPlayerId: backend.nextTurnPlayerId,
+    nextTurnNumber: backend.nextTurnNumber,
+  };
+}
+
 function toInfluenceCards(player: BackendGamePlayer): InfluenceCard[] {
   const hidden: InfluenceCard[] = Array.from(
     { length: Math.max(0, player.influenceCount) },
@@ -147,6 +172,7 @@ function toGameState(backend: BackendGameState): GameState {
     activeAction: mapPendingAction(backend.pendingAction),
     pendingChallenge: mapChallengeResolution(backend),
     pendingBlock: null,
+    lastActionResult: mapActionResult(backend.lastActionResult),
     exchangePool,
     log: backend.log.map((entry) => ({
       id: entry.id,
@@ -328,6 +354,13 @@ if (intent.action === "coup") {
   async resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>> {
     const result = await apiClient.post<BackendGameState>(
       `/api/matches/${matchId}/steal/resolve?granted=${granted}`,
+    );
+    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
+  }
+
+  async resolve(matchId: string): Promise<Result<GameState>> {
+    const result = await apiClient.post<BackendGameState>(
+      `/api/matches/${matchId}/resolve`,
     );
     return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }

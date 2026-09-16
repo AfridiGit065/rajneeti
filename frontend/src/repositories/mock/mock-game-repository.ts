@@ -1,5 +1,5 @@
 ﻿import type { GameRepository } from "../game-repository";
-import type { ActionIntent, GameResult, GameState } from "@/types/game";
+import type { ActionIntent, ActionResult, GameActionId, GameResult, GameState } from "@/types/game";
 import type { CharacterId } from "@/types/character";
 import { err, ok, type Result } from "@/types/api";
 import { MOCK_FINISHED_GAME_STATE, MOCK_GAME_STATE } from "@/mocks/matches";
@@ -136,6 +136,97 @@ export class MockGameRepository implements GameRepository {
       finishedAt: new Date().toISOString(),
       turnCount: 11,
     });
+  }
+
+  async resolve(_matchId: string): Promise<Result<GameState>> {
+    await delay(500);
+    const intent = this.state.activeAction as (ActionIntent & { blockerUserId?: string; blockedCharacter?: CharacterId }) | null;
+    if (!intent) {
+      return err({
+        status: 400,
+        error: "NO_PENDING_ACTION",
+        message: "সমাধান করার জন্য কোনো অপেক্ষমাণ অ্যাকশন নেই।",
+      });
+    }
+
+    // The mock mirrors the server contract: the verdict is derived from the
+    // server-side recorded blocker flag, never a client boolean.
+    const blocked = Boolean(intent.blockerUserId);
+    const actorId = this.state.currentTurnPlayerId ?? this.state.players[0]!.id;
+    const targetId = intent.targetPlayerId;
+    const actor = this.state.players.find((p) => p.id === actorId);
+    const target = targetId ? this.state.players.find((p) => p.id === targetId) : undefined;
+    const actorCoinsBefore = actor?.coins ?? 0;
+
+    let coinsLost = 0;
+    let influenceLostById: string | undefined;
+    switch (intent.action) {
+      case "foreign_aid":
+        if (!blocked && actor) actor.coins += 2;
+        break;
+      case "tax":
+        if (!blocked && actor) actor.coins += 3;
+        break;
+      case "steal":
+        if (!blocked && actor && target && target.coins > 0) {
+          const taken = Math.min(2, target.coins);
+          target.coins -= taken;
+          actor.coins += taken;
+          coinsLost = taken;
+        }
+        break;
+      case "assassinate":
+        if (!blocked && actor && target && target.influenceCards.length > 0) {
+          actor.coins = Math.max(0, actor.coins - 3);
+          target.influenceCards = target.influenceCards.slice(1);
+          influenceLostById = target.id;
+        }
+        break;
+      default:
+        break;
+    }
+    const coinsGained = (actor?.coins ?? 0) - actorCoinsBefore;
+
+    const avatar = this.state.players.find((p) => p.isTurn) ?? this.state.players[0];
+    const result: ActionResult = {
+      actionType: intent.action as GameActionId,
+      result: blocked ? "CANCELLED" : "RESOLVED",
+      actorUserId: actorId,
+      coinsGained,
+      coinsLost,
+      blockedByUserId: blocked ? intent.blockerUserId : undefined,
+      blockedCharacter: blocked ? intent.blockedCharacter : undefined,
+      claimChallenged: false,
+      influenceLostById,
+      eliminated: influenceLostById
+        ? (target?.influenceCards.length ?? 0) === 0
+        : false,
+      nextTurnPlayerId: this.state.turnOrder[(this.state.turnOrder.indexOf(actorId) + 1) % this.state.turnOrder.length] ?? actorId,
+      nextTurnNumber: this.state.turnNumber + 1,
+    };
+
+    this.state = {
+      ...this.state,
+      phase: "action_selection",
+      activeAction: null,
+      pendingChallenge: null,
+      pendingBlock: null,
+      lastActionResult: result,
+      log: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          text: avatar
+            ? `${avatar.displayName ?? avatar.username}: ${intent.action} ${
+                blocked ? "ব্লক হয়েছে — অ্যাকশন বাতিল!" : "নিষ্পত্তি সম্পন্ন!"
+              }`
+            : "অ্যাকশন নিষ্পত্তি সম্পন্ন হয়েছে!",
+          kind: blocked ? "block" : "action",
+        },
+        ...this.state.log,
+      ],
+    };
+    return ok(this.state);
   }
 
   async resolveForeignAid(_matchId: string, blocked: boolean): Promise<Result<GameState>> {
