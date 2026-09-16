@@ -112,6 +112,7 @@ public class GameEngine {
     private final CardManager cardManager;
     private final TurnManager turnManager;
     private final GameStateMapper gameStateMapper;
+    private final WinnerManager winnerManager;
 
     /**
      * Initializes a live game instance for an existing match.
@@ -855,11 +856,18 @@ public class GameEngine {
             log.info("Assassination cancelled in match {} (no coins paid, no influence lost)", matchId);
         }
 
+        // Module 21 — persist eliminations before the turn advances so the
+        // TurnManager skips the player who just lost their last card.
+        winnerManager.syncPlayerStates(state);
+
         Match match = turnManager.advanceTurn(matchId);
         state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
         state.setTurnNumber(match.getTurnNumber());
         state.setActionExecuted(false);
         state.setPhase(PHASE_IN_PROGRESS);
+
+        // Module 21 — a successful Assassination may have left a single survivor.
+        winnerManager.checkAndFinish(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -1286,11 +1294,18 @@ public class GameEngine {
 
         state.setActionExecuted(true);
 
+        // Module 21 — persist eliminations before the turn advances so the
+        // TurnManager skips the player who just lost their last card.
+        winnerManager.syncPlayerStates(state);
+
         Match match = turnManager.advanceTurn(matchId);
         state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
         state.setTurnNumber(match.getTurnNumber());
         state.setActionExecuted(false);
         state.setPhase(PHASE_IN_PROGRESS);
+
+        // Module 21 — a Coup may have eliminated the last opponent.
+        winnerManager.checkAndFinish(state);
 
         log.info("Player '{}' launched a Coup on '{}' in match {} ({} coins paid, "
                         + "current turn -> {})",

@@ -54,6 +54,7 @@ public class ActionResolver {
 
     private final GameEngine gameEngine;
     private final GameStateMapper gameStateMapper;
+    private final WinnerManager winnerManager;
 
     /**
      * Resolves the currently pending action on behalf of its actor.
@@ -81,13 +82,17 @@ public class ActionResolver {
         String type = pending.getType();
         switch (type) {
             case GameEngine.ACTION_FOREIGN_AID:
-                return resolveForeignAid(state, pending);
+                resolveForeignAid(state, pending);
+                break;
             case GameEngine.ACTION_TAX:
-                return resolveTax(state, pending);
+                resolveTax(state, pending);
+                break;
             case GameEngine.ACTION_STEAL:
-                return resolveSteal(state, pending);
+                resolveSteal(state, pending);
+                break;
             case GameEngine.ACTION_ASSASSINATE:
-                return resolveAssassinate(state, pending);
+                resolveAssassinate(state, pending);
+                break;
             case GameEngine.ACTION_EXCHANGE:
                 throw new BusinessException("EXCHANGE_CARD_CHOICE_REQUIRED",
                         "Exchange requires the actor to choose which cards to keep. "
@@ -96,13 +101,20 @@ public class ActionResolver {
                 throw new BusinessException("ACTION_NOT_RESOLVABLE",
                         "The action '" + type + "' cannot be resolved through the generic resolver.");
         }
+
+        // Module 21 — after the action has fully resolved, hand over to the
+        // Winner Manager. It is the single authority that decides whether the
+        // last opponent was eliminated and finishes the match.
+        winnerManager.checkAndFinish(state);
+
+        return gameStateMapper.toResponse(state, pending.getActorUserId());
     }
 
     /**
      * Foreign Aid: 2 coins when no Minister block stands, 0 when a standing
      * block cancelled it. The turn advances regardless (handled by the seam).
      */
-    private GameStateResponse resolveForeignAid(GameState state, PendingAction pending) {
+    private void resolveForeignAid(GameState state, PendingAction pending) {
         UUID actorId = pending.getActorUserId();
         boolean blocked = pending.getBlockerUserId() != null;
 
@@ -116,7 +128,6 @@ public class ActionResolver {
                 coinsOf(state, actorId) - coinsBefore,
                 0, revealedBefore));
 
-        return gameStateMapper.toResponse(state, actorId);
     }
 
     /**
@@ -124,7 +135,7 @@ public class ActionResolver {
      * decided) always awards 3 coins here; a bluffed claim is dropped at the
      * challenge stage and never reaches this point.
      */
-    private GameStateResponse resolveTax(GameState state, PendingAction pending) {
+    private void resolveTax(GameState state, PendingAction pending) {
         UUID actorId = pending.getActorUserId();
 
         int coinsBefore = coinsOf(state, actorId);
@@ -137,14 +148,13 @@ public class ActionResolver {
                 coinsOf(state, actorId) - coinsBefore,
                 0, revealedBefore));
 
-        return gameStateMapper.toResponse(state, actorId);
     }
 
     /**
      * Steal: a standing block cancels it (no transfer), otherwise up to 2 coins
      * move from the target to the actor (capped by the target's balance).
      */
-    private GameStateResponse resolveSteal(GameState state, PendingAction pending) {
+    private void resolveSteal(GameState state, PendingAction pending) {
         UUID actorId = pending.getActorUserId();
         UUID targetId = pending.getTargetPlayerId();
         boolean blocked = pending.getBlockerUserId() != null;
@@ -161,7 +171,6 @@ public class ActionResolver {
                 targetCoinsBefore - coinsOf(state, targetId),
                 revealedBefore));
 
-        return gameStateMapper.toResponse(state, actorId);
     }
 
     /**
@@ -169,7 +178,7 @@ public class ActionResolver {
      * otherwise the 3 reserved coins are deducted and the target loses exactly
      * one influence card, eliminating them if that was their last card.
      */
-    private GameStateResponse resolveAssassinate(GameState state, PendingAction pending) {
+    private void resolveAssassinate(GameState state, PendingAction pending) {
         UUID actorId = pending.getActorUserId();
         UUID targetId = pending.getTargetPlayerId();
         boolean blocked = pending.getBlockerUserId() != null;
@@ -184,7 +193,6 @@ public class ActionResolver {
                 coinsOf(state, actorId) - coinsBefore,
                 0, revealedBefore));
 
-        return gameStateMapper.toResponse(state, actorId);
     }
 
     /**

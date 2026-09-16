@@ -66,10 +66,11 @@ class ChallengeManagerTest {
         actorId = UUID.randomUUID();
         challengerId = UUID.randomUUID();
 
+        WinnerManager winnerManager = new WinnerManager(matchRepository, matchPlayerRepository);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager);
+                cardManager, turnManager, gameStateMapper, winnerManager);
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager);
         gameStore.remove(matchId);
     }
 
@@ -585,8 +586,11 @@ class ChallengeManagerTest {
         GamePlayerState challengerState = state.getPlayers().get(1);
         assertThat(challengerState.getCards()).isEmpty();
         assertThat(challengerState.getStatus()).isEqualTo(PlayerStatus.ELIMINATED);
-        // The pending action survives for the actor to resolve.
-        assertThat(state.getPendingAction()).isNotNull();
+        // Module 21 — eliminating the last opponent ends the game: the pending
+        // action is cleared and the claimant is declared the winner.
+        assertThat(state.getPendingAction()).isNull();
+        assertThat(state.getStatus()).isEqualTo(MatchStatus.FINISHED);
+        assertThat(state.getWinnerUserId()).isEqualTo(actorId);
     }
 
     /* ------------------------------------------------------------------ */

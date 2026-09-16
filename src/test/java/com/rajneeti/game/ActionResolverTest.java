@@ -70,12 +70,13 @@ class ActionResolverTest {
         otherId = UUID.randomUUID();
         thirdId = UUID.randomUUID();
 
+        WinnerManager winnerManager = new WinnerManager(matchRepository, matchPlayerRepository);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager);
+                cardManager, turnManager, gameStateMapper, winnerManager);
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager);
         blockManager = new BlockManager(gameEngine);
-        actionResolver = new ActionResolver(gameEngine, gameStateMapper);
+        actionResolver = new ActionResolver(gameEngine, gameStateMapper, winnerManager);
         gameStore.remove(matchId);
     }
 

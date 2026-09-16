@@ -1,5 +1,6 @@
 ﻿import type { GameRepository } from "../game-repository";
 import type { ActionIntent, ActionResult, GameActionId, GameResult, GameState } from "@/types/game";
+import { MatchStatus } from "@/types/game";
 import type { CharacterId } from "@/types/character";
 import { err, ok, type Result } from "@/types/api";
 import { MOCK_FINISHED_GAME_STATE, MOCK_GAME_STATE } from "@/mocks/matches";
@@ -8,6 +9,30 @@ const delay = (ms = 400) => new Promise((r) => setTimeout(r, ms));
 
 export class MockGameRepository implements GameRepository {
   private state: GameState = MOCK_GAME_STATE;
+
+  /**
+   * Module 21 — mirror the backend winner manager: when a resolution leaves a
+   * single player with influence, the match is FINISHED and that player wins.
+   */
+  private finishIfGameOver(): void {
+    const alive = this.state.players.filter((p) => p.influenceCards.length > 0);
+    if (alive.length !== 1) return;
+    const winner = alive[0]!;
+    this.state = {
+      ...this.state,
+      status: MatchStatus.FINISHED,
+      phase: "game_over",
+      winnerPlayerId: winner.id,
+      endedAt: new Date().toISOString(),
+      activeAction: null,
+      pendingChallenge: null,
+      pendingBlock: null,
+      players: this.state.players.map((p) => ({
+        ...p,
+        isAlive: p.influenceCards.length > 0,
+      })),
+    };
+  }
 
   async getGameState(matchId: string): Promise<Result<GameState>> {
     await delay(250);
@@ -226,6 +251,7 @@ export class MockGameRepository implements GameRepository {
         ...this.state.log,
       ],
     };
+    this.finishIfGameOver();
     return ok(this.state);
   }
 
@@ -283,6 +309,7 @@ export class MockGameRepository implements GameRepository {
         ...this.state.log,
       ],
     };
+    this.finishIfGameOver();
     return ok(this.state);
   }
 

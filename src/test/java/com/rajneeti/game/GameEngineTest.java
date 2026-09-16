@@ -72,9 +72,10 @@ class GameEngineTest {
                 .host(hostUser)
                 .maxPlayers(6)
                 .build();
-
         gameEngine = new GameEngine(
-                matchRepository, matchPlayerRepository, gameStore, cardManager, turnManager, gameStateMapper);
+                matchRepository, matchPlayerRepository, gameStore,
+                cardManager, turnManager, gameStateMapper,
+                new WinnerManager(matchRepository, matchPlayerRepository));
     }
 
     private Match buildMatch() {

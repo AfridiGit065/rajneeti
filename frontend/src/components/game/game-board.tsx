@@ -14,6 +14,7 @@ import { OwnCards } from "./own-cards";
 import { ActionPanel } from "./action-panel";
 import { ChallengeFlow } from "./challenge";
 import { GameLog } from "./game-log";
+import { GameOverScreen } from "./game-over";
 import {
   BlockPanel,
   BlockDialog,
@@ -406,6 +407,12 @@ export function GameBoard({ matchId }: { matchId: string }) {
     );
   }
 
+  // Module 21 — once the backend declares the match FINISHED, the winner
+  // manager has already persisted the outcome; take over the screen.
+  if (game.status === MatchStatus.FINISHED) {
+    return <GameOverScreen game={game} selfId={selfId} />;
+  }
+
   const currentPlayer =
     game.players.find((p) => p.userId === selfId) ??
     game.players.find((p) => p.isTurn) ??
@@ -426,10 +433,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const opponents = game.players
     .filter((p) => p.id !== currentPlayer.id)
     .sort((a, b) => a.seatIndex - b.seatIndex);
-
-  const winner = game.winnerPlayerId
-    ? game.players.find((p) => p.id === game.winnerPlayerId)
-    : null;
 
   // Module 19 — block window state driven by the backend pending action.
   const blockWindowAction: GameActionId | null =
@@ -476,15 +479,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
 
         {/* === Main center column === */}
         <section className="order-2 flex flex-col gap-4 lg:order-2">
-          {game.status === MatchStatus.FINISHED && winner ? (
-            <div className="flex items-center justify-center gap-2 rounded-2xl border border-gold-500/40 bg-gold-500/10 px-4 py-3">
-              <Trophy className="size-5 text-gold-300" aria-hidden />
-              <p className="font-semibold text-gold-200">
-                Winner: {winner.displayName ?? winner.username}
-              </p>
-            </div>
-          ) : null}
-
           {/* Block result card if recently resolved */}
           {blockResultData && (
             <BlockResult
