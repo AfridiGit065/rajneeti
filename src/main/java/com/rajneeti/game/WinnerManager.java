@@ -1,5 +1,7 @@
 package com.rajneeti.game;
 
+import com.rajneeti.dto.websocket.GameOverPayload;
+import com.rajneeti.dto.websocket.WebSocketEventType;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchPlayer;
 import com.rajneeti.entity.User;
@@ -8,6 +10,7 @@ import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,6 +61,7 @@ public class WinnerManager {
 
     private final MatchRepository matchRepository;
     private final MatchPlayerRepository matchPlayerRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     /**
      * Persists the elimination of every player whose in-memory status is now
@@ -225,6 +229,13 @@ public class WinnerManager {
         state.setActionExecuted(false);
         state.getLog().add(GameLogEntry.info(
                 winner.getUsername() + " is the last player standing and wins the game!"));
+
+        webSocketEventPublisher.publishToMatch(matchId, WebSocketEventType.GAME_OVER,
+                winner.getUserId(), GameOverPayload.builder()
+                        .winnerId(winner.getUserId())
+                        .winnerUsername(winner.getUsername())
+                        .endedAt(endedAt)
+                        .build());
 
         log.info("Game over in match {}: winner '{}' ({} coins, {} influence card(s))",
                 matchId, winner.getUsername(), winner.getCoins(),

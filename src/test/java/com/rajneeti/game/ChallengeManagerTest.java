@@ -10,6 +10,7 @@ import com.rajneeti.exception.BusinessException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
 import com.rajneeti.service.TurnManager;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,9 @@ class ChallengeManagerTest {
     @Mock
     private TurnManager turnManager;
 
+    @Mock
+    private WebSocketEventPublisher webSocketEventPublisher;
+
     private final GameStore gameStore = new GameStore();
     private final CardManager cardManager = new CardManager();
     private final GameStateMapper gameStateMapper = new GameStateMapper();
@@ -66,11 +70,11 @@ class ChallengeManagerTest {
         actorId = UUID.randomUUID();
         challengerId = UUID.randomUUID();
 
-        WinnerManager winnerManager = new WinnerManager(matchRepository, matchPlayerRepository);
+        WinnerManager winnerManager = new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper, winnerManager);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager);
+                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher);
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher);
         gameStore.remove(matchId);
     }
 

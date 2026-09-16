@@ -7,12 +7,15 @@ import { useEffect, useState } from "react";
 import { RoomService } from "@/services/room-service";
 import { useRoomStore } from "@/store/room-store";
 import { useAuthStore } from "@/store/auth-store";
+import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ChatPanel } from "@/components/rooms/chat-panel";
+import { RealtimeStatusBadge } from "@/components/layout/realtime-status-badge";
 import {
   RoomCodeDisplay,
   Seat,
@@ -75,6 +78,10 @@ export default function RoomDetailPage() {
       cancelled = true;
     };
   }, [roomId, reloadKey, setActiveRoom]);
+
+  useRoomRealtime(roomId, !!activeRoom, () => {
+    setReloadKey((k) => k + 1);
+  });
 
   const room = activeRoom;
   const me = room?.players.find((p) => p.user.id === currentUser?.id) ?? null;
@@ -221,14 +228,17 @@ export default function RoomDetailPage() {
               >
                 {room.status === "WAITING" ? "Waiting" : room.status}
               </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLeaveOpen(true)}
-              >
-                <LogOut className="size-3.5" aria-hidden />
-                Leave Room
-              </Button>
+              <div className="flex items-center gap-2">
+                <RealtimeStatusBadge />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLeaveOpen(true)}
+                >
+                  <LogOut className="size-3.5" aria-hidden />
+                  Leave Room
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -271,7 +281,8 @@ export default function RoomDetailPage() {
           )}
 
           {me ? (
-            <div className="mt-8 rounded-2xl border border-forest-500/25 bg-surface panel-emboss p-6">
+            <div className="mt-8 grid gap-4 lg:grid-cols-3">
+              <div className="lg:col-span-2 rounded-2xl border border-forest-500/25 bg-surface panel-emboss p-6">
               <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-ivory">
@@ -312,6 +323,8 @@ export default function RoomDetailPage() {
                   ) : null}
                 </div>
               </div>
+              </div>
+              <ChatPanel roomId={room.roomId} />
             </div>
           ) : null}
         </>

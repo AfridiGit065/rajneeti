@@ -21,6 +21,7 @@ import com.rajneeti.repository.RoomPlayerRepository;
 import com.rajneeti.repository.RoomRepository;
 import com.rajneeti.repository.UserRepository;
 import com.rajneeti.service.impl.MatchServiceImpl;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,6 +69,9 @@ class MatchServiceTest {
 
     @Mock
     private GameEngine gameEngine;
+
+    @Mock
+    private WebSocketEventPublisher webSocketEventPublisher;
 
     @Spy
     private MatchMapper matchMapper = new MatchMapper();

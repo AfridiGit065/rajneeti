@@ -1,9 +1,12 @@
 package com.rajneeti.game;
 
 import com.rajneeti.dto.game.GameStateResponse;
+import com.rajneeti.dto.websocket.BlockPayload;
+import com.rajneeti.dto.websocket.WebSocketEventType;
 import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,6 +54,7 @@ public class BlockManager {
             GameEngine.ACTION_ASSASSINATE, Set.of(GameEngine.CHARACTER_GOYENDA));
 
     private final GameEngine gameEngine;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     /**
      * Records a block claim by {@code blockerId} against the currently pending
@@ -136,6 +140,15 @@ public class BlockManager {
 
         log.info("Player '{}' claimed {} to block '{}' in match {}",
                 blocker.getUsername(), normalized, pending.getType(), matchId);
+
+        webSocketEventPublisher.publishToMatch(matchId, WebSocketEventType.BLOCK, blockerId,
+                BlockPayload.builder()
+                        .blockerUserId(blockerId)
+                        .blockerUsername(blocker.getUsername())
+                        .actorUserId(pending.getActorUserId())
+                        .actionType(pending.getType())
+                        .blockedCharacter(normalized)
+                        .build());
 
         return gameEngine.getSafeGameState(matchId, blockerId);
     }

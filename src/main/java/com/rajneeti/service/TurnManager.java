@@ -1,5 +1,7 @@
 package com.rajneeti.service;
 
+import com.rajneeti.dto.websocket.TurnChangePayload;
+import com.rajneeti.dto.websocket.WebSocketEventType;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchPlayer;
 import com.rajneeti.entity.User;
@@ -9,6 +11,7 @@ import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +44,7 @@ public class TurnManager {
 
     private final MatchRepository matchRepository;
     private final MatchPlayerRepository matchPlayerRepository;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     /**
      * Assigns the first turn to the player with the lowest seat number.
@@ -65,6 +69,13 @@ public class TurnManager {
         match.setTurnNumber(1);
 
         matchRepository.save(match);
+
+        webSocketEventPublisher.publishToMatch(match.getId(), WebSocketEventType.TURN_CHANGE,
+                firstPlayer.getUser().getId(), TurnChangePayload.builder()
+                        .previousTurnPlayerId(null)
+                        .currentTurnPlayerId(firstPlayer.getUser().getId())
+                        .turnNumber(match.getTurnNumber())
+                        .build());
 
         log.info("First turn assigned to player '{}' (seat {}) in match {}",
                 firstPlayer.getUser().getUsername(), firstPlayer.getSeatNumber(), match.getId());
@@ -166,6 +177,13 @@ public class TurnManager {
         match.setTurnNumber(currentTurnNumber + 1);
 
         matchRepository.save(match);
+
+        webSocketEventPublisher.publishToMatch(matchId, WebSocketEventType.TURN_CHANGE,
+                nextPlayer.getUser().getId(), TurnChangePayload.builder()
+                        .previousTurnPlayerId(currentTurnUserId)
+                        .currentTurnPlayerId(nextPlayer.getUser().getId())
+                        .turnNumber(match.getTurnNumber())
+                        .build());
 
         log.info("Turn advanced to player '{}' (seat {}) in match {}, turn #{}",
                 nextPlayer.getUser().getUsername(), nextPlayer.getSeatNumber(),

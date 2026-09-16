@@ -9,6 +9,7 @@ import com.rajneeti.exception.BusinessException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
 import com.rajneeti.service.TurnManager;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,9 @@ class GameEngineAssassinateTest {
     @Mock
     private TurnManager turnManager;
 
+    @Mock
+    private WebSocketEventPublisher webSocketEventPublisher;
+
     private final GameStore gameStore = new GameStore();
     private final CardManager cardManager = new CardManager();
     private final GameStateMapper gameStateMapper = new GameStateMapper();
@@ -68,7 +72,8 @@ class GameEngineAssassinateTest {
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
                 cardManager, turnManager, gameStateMapper,
-                new WinnerManager(matchRepository, matchPlayerRepository));
+                new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher),
+                webSocketEventPublisher);
         gameStore.remove(matchId);
     }
 

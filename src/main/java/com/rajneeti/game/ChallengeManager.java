@@ -2,11 +2,15 @@ package com.rajneeti.game;
 
 import com.rajneeti.dto.game.ChallengeDto;
 import com.rajneeti.dto.game.GameStateResponse;
+import com.rajneeti.dto.websocket.CardRevealPayload;
+import com.rajneeti.dto.websocket.ChallengePayload;
+import com.rajneeti.dto.websocket.WebSocketEventType;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.service.TurnManager;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -72,6 +76,7 @@ public class ChallengeManager {
     private final CardManager cardManager;
     private final TurnManager turnManager;
     private final WinnerManager winnerManager;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     /**
      * Resolves a challenge raised by {@code challengerId} against the currently
@@ -171,6 +176,9 @@ public class ChallengeManager {
                 describe(challenge, challenger.getUsername(),
                         claimant.getUsername())));
 
+        publishChallengeEvent(state, challenger, claimant, challenge);
+        publishPublicReveal(state, challenge);
+
         log.info("Challenge on '{}' resolved in match {}: claim={} loser={} continues={}",
                 pending.getType(), matchId, challenge.isClaimTrue() ? "TRUE" : "FALSE",
                 challenge.getInfluenceLostById(), challenge.isActionContinues());
@@ -244,6 +252,9 @@ public class ChallengeManager {
                 describe(challenge, challenger.getUsername(),
                         blocker.getUsername())));
 
+        publishChallengeEvent(state, challenger, blocker, challenge);
+        publishPublicReveal(state, challenge);
+
         log.info("Block challenge on '{}' resolved in match {}: claim={} loser={} blockStands={}",
                 pending.getType(), state.getMatchId(),
                 challenge.isClaimTrue() ? "TRUE" : "FALSE",
@@ -291,6 +302,9 @@ public class ChallengeManager {
         state.getLog().add(GameLogEntry.of("reveal",
                 blocker.getUsername() + " proved the block and revealed " + cardName(blockedCard)
                         + ". The card returns to the deck and a replacement is drawn."));
+
+        // Module 22 — the replacement card is dealt privately to its owner.
+        sendPrivateDraw(state.getMatchId(), blocker, replacement);
 
         // 3. The block stands. Mark the block as challenged so a second block
         //    challenge is rejected; the actor still resolves the action next.
@@ -401,6 +415,9 @@ public class ChallengeManager {
         state.getLog().add(GameLogEntry.of("reveal",
                 claimant.getUsername() + " proved the claim and revealed " + cardName(claimedCard)
                         + ". The card returns to the deck and a replacement is drawn."));
+
+        // Module 22 — the replacement card is dealt privately to its owner.
+        sendPrivateDraw(state.getMatchId(), claimant, replacement);
 
         // 3. The action continues. Keep the pending action open, record the
         //    challenge (blocks a second challenge) and refresh the private
@@ -524,6 +541,61 @@ public class ChallengeManager {
         // (which reads the persisted status) skips this player when the turn
         // advances after a bluff is exposed.
         winnerManager.syncPlayerStates(state);
+    }
+
+    /**
+     * Publishes a CHALLENGE event for a resolved challenge (Module 22). The
+     * block claim flag tells subscribers whether the challenge decided an
+     * action claim or a block claim.
+     */
+    private void publishChallengeEvent(GameState state, GamePlayerState challenger,
+                                       GamePlayerState claimant, GameChallenge challenge) {
+        webSocketEventPublisher.publishToMatch(state.getMatchId(),
+                WebSocketEventType.CHALLENGE, challenger.getUserId(),
+                ChallengePayload.builder()
+                        .challengerUserId(challenger.getUserId())
+                        .challengerUsername(challenger.getUsername())
+                        .claimantUserId(claimant.getUserId())
+                        .claimantUsername(claimant.getUsername())
+                        .actionType(challenge.getActionType())
+                        .claimedCharacter(challenge.getClaimedCharacter())
+                        .claimTrue(challenge.isClaimTrue())
+                        .actionContinues(challenge.isActionContinues())
+                        .blockClaim(challenge.isBlockClaim())
+                        .build());
+    }
+
+    /**
+     * Publishes a public CARD_REVEAL for the card a claimant revealed to prove
+     * or lose their claim (Module 22). The revealed character is public
+     * knowledge: for a truthful claim it proves the claim, for a bluff it
+     * exposes the lost card.
+     */
+    private void publishPublicReveal(GameState state, GameChallenge challenge) {
+        if (challenge.getRevealedCharacterId() == null) {
+            return;
+        }
+        webSocketEventPublisher.publishToMatch(state.getMatchId(),
+                WebSocketEventType.CARD_REVEAL, challenge.getClaimantUserId(),
+                CardRevealPayload.builder()
+                        .playerId(challenge.getClaimantUserId())
+                        .characterId(challenge.getRevealedCharacterId())
+                        .reason("revealed")
+                        .build());
+    }
+
+    /**
+     * Publishes a private CARD_REVEAL ("drawn") so only the card's owner learns
+     * which replacement they drew after a truthful challenge (Module 22).
+     */
+    private void sendPrivateDraw(UUID matchId, GamePlayerState owner, GameCard card) {
+        webSocketEventPublisher.sendToUser(owner.getUserId(), WebSocketEventType.CARD_REVEAL, null,
+                CardRevealPayload.builder()
+                        .playerId(owner.getUserId())
+                        .username(owner.getUsername())
+                        .characterId(cardName(card))
+                        .reason("drawn")
+                        .build());
     }
 
     private String cardName(GameCard card) {

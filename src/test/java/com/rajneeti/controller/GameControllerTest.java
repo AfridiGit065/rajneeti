@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
@@ -77,6 +78,9 @@ class GameControllerTest {
 
     @MockBean(name = "corsConfigurationSource")
     private CorsConfigurationSource corsConfigurationSource;
+
+    @MockBean
+    private WebSocketEventPublisher webSocketEventPublisher;
 
     private UserPrincipal testPrincipal;
     private UUID testUserId;

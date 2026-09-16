@@ -1,7 +1,9 @@
 package com.rajneeti.config;
 
+import com.rajneeti.websocket.WebSocketAuthInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -32,6 +34,14 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketProperties wsProperties;
+    private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        // Module 22 — authenticate the CONNECT frame (JWT) and authorize every
+        // subscription on the inbound channel before frames reach handlers.
+        registration.interceptors(webSocketAuthInterceptor);
+    }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
@@ -43,7 +53,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // All @MessageMapping methods must be prefixed with /app
         registry.setApplicationDestinationPrefixes(wsProperties.getAppDestinationPrefix());
         // Enable user-specific destinations (/user/...)
-        registry.setUserDestinationPrefix(wsProperties.getQueuePrefix());
+        registry.setUserDestinationPrefix(wsProperties.getUserDestinationPrefix());
     }
 
     @Override

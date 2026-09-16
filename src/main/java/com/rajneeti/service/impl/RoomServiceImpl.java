@@ -2,9 +2,9 @@ package com.rajneeti.service.impl;
 
 import com.rajneeti.dto.room.CreateRoomRequest;
 import com.rajneeti.dto.room.JoinRoomRequest;
-import com.rajneeti.dto.room.RoomEventResponse;
-import com.rajneeti.dto.room.RoomPlayerResponse;
 import com.rajneeti.dto.room.RoomResponse;
+import com.rajneeti.dto.websocket.RoomPayload;
+import com.rajneeti.dto.websocket.WebSocketEventType;
 import com.rajneeti.entity.Room;
 import com.rajneeti.entity.RoomPlayer;
 import com.rajneeti.entity.User;
@@ -22,9 +22,9 @@ import com.rajneeti.repository.RoomPlayerRepository;
 import com.rajneeti.repository.RoomRepository;
 import com.rajneeti.repository.UserRepository;
 import com.rajneeti.service.RoomService;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,11 +45,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RoomServiceImpl implements RoomService {
 
-    private final RoomRepository        roomRepository;
-    private final RoomPlayerRepository  roomPlayerRepository;
-    private final UserRepository        userRepository;
-    private final RoomMapper            roomMapper;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final RoomRepository            roomRepository;
+    private final RoomPlayerRepository      roomPlayerRepository;
+    private final UserRepository            userRepository;
+    private final RoomMapper                roomMapper;
+    private final WebSocketEventPublisher   webSocketEventPublisher;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -89,15 +89,15 @@ public class RoomServiceImpl implements RoomService {
 
         RoomResponse response = roomMapper.toRoomResponse(savedRoom, players);
 
-        broadcastEvent(savedRoom.getId(), RoomEventResponse.builder()
-                .event("ROOM_CREATED")
-                .roomId(savedRoom.getId())
-                .roomCode(roomCode)
-                .player(roomMapper.toRoomPlayerResponse(savedPlayer, savedRoom))
-                .playerId(host.getId())
-                .username(host.getUsername())
-                .message("Room created by " + host.getUsername())
-                .build());
+        webSocketEventPublisher.publishToRoom(savedRoom.getId(), WebSocketEventType.JOIN_ROOM, host.getId(),
+                RoomPayload.builder()
+                        .playerId(host.getId())
+                        .username(host.getUsername())
+                        .seatNumber(savedPlayer.getSeatNumber())
+                        .ready(false)
+                        .host(true)
+                        .playerCount(players.size())
+                        .build());
 
         return response;
     }
@@ -151,17 +151,15 @@ public class RoomServiceImpl implements RoomService {
 
         log.info("Player '{}' joined room '{}' (Seat {})", user.getUsername(), roomCode, assignedSeat);
 
-        RoomPlayerResponse playerResponse = roomMapper.toRoomPlayerResponse(savedPlayer, room);
-
-        broadcastEvent(room.getId(), RoomEventResponse.builder()
-                .event("PLAYER_JOINED")
-                .roomId(room.getId())
-                .roomCode(room.getRoomCode())
-                .player(playerResponse)
-                .playerId(user.getId())
-                .username(user.getUsername())
-                .message(user.getUsername() + " joined the room.")
-                .build());
+        webSocketEventPublisher.publishToRoom(room.getId(), WebSocketEventType.JOIN_ROOM, user.getId(),
+                RoomPayload.builder()
+                        .playerId(user.getId())
+                        .username(user.getUsername())
+                        .seatNumber(savedPlayer.getSeatNumber())
+                        .ready(false)
+                        .host(room.getHost().getId().equals(user.getId()))
+                        .playerCount(currentPlayers.size())
+                        .build());
 
         return roomMapper.toRoomResponse(room, currentPlayers);
     }
@@ -196,14 +194,14 @@ public class RoomServiceImpl implements RoomService {
             roomRepository.save(room);
             log.info("Room '{}' cancelled as all players have left.", room.getRoomCode());
 
-            broadcastEvent(roomId, RoomEventResponse.builder()
-                    .event("ROOM_CANCELLED")
-                    .roomId(roomId)
-                    .roomCode(room.getRoomCode())
-                    .playerId(userId)
-                    .username(user.getUsername())
-                    .message("Room was cancelled as all players left.")
-                    .build());
+            webSocketEventPublisher.publishToRoom(roomId, WebSocketEventType.LEAVE_ROOM, userId,
+                    RoomPayload.builder()
+                            .playerId(userId)
+                            .username(user.getUsername())
+                            .playerCount(0)
+                            .build());
+            webSocketEventPublisher.publishToRoom(roomId, WebSocketEventType.ROOM_CANCELLED, userId,
+                    RoomPayload.builder().playerCount(0).build());
         } else if (wasHost) {
             // Assign next earliest player as the new host
             RoomPlayer newHostPlayer = remainingPlayers.get(0);
@@ -212,33 +210,30 @@ public class RoomServiceImpl implements RoomService {
 
             log.info("Host transferred to '{}' for room '{}'", newHostPlayer.getUser().getUsername(), room.getRoomCode());
 
-            broadcastEvent(roomId, RoomEventResponse.builder()
-                    .event("PLAYER_LEFT")
-                    .roomId(roomId)
-                    .roomCode(room.getRoomCode())
-                    .playerId(userId)
-                    .username(user.getUsername())
-                    .message(user.getUsername() + " left the room.")
-                    .build());
+            webSocketEventPublisher.publishToRoom(roomId, WebSocketEventType.LEAVE_ROOM, userId,
+                    RoomPayload.builder()
+                            .playerId(userId)
+                            .username(user.getUsername())
+                            .playerCount(remainingPlayers.size())
+                            .build());
 
-            broadcastEvent(roomId, RoomEventResponse.builder()
-                    .event("HOST_CHANGED")
-                    .roomId(roomId)
-                    .roomCode(room.getRoomCode())
-                    .playerId(newHostPlayer.getUser().getId())
-                    .username(newHostPlayer.getUser().getUsername())
-                    .message(newHostPlayer.getUser().getUsername() + " is now the room host.")
-                    .build());
+            webSocketEventPublisher.publishToRoom(roomId, WebSocketEventType.HOST_CHANGED, newHostPlayer.getUser().getId(),
+                    RoomPayload.builder()
+                            .playerId(newHostPlayer.getUser().getId())
+                            .username(newHostPlayer.getUser().getUsername())
+                            .host(true)
+                            .newHostId(newHostPlayer.getUser().getId())
+                            .newHostUsername(newHostPlayer.getUser().getUsername())
+                            .playerCount(remainingPlayers.size())
+                            .build());
         } else {
             // Regular player left
-            broadcastEvent(roomId, RoomEventResponse.builder()
-                    .event("PLAYER_LEFT")
-                    .roomId(roomId)
-                    .roomCode(room.getRoomCode())
-                    .playerId(userId)
-                    .username(user.getUsername())
-                    .message(user.getUsername() + " left the room.")
-                    .build());
+            webSocketEventPublisher.publishToRoom(roomId, WebSocketEventType.LEAVE_ROOM, userId,
+                    RoomPayload.builder()
+                            .playerId(userId)
+                            .username(user.getUsername())
+                            .playerCount(remainingPlayers.size())
+                            .build());
         }
     }
 
@@ -256,14 +251,8 @@ public class RoomServiceImpl implements RoomService {
 
         log.info("Room '{}' cancelled by host ID: {}", room.getRoomCode(), userId);
 
-        broadcastEvent(roomId, RoomEventResponse.builder()
-                .event("ROOM_CANCELLED")
-                .roomId(roomId)
-                .roomCode(room.getRoomCode())
-                .playerId(userId)
-                .username(room.getHost().getUsername())
-                .message("Room was cancelled by the host.")
-                .build());
+        webSocketEventPublisher.publishToRoom(roomId, WebSocketEventType.ROOM_CANCELLED, userId,
+                RoomPayload.builder().playerCount(0).build());
     }
 
     @Override
@@ -307,17 +296,16 @@ public class RoomServiceImpl implements RoomService {
                 player.getUser().getUsername(), ready, room.getRoomCode());
 
         List<RoomPlayer> players = roomPlayerRepository.findByRoomIdOrderBySeatNumberAsc(roomId);
-        RoomPlayerResponse playerResponse = roomMapper.toRoomPlayerResponse(player, room);
 
-        broadcastEvent(roomId, RoomEventResponse.builder()
-                .event(ready ? "PLAYER_READY" : "PLAYER_UNREADY")
-                .roomId(roomId)
-                .roomCode(room.getRoomCode())
-                .player(playerResponse)
-                .playerId(userId)
-                .username(player.getUser().getUsername())
-                .message(player.getUser().getUsername() + (ready ? " is ready." : " is not ready."))
-                .build());
+        webSocketEventPublisher.publishToRoom(roomId, ready ? WebSocketEventType.READY : WebSocketEventType.UNREADY, userId,
+                RoomPayload.builder()
+                        .playerId(userId)
+                        .username(player.getUser().getUsername())
+                        .seatNumber(player.getSeatNumber())
+                        .ready(ready)
+                        .host(room.getHost().getId().equals(userId))
+                        .playerCount(players.size())
+                        .build());
 
         return roomMapper.toRoomResponse(room, players);
     }
@@ -352,13 +340,5 @@ public class RoomServiceImpl implements RoomService {
             }
         } while (roomRepository.existsByRoomCode(code));
         return code;
-    }
-
-    private void broadcastEvent(UUID roomId, RoomEventResponse event) {
-        try {
-            messagingTemplate.convertAndSend("/topic/rooms/" + roomId, event);
-        } catch (Exception ex) {
-            log.warn("Failed to broadcast WebSocket event for room {}: {}", roomId, ex.getMessage());
-        }
     }
 }

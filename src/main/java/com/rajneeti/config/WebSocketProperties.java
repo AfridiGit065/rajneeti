@@ -30,6 +30,9 @@ public class WebSocketProperties {
     /** STOMP topic prefix for broadcast messages. */
     private String topicPrefix = "/topic";
 
-    /** STOMP user-specific queue prefix. */
-    private String queuePrefix = "/user";
+    /** STOMP broker queue prefix used for session-scoped /user rewrites. */
+    private String queuePrefix = "/queue";
+
+    /** STOMP user destination prefix (e.g., /user). */
+    private String userDestinationPrefix = "/user";
 }
