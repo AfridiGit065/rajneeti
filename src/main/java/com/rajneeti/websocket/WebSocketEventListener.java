@@ -24,7 +24,8 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketConnect(SessionConnectedEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        log.info("WebSocket client connected – sessionId: {}", accessor.getSessionId());
+        log.info("WebSocket client connected – sessionId: {} (user: {})",
+                accessor.getSessionId(), describeUser(accessor));
     }
 
     /**
@@ -33,19 +34,24 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketSubscribe(SessionSubscribeEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        log.debug("WebSocket subscribe – sessionId: {}, destination: {}",
-                accessor.getSessionId(), accessor.getDestination());
+        log.debug("WebSocket subscribe – sessionId: {}, destination: {}, user: {}",
+                accessor.getSessionId(), accessor.getDestination(), describeUser(accessor));
     }
 
     /**
      * Fired when a STOMP client disconnects.
-     *
-     * <p>TODO (Module 03+): Notify other players in the same room about this player leaving.
      */
     @EventListener
     public void handleWebSocketDisconnect(SessionDisconnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        log.info("WebSocket client disconnected – sessionId: {}, reason: {}",
-                accessor.getSessionId(), event.getCloseStatus());
+        log.info("WebSocket client disconnected – sessionId: {}, user: {}, reason: {}",
+                accessor.getSessionId(), describeUser(accessor), event.getCloseStatus());
+    }
+
+    private String describeUser(StompHeaderAccessor accessor) {
+        if (accessor.getUser() instanceof WebSocketPrincipal principal) {
+            return principal.getUsername();
+        }
+        return accessor.getUser() != null ? accessor.getUser().getName() : "anonymous";
     }
 }

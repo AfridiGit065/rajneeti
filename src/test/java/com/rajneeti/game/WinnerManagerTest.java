@@ -11,6 +11,7 @@ import com.rajneeti.exception.BusinessException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
 import com.rajneeti.service.TurnManager;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,9 @@ class WinnerManagerTest {
     @Mock
     private TurnManager turnManager;
 
+    @Mock
+    private WebSocketEventPublisher webSocketEventPublisher;
+
     private final GameStore gameStore = new GameStore();
     private final CardManager cardManager = new CardManager();
     private final GameStateMapper gameStateMapper = new GameStateMapper();
@@ -78,11 +82,11 @@ class WinnerManagerTest {
         otherId = UUID.randomUUID();
         thirdId = UUID.randomUUID();
 
-        winnerManager = new WinnerManager(matchRepository, matchPlayerRepository);
+        winnerManager = new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper, winnerManager);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager);
+                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher);
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher);
         actionResolver = new ActionResolver(gameEngine, gameStateMapper, winnerManager);
         gameStore.remove(matchId);
     }
@@ -396,7 +400,7 @@ class WinnerManagerTest {
         byId(state, otherId).setStatus(PlayerStatus.ELIMINATED);
         winnerManager.syncPlayerStates(state);
 
-        TurnManager realTurnManager = new TurnManager(matchRepository, matchPlayerRepository);
+        TurnManager realTurnManager = new TurnManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
         Match advanced = realTurnManager.advanceTurn(matchId);
 
         assertThat(advanced.getCurrentTurnPlayerId()).isEqualTo(thirdId);
@@ -411,7 +415,7 @@ class WinnerManagerTest {
         byId(state, thirdId).setStatus(PlayerStatus.ELIMINATED);
         winnerManager.syncPlayerStates(state);
 
-        TurnManager realTurnManager = new TurnManager(matchRepository, matchPlayerRepository);
+        TurnManager realTurnManager = new TurnManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
         Match advanced = realTurnManager.advanceTurn(matchId);
 
         assertThat(advanced.getCurrentTurnPlayerId()).isEqualTo(actorId);
@@ -455,7 +459,7 @@ class WinnerManagerTest {
         byId(state, otherId).setStatus(PlayerStatus.ELIMINATED);
         winnerManager.checkAndFinish(state);
 
-        BlockManager blockManager = new BlockManager(gameEngine);
+        BlockManager blockManager = new BlockManager(gameEngine, webSocketEventPublisher);
         assertThatThrownBy(() -> blockManager.block(matchId, otherId, GameEngine.CHARACTER_MINISTER))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())

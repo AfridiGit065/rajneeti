@@ -93,7 +93,8 @@ websocket:
   endpoint: /ws
   app-destination-prefix: /app
   topic-prefix: /topic
-  queue-prefix: /user
+  queue-prefix: /queue
+  user-destination-prefix: /user
 
 # ── CORS ──────────────────────────────────────────────────────
 cors:

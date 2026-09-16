@@ -1,6 +1,8 @@
 package com.rajneeti.game;
 
 import com.rajneeti.dto.game.GameStateResponse;
+import com.rajneeti.dto.websocket.GameActionPayload;
+import com.rajneeti.dto.websocket.WebSocketEventType;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchPlayer;
 import com.rajneeti.entity.Room;
@@ -12,6 +14,7 @@ import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
 import com.rajneeti.service.TurnManager;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -106,6 +109,15 @@ public class GameEngine {
     public static final String PHASE_IN_PROGRESS = "in_progress";
     public static final String PHASE_GAME_OVER = "game_over";
 
+    /** Outcome of a pending action while its challenge/block window is open. */
+    public static final String ACTION_OUTCOME_PENDING = "PENDING";
+
+    /** Outcome of an action that resolved successfully. */
+    public static final String ACTION_OUTCOME_RESOLVED = "RESOLVED";
+
+    /** Outcome of an action that was cancelled (blocked, bluffed or overturned). */
+    public static final String ACTION_OUTCOME_CANCELLED = "CANCELLED";
+
     private final MatchRepository matchRepository;
     private final MatchPlayerRepository matchPlayerRepository;
     private final GameStore gameStore;
@@ -113,6 +125,7 @@ public class GameEngine {
     private final TurnManager turnManager;
     private final GameStateMapper gameStateMapper;
     private final WinnerManager winnerManager;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     /**
      * Initializes a live game instance for an existing match.
@@ -318,6 +331,8 @@ public class GameEngine {
         log.info("Player '{}' collected income in match {} (+{} coin), turn → {}",
                 player.getUsername(), matchId, INCOME_GAIN, match.getTurnNumber());
 
+        publishPlayAction(state, userId, "INCOME", null, ACTION_OUTCOME_RESOLVED);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -386,6 +401,8 @@ public class GameEngine {
         log.info("Player '{}' declared Foreign Aid in match {} (block window open)",
                 player.getUsername(), matchId);
 
+        publishPlayAction(state, userId, ACTION_FOREIGN_AID, null, ACTION_OUTCOME_PENDING);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -451,6 +468,9 @@ public class GameEngine {
 
         log.info("Foreign Aid resolved (blocked={}) in match {}, turn → {}",
                 blocked, matchId, match.getTurnNumber());
+
+        publishPlayAction(state, userId, ACTION_FOREIGN_AID, null,
+                blocked ? ACTION_OUTCOME_CANCELLED : ACTION_OUTCOME_RESOLVED);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -549,6 +569,8 @@ public class GameEngine {
 
         log.info("Player '{}' declared Exchange in match {} (drew {}, challenge window open)",
                 player.getUsername(), matchId, drawn.size());
+
+        publishPlayAction(state, userId, ACTION_EXCHANGE, null, ACTION_OUTCOME_PENDING);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -652,6 +674,8 @@ public class GameEngine {
 
         log.info("Exchange resolved in match {} (kept {} returned {}), turn → {}",
                 matchId, kept.size(), returned.size(), match.getTurnNumber());
+
+        publishPlayAction(state, userId, ACTION_EXCHANGE, null, ACTION_OUTCOME_RESOLVED);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -765,6 +789,8 @@ public class GameEngine {
         log.info("Player '{}' declared an Assassination on '{}' in match {} ({} coins reserved)",
                 player.getUsername(), target.getUsername(), matchId, ASSASSINATE_COST);
 
+        publishPlayAction(state, userId, ACTION_ASSASSINATE, targetPlayerId, ACTION_OUTCOME_PENDING);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -869,6 +895,9 @@ public class GameEngine {
         // Module 21 — a successful Assassination may have left a single survivor.
         winnerManager.checkAndFinish(state);
 
+        publishPlayAction(state, userId, ACTION_ASSASSINATE, targetId,
+                succeeded ? ACTION_OUTCOME_RESOLVED : ACTION_OUTCOME_CANCELLED);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -939,6 +968,8 @@ public class GameEngine {
 
         log.info("Player '{}' declared Tax in match {} (challenge window open)",
                 player.getUsername(), matchId);
+
+        publishPlayAction(state, userId, ACTION_TAX, null, ACTION_OUTCOME_PENDING);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -1041,6 +1072,8 @@ public class GameEngine {
         log.info("Player '{}' declared a Steal on '{}' in match {} (challenge window open)",
                 player.getUsername(), target.getUsername(), matchId);
 
+        publishPlayAction(state, userId, ACTION_STEAL, targetPlayerId, ACTION_OUTCOME_PENDING);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -1102,6 +1135,9 @@ public class GameEngine {
         state.setTurnNumber(match.getTurnNumber());
         state.setActionExecuted(false);
         state.setPhase(PHASE_IN_PROGRESS);
+
+        publishPlayAction(state, userId, ACTION_TAX, null,
+                granted ? ACTION_OUTCOME_RESOLVED : ACTION_OUTCOME_CANCELLED);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -1177,6 +1213,9 @@ public class GameEngine {
         state.setTurnNumber(match.getTurnNumber());
         state.setActionExecuted(false);
         state.setPhase(PHASE_IN_PROGRESS);
+
+        publishPlayAction(state, userId, ACTION_STEAL, targetId,
+                granted ? ACTION_OUTCOME_RESOLVED : ACTION_OUTCOME_CANCELLED);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -1312,7 +1351,35 @@ public class GameEngine {
                 player.getUsername(), target.getUsername(), matchId, COUP_COST,
                 match.getTurnNumber());
 
+        publishPlayAction(state, userId, "COUP", targetPlayerId, ACTION_OUTCOME_RESOLVED);
+
         return gameStateMapper.toResponse(state, userId);
+    }
+
+    /**
+     * Publishes a PLAYER_ACTION event to the match topic (Module 22).
+     *
+     * @param state      the live game state
+     * @param actorId    the acting player's user ID
+     * @param actionType the action type identifier (e.g. {@code "INCOME"})
+     * @param targetId   the targeted player's user ID (may be {@code null})
+     * @param outcome    the action lifecycle outcome: PENDING, RESOLVED or CANCELLED
+     */
+    private void publishPlayAction(GameState state, UUID actorId, String actionType,
+                                   UUID targetId, String outcome) {
+        String actorUsername = state.getPlayers().stream()
+                .filter(p -> p.getUserId().equals(actorId))
+                .findFirst()
+                .map(GamePlayerState::getUsername)
+                .orElse(null);
+        webSocketEventPublisher.publishToMatch(state.getMatchId(), WebSocketEventType.PLAYER_ACTION,
+                actorId, GameActionPayload.builder()
+                        .actorUserId(actorId)
+                        .actorUsername(actorUsername)
+                        .actionType(actionType)
+                        .targetUserId(targetId)
+                        .outcome(outcome)
+                        .build());
     }
 
     /**

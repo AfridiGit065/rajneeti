@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRealtimeStore } from "@/store/realtime-store";
+import { useMatchRealtime } from "@/hooks/use-match-realtime";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -213,6 +215,37 @@ export function GameBoard({ matchId }: { matchId: string }) {
       cancelled = true;
     };
   }, [load]);
+
+  const [matchTick, setMatchTick] = useState(0);
+
+  useMatchRealtime(matchId, !!matchId, () => {
+    setMatchTick((t) => t + 1);
+  });
+
+  useEffect(() => {
+    return useRealtimeStore.subscribe((state, prev) => {
+      if (
+        state.lastDraw &&
+        state.lastDraw !== prev.lastDraw &&
+        state.lastDraw.matchId === matchId &&
+        state.lastDraw.playerId === selfId
+      ) {
+        setMatchTick((t) => t + 1);
+      }
+    });
+  }, [matchId, selfId]);
+
+  useEffect(() => {
+    if (matchTick === 0) return;
+    let cancelled = false;
+    load().then((result) => {
+      if (cancelled) return;
+      if (result.ok) setGame(result.data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [load, matchTick]);
 
   async function retry() {
     setLoading(true);

@@ -4,6 +4,8 @@ import com.rajneeti.dto.action.ActionRequest;
 import com.rajneeti.dto.action.MatchActionResponse;
 import com.rajneeti.dto.match.MatchResponse;
 import com.rajneeti.dto.turn.TurnInfo;
+import com.rajneeti.dto.websocket.MatchStartedPayload;
+import com.rajneeti.dto.websocket.WebSocketEventType;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchPlayer;
 import com.rajneeti.entity.PendingAction;
@@ -29,6 +31,7 @@ import com.rajneeti.repository.RoomRepository;
 import com.rajneeti.service.MatchService;
 import com.rajneeti.service.RoomService;
 import com.rajneeti.service.TurnManager;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -53,8 +56,9 @@ public class MatchServiceImpl implements MatchService {
     private final RoomRepository         roomRepository;
     private final RoomPlayerRepository   roomPlayerRepository;
     private final RoomService            roomService;
-    private final MatchMapper            matchMapper;
-    private final TurnManager            turnManager;
+    private final MatchMapper             matchMapper;
+    private final TurnManager             turnManager;
+    private final WebSocketEventPublisher webSocketEventPublisher;
 
     @Override
     @Transactional
@@ -123,6 +127,19 @@ public class MatchServiceImpl implements MatchService {
         // 10. Transition room status to IN_GAME
         room.setStatus(RoomStatus.IN_GAME);
         roomRepository.save(room);
+
+        // 10b. Broadcast START_GAME so every room/member and match subscriber is
+        // redirected to the live game (Module 22).
+        MatchStartedPayload started = MatchStartedPayload.builder()
+                .matchId(savedMatch.getId())
+                .roomId(roomId)
+                .hostUserId(room.getHost().getId())
+                .playerCount(matchPlayers.size())
+                .build();
+        webSocketEventPublisher.publishToRoom(roomId, WebSocketEventType.START_GAME,
+                room.getHost().getId(), started);
+        webSocketEventPublisher.publishToMatch(savedMatch.getId(), WebSocketEventType.START_GAME,
+                room.getHost().getId(), started);
 
         log.info("Match {} started for room '{}' ({} players) by host '{}'",
                 savedMatch.getId(), room.getRoomCode(), matchPlayers.size(),

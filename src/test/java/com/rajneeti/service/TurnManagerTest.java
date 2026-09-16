@@ -9,6 +9,7 @@ import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ class TurnManagerTest {
 
     @Mock
     private MatchPlayerRepository matchPlayerRepository;
+
+    @Mock
+    private WebSocketEventPublisher webSocketEventPublisher;
 
     @InjectMocks
     private TurnManager turnManager;

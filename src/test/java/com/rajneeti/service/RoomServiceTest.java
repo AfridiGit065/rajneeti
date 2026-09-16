@@ -19,6 +19,7 @@ import com.rajneeti.repository.RoomPlayerRepository;
 import com.rajneeti.repository.RoomRepository;
 import com.rajneeti.repository.UserRepository;
 import com.rajneeti.service.impl.RoomServiceImpl;
+import com.rajneeti.websocket.WebSocketEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +53,7 @@ class RoomServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private SimpMessagingTemplate messagingTemplate;
+    private WebSocketEventPublisher webSocketEventPublisher;
 
     @Spy
     private RoomMapper roomMapper = new RoomMapper();
