@@ -27,4 +27,6 @@ export interface GameRepository {
     succeeded: boolean,
   ): Promise<Result<GameState>>;
   resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>>;
+  /** Module 20 — resolves the pending action authoritatively (no boolean). */
+  resolve(matchId: string): Promise<Result<GameState>>;
 }

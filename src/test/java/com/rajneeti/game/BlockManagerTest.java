@@ -65,11 +65,12 @@ class BlockManagerTest {
         blockerId = UUID.randomUUID();
         challengerId = UUID.randomUUID();
 
+        WinnerManager winnerManager = new WinnerManager(matchRepository, matchPlayerRepository);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper);
+                cardManager, turnManager, gameStateMapper, winnerManager);
         blockManager = new BlockManager(gameEngine);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager);
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager);
         gameStore.remove(matchId);
     }
 

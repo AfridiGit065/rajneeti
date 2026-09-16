@@ -113,6 +113,8 @@ export interface BackendGameLogEntry {
 export type BackendGameStatus = "CREATED" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
 
 export interface BackendPendingAction {
+  /** Module 20 — unique identity of this pending action lifecycle. */
+  id: string;
   type: string;
   actorUserId: string;
   startedAt: string;
@@ -128,6 +130,8 @@ export interface BackendPendingAction {
   blockerUserId?: string;
   /** Module 19 — lower-case character id the blocker claimed, e.g. "minister". */
   blockedCharacter?: string;
+  /** Module 19 — the opponent who challenged the pending block claim. */
+  blockChallengerUserId?: string;
 }
 
 export interface BackendChallenge {
@@ -146,6 +150,33 @@ export interface BackendChallenge {
   actionContinues: boolean;
   /** Module 19 — true when the challenge was raised against a block claim. */
   blockClaim?: boolean;
+}
+
+export interface BackendActionResult {
+  /** Action type identifier, e.g. "STEAL". */
+  actionType: string;
+  /** "RESOLVED" when the effect went through, "CANCELLED" when blocked. */
+  result: "RESOLVED" | "CANCELLED";
+  /** The acting player's user ID. */
+  actorUserId: string;
+  /** Coin delta applied to the actor (negative for paid costs). */
+  coinsGained: number;
+  /** Coin delta applied to the target (positive coins stolen from them). */
+  coinsLost: number;
+  /** Non-null when a standing block terminated the action. */
+  blockedByUserId?: string;
+  /** Lower-case character id the blocker asserted, e.g. "minister". */
+  blockedCharacter?: string;
+  /** True when the action survived a successful challenge before resolution. */
+  claimChallenged: boolean;
+  /** The player who lost exactly one influence card. */
+  influenceLostById?: string;
+  /** True when the influence loss eliminated the affected player. */
+  eliminated: boolean;
+  /** The next turn holder after the action was resolved/cancelled. */
+  nextTurnPlayerId: string;
+  /** The next turn number after the action was resolved/cancelled. */
+  nextTurnNumber: number;
 }
 
 export interface BackendBlockRequest {
@@ -171,6 +202,8 @@ export interface BackendGameState {
   pendingAction?: BackendPendingAction;
   /** Module 18 — non-null after a challenge resolved for the current action. */
   lastChallenge?: BackendChallenge;
+  /** Module 20 — non-null after the Action Resolver closed the most recent action. */
+  lastActionResult?: BackendActionResult;
   startedAt: string;
   endedAt?: string;
 }

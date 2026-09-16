@@ -14,6 +14,7 @@ import { OwnCards } from "./own-cards";
 import { ActionPanel } from "./action-panel";
 import { ChallengeFlow } from "./challenge";
 import { GameLog } from "./game-log";
+import { GameOverScreen } from "./game-over";
 import {
   BlockPanel,
   BlockDialog,
@@ -33,8 +34,7 @@ import { GameService } from "@/services/game-service";
 import { MOCK_CURRENT_USER } from "@/mocks/users";
 import { useAuthStore } from "@/store/auth-store";
 import { useToast } from "@/hooks/use-toast";
-import { MatchStatus, type GameActionId, type GamePhase, type GamePlayer, type GameState } from "@/types/game";
-import type { Result } from "@/types/api";
+import { MatchStatus, type GameActionId, type GamePhase, type GamePlayer, type GameState, type ActionResult } from "@/types/game";
 import type { CharacterId } from "@/types/character";
 
 const PHASE_LABEL: Record<GamePhase, string> = {
@@ -116,6 +116,63 @@ function ActiveAction({ game }: { game: GameState }) {
           {PHASE_LABEL[game.phase]}
         </Badge>
         <span className="text-xs text-muted">Turn #{game.turnNumber}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Module 20 — compact summary of the last authoritative verdict produced by
+ * the backend Action Resolver. Shown until the next action is declared.
+ */
+function ActionResultSummary({
+  result,
+  players,
+}: {
+  result: ActionResult;
+  players: GamePlayer[];
+}) {
+  const action = getAction(result.actionType);
+  const cancelled = result.result === "CANCELLED";
+  const blocker = result.blockedByUserId
+    ? players.find((p) => p.id === result.blockedByUserId)
+    : undefined;
+  const loser = result.influenceLostById
+    ? players.find((p) => p.id === result.influenceLostById)
+    : undefined;
+
+  return (
+    <div className="rounded-2xl border border-gold-500/25 bg-surface p-4 panel-emboss">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+        Action Result
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="text-lg font-bold text-gold-300">
+          {action.nameBn} ({action.nameEn})
+        </span>
+        <Badge tone={cancelled ? "crimson" : "emerald"}>
+          {cancelled ? "ব্লক — বাতিল" : "সম্পন্ন"}
+        </Badge>
+        {result.claimChallenged ? (
+          <Badge tone="parchment">চ্যালেঞ্জ উত্তীর্ণ</Badge>
+        ) : null}
+      </div>
+      <div className="mt-2 space-y-1 text-sm text-muted">
+        {result.coinsGained !== 0 ? (
+          <p>
+            কয়েন: {result.coinsGained > 0 ? `+${result.coinsGained}` : result.coinsGained}
+            {result.coinsLost > 0 ? ` (লক্ষ্য থেকে −${result.coinsLost})` : ""}
+          </p>
+        ) : null}
+        {blocker ? (
+          <p>ব্লকার: {blocker.displayName ?? blocker.username}</p>
+        ) : null}
+        {loser ? (
+          <p>
+            ইনফ্লুয়েন্স হারিয়েছেন: {loser.displayName ?? loser.username}
+            {result.eliminated ? " — খেলা থেকে অপসারিত!" : ""}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -250,23 +307,18 @@ export function GameBoard({ matchId }: { matchId: string }) {
     }
   }
 
-  async function resolvePendingAction(blocked: boolean) {
+  async function resolvePendingAction() {
     if (!game?.activeAction) return;
-    const act = game.activeAction;
     setBlockBusy(true);
-    let result: Result<GameState>;
-    if (act.action === "foreign_aid") {
-      result = await GameService.resolveForeignAid(matchId, blocked);
-    } else if (act.action === "steal") {
-      result = await GameService.resolveSteal(matchId, !blocked);
-    } else {
-      result = await GameService.resolveAssassinate(matchId, !blocked);
-    }
+    // Module 20 — the verdict is derived entirely server-side by the Action
+    // Resolver from the recorded block/challenge flags. No boolean is sent.
+    const result = await GameService.resolve(matchId);
     setBlockBusy(false);
     if (result.ok) {
       setGame(result.data);
       setBlockDialogOpen(false);
-      success(blocked ? "ব্লক গৃহীত হয়েছে — অ্যাকশন বাতিল" : "অ্যাকশন সমাধান সম্পন্ন হয়েছে");
+      const cancelled = result.data.lastActionResult?.result === "CANCELLED";
+      success(cancelled ? "ব্লক গৃহীত হয়েছে — অ্যাকশন বাতিল" : "অ্যাকশন সমাধান সম্পন্ন হয়েছে");
     } else {
       notifyError(result.error.message);
     }
@@ -355,6 +407,12 @@ export function GameBoard({ matchId }: { matchId: string }) {
     );
   }
 
+  // Module 21 — once the backend declares the match FINISHED, the winner
+  // manager has already persisted the outcome; take over the screen.
+  if (game.status === MatchStatus.FINISHED) {
+    return <GameOverScreen game={game} selfId={selfId} />;
+  }
+
   const currentPlayer =
     game.players.find((p) => p.userId === selfId) ??
     game.players.find((p) => p.isTurn) ??
@@ -375,10 +433,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const opponents = game.players
     .filter((p) => p.id !== currentPlayer.id)
     .sort((a, b) => a.seatIndex - b.seatIndex);
-
-  const winner = game.winnerPlayerId
-    ? game.players.find((p) => p.id === game.winnerPlayerId)
-    : null;
 
   // Module 19 — block window state driven by the backend pending action.
   const blockWindowAction: GameActionId | null =
@@ -425,15 +479,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
 
         {/* === Main center column === */}
         <section className="order-2 flex flex-col gap-4 lg:order-2">
-          {game.status === MatchStatus.FINISHED && winner ? (
-            <div className="flex items-center justify-center gap-2 rounded-2xl border border-gold-500/40 bg-gold-500/10 px-4 py-3">
-              <Trophy className="size-5 text-gold-300" aria-hidden />
-              <p className="font-semibold text-gold-200">
-                Winner: {winner.displayName ?? winner.username}
-              </p>
-            </div>
-          ) : null}
-
           {/* Block result card if recently resolved */}
           {blockResultData && (
             <BlockResult
@@ -441,6 +486,14 @@ export function GameBoard({ matchId }: { matchId: string }) {
               onDismiss={() => setBlockResultData(null)}
             />
           )}
+
+          {/* Module 20 — authoritative verdict of the last resolved action */}
+          {game.lastActionResult ? (
+            <ActionResultSummary
+              result={game.lastActionResult}
+              players={game.players}
+            />
+          ) : null}
 
           {/* Active Block Indicator */}
           {blockEvent && (
@@ -465,7 +518,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
             <BlockWindowPanel
               action={blockWindowAction}
               busy={blockBusy}
-              onResolve={() => void resolvePendingAction(false)}
+              onResolve={() => void resolvePendingAction()}
             />
           ) : null}
 
@@ -505,7 +558,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
           open={blockDialogOpen}
           busy={blockBusy}
           onClose={() => setBlockDialogOpen(false)}
-          onAllowBlock={() => void resolvePendingAction(true)}
+          onAllowBlock={() => void resolvePendingAction()}
           onChallenge={() => void handleBlockChallenge()}
         />
       )}

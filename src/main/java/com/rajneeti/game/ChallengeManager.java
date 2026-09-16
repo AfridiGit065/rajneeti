@@ -71,6 +71,7 @@ public class ChallengeManager {
     private final GameEngine gameEngine;
     private final CardManager cardManager;
     private final TurnManager turnManager;
+    private final WinnerManager winnerManager;
 
     /**
      * Resolves a challenge raised by {@code challengerId} against the currently
@@ -174,6 +175,9 @@ public class ChallengeManager {
                 pending.getType(), matchId, challenge.isClaimTrue() ? "TRUE" : "FALSE",
                 challenge.getInfluenceLostById(), challenge.isActionContinues());
 
+        // Module 21 — a challenge may have eliminated the last opponent.
+        winnerManager.checkAndFinish(state);
+
         return gameEngine.getSafeGameState(matchId, challengerId);
     }
 
@@ -246,6 +250,9 @@ public class ChallengeManager {
                 challenge.getInfluenceLostById(),
                 challenge.isActionContinues() ? "NO" : "YES");
 
+        // Module 21 — a block challenge may have eliminated the last opponent.
+        winnerManager.checkAndFinish(state);
+
         return gameEngine.getSafeGameState(state.getMatchId(), challenger.getUserId());
     }
 
@@ -288,6 +295,7 @@ public class ChallengeManager {
         // 3. The block stands. Mark the block as challenged so a second block
         //    challenge is rejected; the actor still resolves the action next.
         PendingAction updated = PendingAction.builder()
+                .id(pending.getId())
                 .type(pending.getType())
                 .actorUserId(pending.getActorUserId())
                 .startedAt(pending.getStartedAt())
@@ -332,6 +340,7 @@ public class ChallengeManager {
 
         // Remove the block: the action continues unblocked for the actor's resolution.
         PendingAction updated = PendingAction.builder()
+                .id(pending.getId())
                 .type(pending.getType())
                 .actorUserId(pending.getActorUserId())
                 .startedAt(pending.getStartedAt())
@@ -397,6 +406,7 @@ public class ChallengeManager {
         //    challenge (blocks a second challenge) and refresh the private
         //    exchange pool so the exchange's later confirm step sees the new hand.
         PendingAction updated = PendingAction.builder()
+                .id(pending.getId())
                 .type(pending.getType())
                 .actorUserId(pending.getActorUserId())
                 .startedAt(pending.getStartedAt())
@@ -510,6 +520,10 @@ public class ChallengeManager {
         player.setStatus(PlayerStatus.ELIMINATED);
         state.getLog().add(GameLogEntry.of("elimination",
                 player.getUsername() + " was eliminated " + reason));
+        // Module 21 — persist the elimination immediately so the TurnManager
+        // (which reads the persisted status) skips this player when the turn
+        // advances after a bluff is exposed.
+        winnerManager.syncPlayerStates(state);
     }
 
     private String cardName(GameCard card) {

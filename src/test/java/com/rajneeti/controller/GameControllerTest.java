@@ -10,6 +10,7 @@ import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
 import com.rajneeti.exception.GlobalExceptionHandler;
 import com.rajneeti.exception.MatchNotFoundException;
+import com.rajneeti.game.ActionResolver;
 import com.rajneeti.game.BlockManager;
 import com.rajneeti.game.ChallengeManager;
 import com.rajneeti.game.GameEngine;
@@ -55,6 +56,9 @@ class GameControllerTest {
 
     @MockBean
     private BlockManager blockManager;
+
+    @MockBean
+    private ActionResolver actionResolver;
 
     @MockBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -613,5 +617,70 @@ class GameControllerTest {
                         .content("{\"claimedCharacter\":\"minister\"}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("ACTION_NOT_BLOCKABLE"));
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Module 20 — resolve                                                */
+    /* ------------------------------------------------------------------ */
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/resolve - Success (resolves pending action)")
+    void resolve_Success() throws Exception {
+        GameStateResponse response = buildGameResponse();
+        UUID nextTurn = UUID.randomUUID();
+        response.setLastActionResult(com.rajneeti.dto.game.ActionResultDto.builder()
+                .actionType("FOREIGN_AID")
+                .result("RESOLVED")
+                .actorUserId(testUserId)
+                .coinsGained(2)
+                .coinsLost(0)
+                .blockedByUserId(null)
+                .blockedCharacter(null)
+                .claimChallenged(false)
+                .influenceLostById(null)
+                .eliminated(false)
+                .nextTurnPlayerId(nextTurn)
+                .nextTurnNumber(2)
+                .build());
+        response.setPendingAction(null);
+
+        when(actionResolver.resolve(eq(testMatchId), eq(testUserId)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/resolve")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.lastActionResult.actionType").value("FOREIGN_AID"))
+                .andExpect(jsonPath("$.data.lastActionResult.result").value("RESOLVED"))
+                .andExpect(jsonPath("$.data.lastActionResult.coinsGained").value(2))
+                .andExpect(jsonPath("$.data.lastActionResult.eliminated").value(false))
+                .andExpect(jsonPath("$.data.pendingAction").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/resolve - No pending action (422)")
+    void resolve_NoPendingAction() throws Exception {
+        when(actionResolver.resolve(eq(testMatchId), eq(testUserId)))
+                .thenThrow(new BusinessException("NO_PENDING_ACTION",
+                        "No pending action to resolve."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/resolve")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("NO_PENDING_ACTION"));
+    }
+
+    @Test
+    @DisplayName("POST /api/matches/{matchId}/resolve - Non-actor rejected (422)")
+    void resolve_NotActor() throws Exception {
+        when(actionResolver.resolve(eq(testMatchId), eq(testUserId)))
+                .thenThrow(new BusinessException("NOT_ACTOR",
+                        "Only the action's actor can resolve the pending action."));
+
+        mockMvc.perform(post("/api/matches/" + testMatchId + "/resolve")
+                        .with(user(testPrincipal)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error").value("NOT_ACTOR"));
     }
 }

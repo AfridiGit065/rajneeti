@@ -112,6 +112,7 @@ public class GameEngine {
     private final CardManager cardManager;
     private final TurnManager turnManager;
     private final GameStateMapper gameStateMapper;
+    private final WinnerManager winnerManager;
 
     /**
      * Initializes a live game instance for an existing match.
@@ -267,6 +268,7 @@ public class GameEngine {
     public GameStateResponse performIncome(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -335,6 +337,7 @@ public class GameEngine {
     public GameStateResponse performForeignAid(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -371,6 +374,7 @@ public class GameEngine {
         }
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_FOREIGN_AID)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -475,6 +479,7 @@ public class GameEngine {
     public GameStateResponse performExchange(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -530,6 +535,7 @@ public class GameEngine {
         pool.addAll(drawn);
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_EXCHANGE)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -673,6 +679,7 @@ public class GameEngine {
     public GameStateResponse performAssassinate(UUID matchId, UUID userId, UUID targetPlayerId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -741,6 +748,7 @@ public class GameEngine {
         }
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_ASSASSINATE)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -848,11 +856,18 @@ public class GameEngine {
             log.info("Assassination cancelled in match {} (no coins paid, no influence lost)", matchId);
         }
 
+        // Module 21 — persist eliminations before the turn advances so the
+        // TurnManager skips the player who just lost their last card.
+        winnerManager.syncPlayerStates(state);
+
         Match match = turnManager.advanceTurn(matchId);
         state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
         state.setTurnNumber(match.getTurnNumber());
         state.setActionExecuted(false);
         state.setPhase(PHASE_IN_PROGRESS);
+
+        // Module 21 — a successful Assassination may have left a single survivor.
+        winnerManager.checkAndFinish(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -875,6 +890,7 @@ public class GameEngine {
     public GameStateResponse performTax(UUID matchId, UUID userId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -911,6 +927,7 @@ public class GameEngine {
         }
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_TAX)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -946,6 +963,7 @@ public class GameEngine {
     public GameStateResponse performSteal(UUID matchId, UUID userId, UUID targetPlayerId) {
         GameState state = getOrInitialize(matchId);
         state.setLastChallenge(null);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -1008,6 +1026,7 @@ public class GameEngine {
         }
 
         state.setPendingAction(PendingAction.builder()
+                .id(UUID.randomUUID())
                 .type(ACTION_STEAL)
                 .actorUserId(userId)
                 .startedAt(LocalDateTime.now())
@@ -1187,6 +1206,7 @@ public class GameEngine {
     @Transactional
     public GameStateResponse performCoup(UUID matchId, UUID userId, UUID targetPlayerId) {
         GameState state = getOrInitialize(matchId);
+        state.setLastActionResult(null);
 
         if (state.getStatus() != MatchStatus.IN_PROGRESS
                 && state.getStatus() != MatchStatus.CREATED) {
@@ -1274,11 +1294,18 @@ public class GameEngine {
 
         state.setActionExecuted(true);
 
+        // Module 21 — persist eliminations before the turn advances so the
+        // TurnManager skips the player who just lost their last card.
+        winnerManager.syncPlayerStates(state);
+
         Match match = turnManager.advanceTurn(matchId);
         state.setCurrentTurnPlayerId(match.getCurrentTurnPlayerId());
         state.setTurnNumber(match.getTurnNumber());
         state.setActionExecuted(false);
         state.setPhase(PHASE_IN_PROGRESS);
+
+        // Module 21 — a Coup may have eliminated the last opponent.
+        winnerManager.checkAndFinish(state);
 
         log.info("Player '{}' launched a Coup on '{}' in match {} ({} coins paid, "
                         + "current turn -> {})",

@@ -53,6 +53,7 @@ export const MOCK_GAME_STATE: GameState = {
   activeAction: { action: "tax", claimedCharacter: "minister" },
   pendingChallenge: null,
   pendingBlock: null,
+  lastActionResult: null,
   log: [
     {
       id: "log-1",
@@ -129,6 +130,7 @@ export const MOCK_FINISHED_GAME_STATE: GameState = {
   activeAction: null,
   pendingChallenge: null,
   pendingBlock: null,
+  lastActionResult: null,
   log: [
     {
       id: "fin-1",

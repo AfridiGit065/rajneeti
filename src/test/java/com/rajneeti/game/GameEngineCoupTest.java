@@ -64,7 +64,8 @@ class GameEngineCoupTest {
 
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper);
+                cardManager, turnManager, gameStateMapper,
+                new WinnerManager(matchRepository, matchPlayerRepository));
         gameStore.remove(matchId);
     }
 

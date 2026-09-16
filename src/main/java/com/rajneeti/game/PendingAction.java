@@ -16,6 +16,14 @@ import java.util.UUID;
 @Builder
 public class PendingAction {
 
+    /**
+     * Module 20 — unique identity of this pending action (assigned when the
+     * action is declared). Carried through every challenge/block rebuild so the
+     * whole lifecycle refers to one stable id and an action can never be
+     * resolved twice under two different references.
+     */
+    private final UUID id;
+
     /** Action type identifier, e.g. {@code "FOREIGN_AID"}. */
     private final String type;
 

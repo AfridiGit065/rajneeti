@@ -19,6 +19,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PendingActionDto {
 
+    /** Module 20 — unique identity of this pending action lifecycle. */
+    private UUID id;
+
     /** Action type, e.g. {@code "FOREIGN_AID"}. */
     private String type;
 
@@ -57,4 +60,11 @@ public class PendingActionDto {
      * {@code "minister"}). {@code null} until a block is submitted.
      */
     private String blockedCharacter;
+
+    /**
+     * Module 19 — user ID of the opponent who challenged the pending block
+     * claim. Once set, any second block challenge against the same block is
+     * rejected.
+     */
+    private UUID blockChallengerUserId;
 }

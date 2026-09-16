@@ -62,9 +62,10 @@ class GameEngineIncomeTest {
         matchId = UUID.randomUUID();
         actorId = UUID.randomUUID();
         otherId = UUID.randomUUID();
-
         gameEngine = new GameEngine(
-                matchRepository, matchPlayerRepository, gameStore, cardManager, turnManager, gameStateMapper);
+                matchRepository, matchPlayerRepository, gameStore,
+                cardManager, turnManager, gameStateMapper,
+                new WinnerManager(matchRepository, matchPlayerRepository));
         gameStore.remove(matchId);
     }
 

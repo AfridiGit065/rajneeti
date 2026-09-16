@@ -87,6 +87,14 @@ public class GameState {
     @Builder.Default
     private GameChallenge lastChallenge = null;
 
+    /**
+     * Module 20 — non-null after the Action Resolver closed the most recent
+     * pending action (RESOLVED or CANCELLED). Cleared whenever a brand-new
+     * action is declared so stale result data does not linger.
+     */
+    @Builder.Default
+    private GameActionResult lastActionResult = null;
+
     @Builder.Default
     private List<GameLogEntry> log = new ArrayList<>();
 
