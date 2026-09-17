@@ -327,39 +327,38 @@ function computeSeats(opponents: GamePlayer[]): SeatPosition[] {
 
   // All positions expressed as percent of the game-arena container
   // Arena spans below the header bar.
-  // We center the top group and put side opponents at ~30-45% vertical.
+  // Top seats sit near the top edge; left/right hug the screen sides.
 
   const seats: SeatPosition[] = [];
 
   if (n === 1) {
-    // Single top center
-    seats.push({ player: opponents[0]!, top: "7%", left: "50%", transform: "translateX(-50%)" });
+    // Single top center — moved up closer to top edge
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "50%", transform: "translateX(-50%)" });
   } else if (n === 2) {
-    // Two top: spread horizontally
-    seats.push({ player: opponents[0]!, top: "7%", left: "34%", transform: "translateX(-50%)" });
-    seats.push({ player: opponents[1]!, top: "7%", left: "66%", transform: "translateX(-50%)" });
+    // Two top: spread horizontally, moved up
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "30%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "0.8%", left: "70%", transform: "translateX(-50%)" });
   } else if (n === 3) {
-    // 1 top center, 1 left, 1 right
-    seats.push({ player: opponents[0]!, top: "7%",  left: "50%", transform: "translateX(-50%)" });
-    seats.push({ player: opponents[1]!, top: "31%", left: "3%" });
-    seats.push({ player: opponents[2]!, top: "31%", left: "auto" });
-    // override right side using CSS right instead — handled via inline style below
+    // 1 top center, 1 left, 1 right — push left/right to edges
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "30%", left: "1%" });
+    seats.push({ player: opponents[2]!, top: "30%", left: "auto" });
   } else if (n === 4) {
     // 1 top center, 2 left, 1 right
-    seats.push({ player: opponents[0]!, top: "6%",  left: "50%", transform: "translateX(-50%)" });
-    seats.push({ player: opponents[1]!, top: "25%", left: "3%" });
-    seats.push({ player: opponents[2]!, top: "43%", left: "3%" });
-    seats.push({ player: opponents[3]!, top: "34%", left: "auto" });
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "24%", left: "1%" });
+    seats.push({ player: opponents[2]!, top: "44%", left: "1%" });
+    seats.push({ player: opponents[3]!, top: "33%", left: "auto" });
   } else {
     // 5+ opponents: 1 top, 2 left, 2+ right
-    seats.push({ player: opponents[0]!, top: "6%",  left: "50%", transform: "translateX(-50%)" });
-    seats.push({ player: opponents[1]!, top: "22%", left: "3%" });
-    seats.push({ player: opponents[2]!, top: "41%", left: "3%" });
-    seats.push({ player: opponents[3]!, top: "22%", left: "auto" });
-    seats.push({ player: opponents[4]!, top: "41%", left: "auto" });
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "20%", left: "1%" });
+    seats.push({ player: opponents[2]!, top: "42%", left: "1%" });
+    seats.push({ player: opponents[3]!, top: "20%", left: "auto" });
+    seats.push({ player: opponents[4]!, top: "42%", left: "auto" });
     // Any 6th+ opponent: put below top center
     for (let i = 5; i < n; i++) {
-      seats.push({ player: opponents[i]!, top: "14%", left: `${30 + (i - 5) * 18}%` });
+      seats.push({ player: opponents[i]!, top: "11%", left: `${30 + (i - 5) * 18}%` });
     }
   }
 
@@ -632,11 +631,11 @@ export function GameBoard({ matchId }: { matchId: string }) {
               style={{
                 top,
                 ...(isRight
-                  ? { right: "3%" }
+                  ? { right: "1.5%" }
                   : { left, transform }),
-                width: 210,
-                maxWidth: "22vw",
-                minWidth: 160,
+                width: 248,
+                maxWidth: "26vw",
+                minWidth: 180,
               }}
               aria-label={`Opponent seat: ${player.displayName ?? player.username}`}
             >
