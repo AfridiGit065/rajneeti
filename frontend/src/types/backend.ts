@@ -29,6 +29,8 @@ export interface BackendRoomPlayer {
   seatNumber: number;
   ready: boolean;
   isHost: boolean;
+  isBot?: boolean;
+  botDifficulty?: string;
   joinedAt: string;
 }
 
@@ -99,6 +101,8 @@ export interface BackendGamePlayer {
   turn: boolean;
   coins: number;
   influenceCount: number;
+  isBot?: boolean;
+  botDifficulty?: string;
   /** Present only for the requesting player's own hand; null for opponents. */
   cards?: BackendGameCard[];
 }

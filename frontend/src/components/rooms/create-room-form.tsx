@@ -12,12 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import type { BotDifficulty } from "@/types/room";
 import {
   AlertTriangle,
+  Bot,
   DoorOpen,
   Globe,
   Lock,
-  Sparkles,
 } from "@/components/ui/icons";
 
 const NAME_MAX = 24;
@@ -32,6 +33,20 @@ const PLAYER_OPTIONS = Array.from(
   },
 );
 
+const BOT_OPTIONS = Array.from(
+  { length: RULES.maxPlayers }, // host seats take one; 0..maxPlayers-1 bots
+  (_, i) => ({
+    value: String(i),
+    label: i === 0 ? "No AI bots" : `${i} AI bot${i > 1 ? "s" : ""}`,
+  }),
+);
+
+const BOT_DIFFICULTY_OPTIONS: { value: BotDifficulty; label: string }[] = [
+  { value: "EASY", label: "Easy" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HARD", label: "Hard" },
+];
+
 export function CreateRoomForm() {
   const router = useRouter();
   const setActiveRoom = useRoomStore((s) => s.setActiveRoom);
@@ -39,6 +54,8 @@ export function CreateRoomForm() {
 
   const [name, setName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState("4");
+  const [botCount, setBotCount] = useState("0");
+  const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>("MEDIUM");
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [nameError, setNameError] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
@@ -54,10 +71,18 @@ export function CreateRoomForm() {
     }
     setNameError(undefined);
 
+    const bots = Number(botCount);
+    if (bots >= Number(maxPlayers)) {
+      setServerError("At least one seat must stay open for you — pick fewer AI bots.");
+      return;
+    }
+
     setSubmitting(true);
     const result = await RoomService.createRoom({
       name: name.trim(),
       maxPlayers: Number(maxPlayers),
+      botCount: bots,
+      botDifficulty,
     });
 
     if (!result.ok) {
@@ -104,6 +129,22 @@ export function CreateRoomForm() {
         value={maxPlayers}
         disabled={submitting}
         onChange={(e) => setMaxPlayers(e.target.value)}
+      />
+
+      <Select
+        label="AI Bots"
+        options={BOT_OPTIONS}
+        value={botCount}
+        disabled={submitting}
+        onChange={(e) => setBotCount(e.target.value)}
+      />
+
+      <Select
+        label="Bot Difficulty"
+        options={BOT_DIFFICULTY_OPTIONS}
+        value={botDifficulty}
+        disabled={submitting || botCount === "0"}
+        onChange={(e) => setBotDifficulty(e.target.value as BotDifficulty)}
       />
 
       <div>
@@ -153,8 +194,8 @@ export function CreateRoomForm() {
       </Button>
 
       <p className="flex items-center justify-center gap-1.5 text-xs text-muted">
-        <Sparkles className="size-3.5 text-gold-400" aria-hidden />
-        A unique room code will be generated upon creation.
+        <Bot className="size-3.5 text-gold-400" aria-hidden />
+        Add AI bots to play solo — they join instantly and drive their own turns.
       </p>
     </form>
   );

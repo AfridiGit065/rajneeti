@@ -2,12 +2,16 @@ import type { UserPublic } from "./user";
 
 export type RoomStatus = "WAITING" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
 
+export type BotDifficulty = "EASY" | "MEDIUM" | "HARD";
+
 export interface RoomPlayer {
   playerId: string;
   user: UserPublic;
   seatIndex: number;
   isHost: boolean;
   isReady: boolean;
+  isBot: boolean;
+  botDifficulty?: BotDifficulty;
   joinedAt: string;
 }
 
@@ -25,6 +29,8 @@ export interface RoomSummary {
 export interface CreateRoomInput {
   name: string;
   maxPlayers: number;
+  botCount: number;
+  botDifficulty: BotDifficulty;
 }
 
 export interface JoinRoomInput {

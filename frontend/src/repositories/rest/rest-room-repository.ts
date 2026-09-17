@@ -1,8 +1,21 @@
 import { apiClient } from "@/lib/api-client";
 import type { BackendMatch, BackendRoom } from "@/types/backend";
 import type { RoomRepository } from "../room-repository";
-import type { CreateRoomInput, JoinRoomInput, RoomSummary } from "@/types/room";
+import type {
+  BotDifficulty,
+  CreateRoomInput,
+  JoinRoomInput,
+  RoomSummary,
+} from "@/types/room";
 import { err, type Result } from "@/types/api";
+
+const DIFFICULTIES: BotDifficulty[] = ["EASY", "MEDIUM", "HARD"];
+
+function toBotDifficulty(value?: string): BotDifficulty | undefined {
+  return DIFFICULTIES.includes(value as BotDifficulty)
+    ? (value as BotDifficulty)
+    : undefined;
+}
 
 function user(id: string, username: string, avatarUrl = "") {
   return { id, username, displayName: username, avatarInitial: username.slice(0, 2).toUpperCase(), level: 1, avatarUrl };
@@ -22,6 +35,8 @@ export function toRoomSummary(room: BackendRoom): RoomSummary {
       seatIndex: player.seatNumber - 1,
       isHost: player.isHost,
       isReady: player.ready,
+      isBot: player.isBot ?? false,
+      botDifficulty: toBotDifficulty(player.botDifficulty),
       joinedAt: player.joinedAt,
     })),
     createdAt: room.createdAt,
@@ -44,7 +59,15 @@ export class RestRoomRepository implements RoomRepository {
     const room = rooms.data.find((item) => item.roomCode === roomCode.trim().toUpperCase());
     return room ? { ok: true, data: room } : err<RoomSummary>({ status: 404, error: "ROOM_NOT_FOUND", message: "Room not found." });
   }
-  async createRoom(input: CreateRoomInput): Promise<Result<RoomSummary>> { return mapRoom(await apiClient.post<BackendRoom>("/api/rooms", { maxPlayers: input.maxPlayers })); }
+  async createRoom(input: CreateRoomInput): Promise<Result<RoomSummary>> {
+    return mapRoom(
+      await apiClient.post<BackendRoom>("/api/rooms", {
+        maxPlayers: input.maxPlayers,
+        botCount: input.botCount,
+        botDifficulty: input.botDifficulty,
+      }),
+    );
+  }
   async joinRoom(input: JoinRoomInput): Promise<Result<RoomSummary>> { return mapRoom(await apiClient.post<BackendRoom>("/api/rooms/join", { roomCode: input.roomCode })); }
   async leaveRoom(roomId: string): Promise<Result<void>> { return apiClient.post<void>(`/api/rooms/${roomId}/leave`); }
   async readyUp(roomId: string, ready: boolean): Promise<Result<RoomSummary>> {

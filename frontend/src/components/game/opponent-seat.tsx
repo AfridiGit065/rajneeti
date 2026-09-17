@@ -1,10 +1,12 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import { Badge } from "@/components/ui/badge";
 import { CoinDisplay } from "./coin-display";
 import { InfluenceDisplay } from "./influence-display";
 import { PlayerInfluenceCards } from "./influence-cards";
-import { Skull } from "@/components/ui/icons";
+import { Bot, Skull } from "@/components/ui/icons";
+import { botDifficultyLabel } from "@/lib/game/bot";
 import type { GamePlayer } from "@/types/game";
 
 export function OpponentSeat({ player }: { player: GamePlayer }) {
@@ -34,9 +36,15 @@ export function OpponentSeat({ player }: { player: GamePlayer }) {
       </span>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1 leading-tight">
-        <p className="truncate text-sm font-semibold text-ivory">
-          {player.displayName ?? player.username}
-          {!player.isAlive ? <span className="ml-1.5 text-xs font-medium text-crimson-300">Eliminated</span> : null}
+        <p className="flex items-center gap-1.5 truncate text-sm font-semibold text-ivory">
+          <span className="truncate">{player.displayName ?? player.username}</span>
+          {player.isBot ? (
+            <Badge tone="parchment" className="shrink-0">
+              <Bot className="size-3" aria-hidden />
+              {botDifficultyLabel(player.botDifficulty)}
+            </Badge>
+          ) : null}
+          {!player.isAlive ? <span className="ml-1 text-xs font-medium text-crimson-300">Eliminated</span> : null}
         </p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <CoinDisplay coins={player.coins} size="sm" />

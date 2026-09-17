@@ -4,7 +4,8 @@ import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { CoinDisplay } from "./coin-display";
 import { InfluenceDisplay } from "./influence-display";
-import { Skull } from "@/components/ui/icons";
+import { Bot, Skull } from "@/components/ui/icons";
+import { botDifficultyLabel } from "@/lib/game/bot";
 import type { GamePlayer } from "@/types/game";
 
 export function PlayerSeat({ player }: { player: GamePlayer }) {
@@ -33,7 +34,15 @@ export function PlayerSeat({ player }: { player: GamePlayer }) {
             <span className="truncate text-xs text-muted">@{player.username}</span>
           </span>
         </div>
-        {player.isTurn ? <Badge tone="gold">Your Turn</Badge> : <Badge tone="neutral">Waiting</Badge>}
+        <div className="flex items-center gap-2">
+          {player.isBot ? (
+            <Badge tone="parchment" className="shrink-0">
+              <Bot className="size-3" aria-hidden />
+              {botDifficultyLabel(player.botDifficulty)}
+            </Badge>
+          ) : null}
+          {player.isTurn ? <Badge tone="gold">Your Turn</Badge> : <Badge tone="neutral">Waiting</Badge>}
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
