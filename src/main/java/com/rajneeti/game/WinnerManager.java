@@ -3,16 +3,18 @@ package com.rajneeti.game;
 import com.rajneeti.dto.websocket.GameOverPayload;
 import com.rajneeti.dto.websocket.WebSocketEventType;
 import com.rajneeti.entity.Match;
+import com.rajneeti.entity.MatchHistory;
 import com.rajneeti.entity.MatchPlayer;
 import com.rajneeti.entity.User;
 import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
+import com.rajneeti.repository.MatchHistoryRepository;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
 import com.rajneeti.websocket.WebSocketEventPublisher;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,12 +58,37 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class WinnerManager {
 
     private final MatchRepository matchRepository;
     private final MatchPlayerRepository matchPlayerRepository;
     private final WebSocketEventPublisher webSocketEventPublisher;
+    private final MatchHistoryRepository matchHistoryRepository;
+
+    /**
+     * Spring-managed constructor (explicitly {@link Autowired} because the
+     * back-compatible constructor below would otherwise leave the container
+     * without a single injectable constructor).
+     */
+    @Autowired
+    public WinnerManager(MatchRepository matchRepository, MatchPlayerRepository matchPlayerRepository,
+                         WebSocketEventPublisher webSocketEventPublisher,
+                         MatchHistoryRepository matchHistoryRepository) {
+        this.matchRepository = matchRepository;
+        this.matchPlayerRepository = matchPlayerRepository;
+        this.webSocketEventPublisher = webSocketEventPublisher;
+        this.matchHistoryRepository = matchHistoryRepository;
+    }
+
+    /**
+     * Back-compatible constructor for unit-test contexts that do not exercise
+     * history persistence; the repository is null there and history capture is
+     * skipped (see {@link #finishGame}).
+     */
+    WinnerManager(MatchRepository matchRepository, MatchPlayerRepository matchPlayerRepository,
+                  WebSocketEventPublisher webSocketEventPublisher) {
+        this(matchRepository, matchPlayerRepository, webSocketEventPublisher, null);
+    }
 
     /**
      * Persists the elimination of every player whose in-memory status is now
@@ -216,6 +243,26 @@ public class WinnerManager {
             match.setEndedAt(endedAt);
             match.setPendingAction(null);
             matchRepository.save(match);
+
+            // Persist the historical per-player outcome so the match-history
+            // page can render real results. Purely a reporting side effect.
+            int fallbackRank = rows.size();
+            List<MatchHistory> history = new ArrayList<>(rows.size());
+            for (MatchPlayer row : rows) {
+                if (row.getUser() == null) {
+                    continue;
+                }
+                history.add(MatchHistory.builder()
+                        .match(match)
+                        .user(row.getUser())
+                        .finalRank(row.getFinalRank() != null ? row.getFinalRank() : fallbackRank--)
+                        .coinsAtEnd(row.getCoinsAtEnd())
+                        .eliminated(Boolean.TRUE.equals(row.getEliminated()))
+                        .build());
+            }
+            if (matchHistoryRepository != null && !history.isEmpty()) {
+                matchHistoryRepository.saveAll(history);
+            }
         } else {
             log.warn("Match row '{}' not found while finishing; live state finished without persistence.",
                     matchId);

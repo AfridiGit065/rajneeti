@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/icons";
 import { useAuthStore } from "@/store/auth-store";
 import { ProfileService } from "@/services/profile-service";
-import { MOCK_MATCH_HISTORY } from "@/mocks/meta";
+import { MetaService } from "@/services/meta-service";
+import type { MatchHistoryEntry } from "@/types/user";
 import { EditProfileModal } from "@/components/profile/edit-profile-modal";
 import { useToast } from "@/hooks/use-toast";
 
@@ -57,13 +58,14 @@ export default function ProfilePage() {
     winStreak: 0,
   });
 
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [recentMatches, setRecentMatches] = useState<MatchHistoryEntry[]>([]);
 
-  useEffect(() => {
+useEffect(() => {
     ProfileService.getProfile().then((result) => {
       if (result.ok) {
         const data = result.data;
@@ -72,6 +74,14 @@ export default function ProfilePage() {
       setLoadingProfile(false);
     });
   }, []);
+
+  useEffect(() => {
+    const userId = authUser?.id;
+    if (!userId) return;
+    MetaService.getMatchHistory(userId).then((result) => {
+      if (result.ok) setRecentMatches(result.data);
+    });
+  }, [authUser?.id]);
 
   // Handle Profile Update (only username & avatarUrl editable)
   const handleProfileSave = async (data: { username: string; avatarUrl: string }) => {
@@ -477,7 +487,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="divide-y divide-forest-500/15">
-              {MOCK_MATCH_HISTORY.slice(0, 3).map((match) => (
+              {recentMatches.slice(0, 3).map((match) => (
                 <div
                   key={match.matchId}
                   className="flex items-center justify-between py-3 text-sm"
@@ -653,7 +663,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-3">
-              {MOCK_MATCH_HISTORY.map((match) => (
+              {recentMatches.map((match) => (
                 <div
                   key={match.matchId}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-forest-500/20 bg-deep-900/70 hover:border-gold-500/30 transition-all"

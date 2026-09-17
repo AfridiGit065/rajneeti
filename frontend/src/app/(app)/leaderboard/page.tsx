@@ -12,7 +12,6 @@ import {
   LeaderboardTabs,
   type LeaderboardTab,
 } from "@/components/leaderboard";
-import { MOCK_CURRENT_USER } from "@/mocks/users";
 import { MetaService } from "@/services/meta-service";
 import { useAuthStore } from "@/store/auth-store";
 import type { LeaderboardEntry } from "@/types/user";
@@ -23,7 +22,7 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const currentUserId = useAuthStore((s) => s.user)?.id ?? MOCK_CURRENT_USER.id;
+  const currentUserId = useAuthStore((s) => s.user)?.id ?? "";
 
   const fetchBoard = useCallback(async () => MetaService.getLeaderboard(), []);
 
