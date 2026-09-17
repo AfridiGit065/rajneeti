@@ -83,4 +83,30 @@ public class HttpAiTransport implements AiHttpTransport {
         }
         return response.body();
     }
+
+    @Override
+    public String postGenerate(String url, String apiKey, String requestJson, long timeoutMs)
+            throws AiHttpException, IOException, InterruptedException {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Content-Type", "application/json")
+                .header("x-goog-api-key", apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(requestJson))
+                .build();
+
+        HttpResponse<String> response = client.send(
+                request, HttpResponse.BodyHandlers.ofString());
+
+        int status = response.statusCode();
+        if (status < 200 || status >= 300) {
+            log.debug("AI provider responded HTTP {} for {}", status, url);
+            throw new AiHttpException(status,
+                    "AI provider returned HTTP " + status
+                            + (response.body() != null && !response.body().isBlank()
+                            ? ": " + response.body() : ""));
+        }
+        return response.body();
+    }
 }

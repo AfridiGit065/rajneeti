@@ -36,9 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * invocation (PowerShell):
  *
  * <pre>
- * $env:AI_PROVIDER="anthropic"
- * $env:AI_BASE_URL="https://api.anthropic.com/v1"
- * $env:AI_MODEL="claude-sonnet-4-5"
+ * $env:AI_PROVIDER="gemini"
+ * $env:AI_BASE_URL="https://generativelanguage.googleapis.com/v1beta"
+ * $env:AI_MODEL="gemini-3.6-flash"
  * $env:AI_API_KEY_1="..."; $env:AI_API_KEY_2="..."; $env:AI_API_KEY_3="..."
  * mvn.cmd -o surefire:test -Dtest=LLMBotDecisionProviderLiveSmokeTest
  * </pre>
@@ -83,7 +83,8 @@ public class LLMBotDecisionProviderLiveSmokeTest {
     @Test
     @DisplayName("every configured API key authenticates against the live provider")
     void allConfiguredKeysAuthenticate() throws Exception {
-        boolean anthropic = "anthropic".equalsIgnoreCase(aiProperties.getProvider());
+        String provider = aiProperties.getProvider() == null
+                ? "" : aiProperties.getProvider().toLowerCase();
         assertTrue(!aiProperties.getApiKeys().isEmpty(),
                 "at least one API key must be configured");
         assertTrue(aiProperties.getApiKeys().size() == 1
@@ -95,28 +96,44 @@ public class LLMBotDecisionProviderLiveSmokeTest {
             String key = aiProperties.getApiKeys().get(i);
             String body;
             String raw;
-            if (anthropic) {
-                body = objectMapper.writeValueAsString(Map.of(
-                        "model", aiProperties.getModel(),
-                        "max_tokens", 32,
-                        "messages", List.of(Map.of("role", "user", "content",
-                                List.of(Map.of("type", "text", "text", "Reply OK"))))));
-                raw = transport.postMessages(messagesUrl(), key, body, 30_000);
-            } else {
-                body = objectMapper.writeValueAsString(Map.of(
-                        "model", aiProperties.getModel(),
-                        "max_tokens", 32,
-                        "messages", List.of(Map.of("role", "user",
-                                "content", "Reply OK"))));
-                raw = transport.postChat(chatUrl(), key, body, 30_000);
+            switch (provider) {
+                case "anthropic" -> {
+                    body = objectMapper.writeValueAsString(Map.of(
+                            "model", aiProperties.getModel(),
+                            "max_tokens", 32,
+                            "messages", List.of(Map.of("role", "user", "content",
+                                    List.of(Map.of("type", "text", "text", "Reply OK"))))));
+                    raw = transport.postMessages(messagesUrl(), key, body, 30_000);
+                }
+                case "gemini" -> {
+                    body = objectMapper.writeValueAsString(Map.of(
+                            "contents", List.of(Map.of("role", "user",
+                                    "parts", List.of(Map.of("text", "Reply OK"))))));
+                    String url = (aiProperties.getBaseUrl().endsWith("/")
+                            ? aiProperties.getBaseUrl() : aiProperties.getBaseUrl() + "/")
+                            + "models/" + aiProperties.getModel() + ":generateContent";
+                    raw = transport.postGenerate(url, key, body, 30_000);
+                }
+                default -> {
+                    body = objectMapper.writeValueAsString(Map.of(
+                            "model", aiProperties.getModel(),
+                            "max_tokens", 32,
+                            "messages", List.of(Map.of("role", "user",
+                                    "content", "Reply OK"))));
+                    raw = transport.postChat(chatUrl(), key, body, 30_000);
+                }
             }
 
             JsonNode root = objectMapper.readTree(raw);
-            if (anthropic) {
-                assertTrue(root.has("content") && root.path("content").isArray(),
+            switch (provider) {
+                case "anthropic" -> assertTrue(
+                        root.has("content") && root.path("content").isArray(),
                         "key #" + (i + 1) + " response has no content blocks: " + raw);
-            } else {
-                assertTrue(root.path("choices").isArray()
+                case "gemini" -> assertTrue(
+                        root.path("candidates").isArray()
+                                && root.path("candidates").path(0).path("content").has("parts"),
+                        "key #" + (i + 1) + " response has no candidate parts: " + raw);
+                default -> assertTrue(root.path("choices").isArray()
                                 && root.path("choices").path(0).path("message").has("content"),
                         "key #" + (i + 1) + " response has no message content: " + raw);
             }
