@@ -73,8 +73,10 @@ class ChallengeManagerTest {
         WinnerManager winnerManager = new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher);
+                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
         gameStore.remove(matchId);
     }
 

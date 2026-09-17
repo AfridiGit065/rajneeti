@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtimeStore } from "@/store/realtime-store";
 import { useMatchRealtime } from "@/hooks/use-match-realtime";
+import { realtimeSocket } from "@/lib/websocket/stomp-client";
+import { isSuperseded, type VersionKey } from "@/lib/realtime/state-version";
+import { toGameState } from "@/lib/game/backend-game-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -198,29 +201,106 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const [influenceLostReason, setInfluenceLostReason] = useState("");
   const [eliminationPlayer, setEliminationPlayer] = useState<GamePlayer | null>(null);
 
+  // Module 23 — the realtime store is the source of truth for gameplay state
+  // after the initial HTTP seed. Every server sync pushes a full snapshot here.
+  const gameSnapshot = useRealtimeStore((s) => s.gameSnapshots[matchId]);
+  const resyncRequested = useRealtimeStore((s) => s.resyncRequested[matchId]);
+  const realtimeStatus = useRealtimeStore((s) => s.status);
+  const consumeResyncRequest = useRealtimeStore((s) => s.consumeResyncRequest);
+  const resetMatchState = useRealtimeStore((s) => s.resetMatchState);
+
+  // Tracks the revision this board has already rendered, so that the public
+  // broadcast and the private reply of the SAME sync do not double-rerender.
+  const appliedVersionRef = useRef<VersionKey | undefined>(undefined);
+  const resyncInFlightRef = useRef(false);
+
   const load = useCallback(async () => GameService.getGameState(matchId), [matchId]);
+
+  /** Applies a full game state and marks its revision as rendered. */
+  const adoptState = useCallback((state: GameState) => {
+    appliedVersionRef.current = {
+      stateVersion: state.stateVersion ?? 0,
+      scope: "private",
+    };
+    setGame(state);
+  }, []);
+
+  /** Sends a resync command for this match (deduped, never spams). */
+  const requestResyncNow = useCallback(() => {
+    if (resyncInFlightRef.current) return;
+    resyncInFlightRef.current = true;
+    realtimeSocket.sendSync(
+      matchId,
+      `resync-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      appliedVersionRef.current?.stateVersion ?? 0,
+    );
+    window.setTimeout(() => {
+      resyncInFlightRef.current = false;
+    }, 1500);
+  }, [matchId]);
 
   useEffect(() => {
     let cancelled = false;
     load().then((result) => {
       if (cancelled) return;
       if (result.ok) {
-        setGame(result.data);
+        adoptState(result.data);
+        setLoading(false);
       } else {
         setError(result.error.message);
+        setLoading(false);
       }
-      setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [load]);
+  }, [load, adoptState]);
 
+  // Module 23 — supersede the REST seed with authoritative snapshots as they
+  // arrive over WebSocket (public broadcasts + private per-player replies).
+  useEffect(() => {
+    if (!gameSnapshot) return;
+    const incoming: VersionKey = {
+      stateVersion: gameSnapshot.stateVersion,
+      scope: gameSnapshot.scope,
+    };
+    if (isSuperseded(appliedVersionRef.current, incoming)) return;
+    appliedVersionRef.current = incoming;
+    setGame(toGameState(gameSnapshot.state));
+  }, [gameSnapshot]);
+
+  // Request a private snapshot whenever the socket (re)connects, so the board
+  // re-syncs after reconnects without waiting for the next action.
+  const wasConnectedRef = useRef(false);
+  useEffect(() => {
+    if (realtimeStatus === "connected" && !wasConnectedRef.current) {
+      requestResyncNow();
+    }
+    wasConnectedRef.current = realtimeStatus === "connected";
+  }, [realtimeStatus, requestResyncNow]);
+
+  // A version gap was detected (missed broadcast) — consume the store flag and
+  // ask the server for the current revision.
+  useEffect(() => {
+    if (resyncRequested && consumeResyncRequest(matchId)) {
+      requestResyncNow();
+    }
+  }, [resyncRequested, consumeResyncRequest, matchId, requestResyncNow]);
+
+  // Drop this match's snapshots when the board unmounts.
+  useEffect(() => {
+    return () => {
+      resetMatchState(matchId);
+    };
+  }, [matchId, resetMatchState]);
+
+  // Module 23 — STATE_UPDATED snapshots are consumed inside the hook itself;
+  // the board renders straight from the store, so no HTTP fallback is needed.
+  useMatchRealtime(matchId, !!matchId);
+
+  // Module F22 — legacy draw tick: refetch once after the local player's drawn
+  // card reveal broadcast, which is not followed by a snapshot sync.
   const [matchTick, setMatchTick] = useState(0);
-
-  useMatchRealtime(matchId, !!matchId, () => {
-    setMatchTick((t) => t + 1);
-  });
 
   useEffect(() => {
     return useRealtimeStore.subscribe((state, prev) => {
@@ -240,19 +320,19 @@ export function GameBoard({ matchId }: { matchId: string }) {
     let cancelled = false;
     load().then((result) => {
       if (cancelled) return;
-      if (result.ok) setGame(result.data);
+      if (result.ok) adoptState(result.data);
     });
     return () => {
       cancelled = true;
     };
-  }, [load, matchTick]);
+  }, [load, matchTick, adoptState]);
 
   async function retry() {
     setLoading(true);
     setError(null);
     const result = await load();
     if (result.ok) {
-      setGame(result.data);
+      adoptState(result.data);
     } else {
       setError(result.error.message);
     }
@@ -274,7 +354,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     setBusy(null);
 
     if (result.ok) {
-      setGame(result.data);
+      adoptState(result.data);
       success(`${getAction(actionId).nameBn} — অ্যাকশন চলছে`);
 
       // If action is Coup, trigger card loss for the target player (F21 simulation)
@@ -295,7 +375,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     const result = await GameService.block(matchId, claimed);
     setBlockBusy(false);
     if (result.ok) {
-      setGame(result.data);
+      adoptState(result.data);
       success("ব্লক দাবি জমা হয়েছে — অ্যাকশনটি ব্লক করা হয়েছে");
     } else {
       notifyError(result.error.message);
@@ -308,7 +388,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     const result = await GameService.challenge(matchId);
     setBlockBusy(false);
     if (result.ok) {
-      setGame(result.data);
+      adoptState(result.data);
       const res = result.data.pendingChallenge;
       if (res?.blockClaim) {
         const challenger =
@@ -348,7 +428,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     const result = await GameService.resolve(matchId);
     setBlockBusy(false);
     if (result.ok) {
-      setGame(result.data);
+      adoptState(result.data);
       setBlockDialogOpen(false);
       const cancelled = result.data.lastActionResult?.result === "CANCELLED";
       success(cancelled ? "ব্লক গৃহীত হয়েছে — অ্যাকশন বাতিল" : "অ্যাকশন সমাধান সম্পন্ন হয়েছে");
@@ -561,7 +641,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
           </div>
 
           {game.status === MatchStatus.IN_PROGRESS ? (
-            <ChallengeFlow game={game} selfId={selfId} onResolved={setGame} />
+            <ChallengeFlow game={game} selfId={selfId} onResolved={adoptState} />
           ) : null}
 
           <div className="mt-auto flex flex-col items-center justify-end gap-4 lg:flex-row lg:items-end">

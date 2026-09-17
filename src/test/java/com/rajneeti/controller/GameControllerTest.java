@@ -13,6 +13,7 @@ import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.game.ActionResolver;
 import com.rajneeti.game.BlockManager;
 import com.rajneeti.game.ChallengeManager;
+import com.rajneeti.game.DuplicateRequestGuard;
 import com.rajneeti.game.GameEngine;
 import com.rajneeti.security.JwtAuthenticationEntryPoint;
 import com.rajneeti.security.JwtTokenProvider;
@@ -60,6 +61,9 @@ class GameControllerTest {
 
     @MockBean
     private ActionResolver actionResolver;
+
+    @MockBean
+    private DuplicateRequestGuard duplicateRequestGuard;
 
     @MockBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;

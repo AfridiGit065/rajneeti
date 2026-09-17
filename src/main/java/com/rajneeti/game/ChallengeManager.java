@@ -77,6 +77,7 @@ public class ChallengeManager {
     private final TurnManager turnManager;
     private final WinnerManager winnerManager;
     private final WebSocketEventPublisher webSocketEventPublisher;
+    private final GameStateSyncService gameStateSyncService;
 
     /**
      * Resolves a challenge raised by {@code challengerId} against the currently
@@ -186,6 +187,10 @@ public class ChallengeManager {
         // Module 21 — a challenge may have eliminated the last opponent.
         winnerManager.checkAndFinish(state);
 
+        // Module 23 — broadcast the authoritative snapshot (version 1 for init,
+        // bumped per challenge resolution afterwards).
+        gameStateSyncService.sync(state);
+
         return gameEngine.getSafeGameState(matchId, challengerId);
     }
 
@@ -263,6 +268,10 @@ public class ChallengeManager {
 
         // Module 21 — a block challenge may have eliminated the last opponent.
         winnerManager.checkAndFinish(state);
+
+        // Module 23 — broadcast the authoritative snapshot after the block
+        // challenge so pendingAction / move status stays in lockstep.
+        gameStateSyncService.sync(state);
 
         return gameEngine.getSafeGameState(state.getMatchId(), challenger.getUserId());
     }
@@ -589,7 +598,10 @@ public class ChallengeManager {
      * which replacement they drew after a truthful challenge (Module 22).
      */
     private void sendPrivateDraw(UUID matchId, GamePlayerState owner, GameCard card) {
-        webSocketEventPublisher.sendToUser(owner.getUserId(), WebSocketEventType.CARD_REVEAL, null,
+        // Module 23 — the overload carrying matchId lets the frontend route the
+        // drawn card into the right match's private state.
+        webSocketEventPublisher.sendToUser(owner.getUserId(), matchId,
+                WebSocketEventType.CARD_REVEAL, null,
                 CardRevealPayload.builder()
                         .playerId(owner.getUserId())
                         .username(owner.getUsername())

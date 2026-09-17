@@ -493,6 +493,144 @@ class WebSocketIntegrationTest {
     }
 
     /* ------------------------------------------------------------------ */
+    /*  Module 23 — authoritative full-state snapshots + resync            */
+    /* ------------------------------------------------------------------ */
+
+    @Test
+    @DisplayName("STATE_UPDATED (public) and PRIVATE_STATE (per-viewer) carry the SAME version and no cards leak")
+    void stateUpdatedAndPrivateStateCarrySameVersion() throws Exception {
+        TestRoom room = twoPlayerLobby();
+        TestUser host = room.host();
+        TestUser guest = room.guest();
+
+        startMatchAndGetId(room, host);
+        StompSession hostSession = connect(host.user()).session();
+        StompSession guestSession = connect(guest.user()).session();
+        BlockingQueue<Map<String, Object>> topicEvents =
+                subscribeMap(hostSession, "/topic/matches/" + matchId);
+        BlockingQueue<Map<String, Object>> hostPrivate =
+                subscribeMap(hostSession, "/user/queue/events");
+        BlockingQueue<Map<String, Object>> guestPrivate =
+                subscribeMap(guestSession, "/user/queue/events");
+        awaitSettled();
+
+        gameEngine.performIncome(matchId, host.userId());
+
+        // Public snapshot: versioned, viewer-neutral, no card data anywhere.
+        Map<String, Object> publicEvent = awaitEvent(topicEvents, "STATE_UPDATED", 5);
+        assertThat(publicEvent).isNotNull();
+        Map<?, ?> publicPayload = payloadOf(publicEvent);
+        assertThat(publicPayload.get("matchId").toString()).isEqualTo(matchId.toString());
+        long publicVersion = number(publicPayload.get("stateVersion"));
+        List<?> publicPlayers = (List<?>) publicPayload.get("players");
+        assertThat(publicPlayers).hasSize(2);
+        assertThat(publicPlayers)
+                .allSatisfy(p -> assertThat(((Map<?, ?>) p).get("cards")).isNull());
+
+        // Every player gets a private snapshot with the very same version.
+        Map<String, Object> hostPrivateEvent = awaitEvent(hostPrivate, "PRIVATE_STATE", 5);
+        Map<?, ?> hostPayload = payloadOf(hostPrivateEvent);
+        assertThat(number(hostPayload.get("stateVersion"))).isEqualTo(publicVersion);
+
+        // Host sees their OWN two cards, but not the opponent's.
+        List<?> hostPlayers = (List<?>) hostPayload.get("players");
+        assertThat(((List<?>) playerOf(hostPlayers, host.userId()).get("cards"))).hasSize(2);
+        assertThat(playerOf(hostPlayers, guest.userId()).get("cards")).isNull();
+
+        Map<String, Object> guestPrivateEvent = awaitEvent(guestPrivate, "PRIVATE_STATE", 5);
+        assertThat(number(payloadOf(guestPrivateEvent).get("stateVersion"))).isEqualTo(publicVersion);
+    }
+
+    @Test
+    @DisplayName("STATE_UPDATED versions increase monotonically across mutations")
+    void stateVersionBumpsMonotonically() throws Exception {
+        TestRoom room = twoPlayerLobby();
+        TestUser host = room.host();
+
+        StompSession hostSession = connect(host.user()).session();
+        BlockingQueue<Map<String, Object>> events =
+                subscribeMap(hostSession, "/topic/matches/" + startMatchAndGetId(room, host));
+        awaitSettled();
+
+        // First action: it lazily initializes the state (broadcast v1) and then
+        // bumps to v2 for the income itself.
+        gameEngine.performIncome(matchId, host.userId());
+
+        Map<String, Object> first = awaitEvent(events, "STATE_UPDATED", 5);
+        long firstVersion = number(payloadOf(first).get("stateVersion"));
+
+        // Second action (guest's turn now): the version must strictly increase.
+        gameEngine.performIncome(matchId, room.guest().userId());
+
+        Map<String, Object> second = awaitEvent(events, "STATE_UPDATED", 5);
+        long secondVersion = number(payloadOf(second).get("stateVersion"));
+
+        assertThat(secondVersion).isGreaterThan(firstVersion);
+    }
+
+    @Test
+    @DisplayName("POST /app/matches/{matchId}/sync replies with a fresh PRIVATE_STATE and rejects duplicates")
+    void syncCommandRepliesWithFreshPrivateStateAndRejectsDuplicates() throws Exception {
+        TestRoom room = twoPlayerLobby();
+        TestUser host = room.host();
+
+        startMatchAndGetId(room, host);
+        gameEngine.performIncome(matchId, host.userId());
+
+        StompSession hostSession = connect(host.user()).session();
+        BlockingQueue<Map<String, Object>> hostPrivate =
+                subscribeMap(hostSession, "/user/queue/events");
+        awaitSettled();
+
+        String requestId = "req-" + UUID.randomUUID();
+        Map<String, Object> sync = new HashMap<>();
+        sync.put("requestId", requestId);
+        sync.put("version", 0L);
+        hostSession.send("/app/matches/" + matchId + "/sync", sync);
+
+        Map<String, Object> reply = awaitEvent(hostPrivate, "PRIVATE_STATE", 5);
+        assertThat(reply).isNotNull();
+        Map<?, ?> payload = payloadOf(reply);
+        assertThat(payload.get("matchId").toString()).isEqualTo(matchId.toString());
+        assertThat(number(payload.get("stateVersion"))).isGreaterThanOrEqualTo(1);
+        assertThat(reply.get("matchId").toString()).isEqualTo(matchId.toString());
+
+        // A delayed retry with the SAME requestId must NOT re-arm the client:
+        // it is rejected as a duplicate and surfaced as a private error.
+        Map<String, Object> duplicateSync = new HashMap<>();
+        duplicateSync.put("requestId", requestId);
+        duplicateSync.put("version", 0L);
+        hostSession.send("/app/matches/" + matchId + "/sync", duplicateSync);
+
+        Map<String, Object> error = awaitEvent(hostPrivate, "WEBSOCKET_ERROR", 5);
+        assertThat(error).isNotNull();
+        assertThat(payloadOf(error).get("errorCode")).isEqualTo("DUPLICATE_REQUEST");
+    }
+
+    @Test
+    @DisplayName("A non-member cannot resync a match and receives a private NOT_IN_MATCH error")
+    void nonMemberResyncGetsPrivateWebSocketError() throws Exception {
+        TestRoom room = twoPlayerLobby();
+        TestUser host = room.host();
+        startMatchAndGetId(room, host);
+
+        User outsider = createUser("ws-sync-outsider");
+        StompSession session = connect(outsider).session();
+        BlockingQueue<Map<String, Object>> privateQueue =
+                subscribeMap(session, "/user/queue/events");
+        awaitSettled();
+
+        Map<String, Object> sync = new HashMap<>();
+        sync.put("requestId", "req-" + UUID.randomUUID());
+        sync.put("version", 0L);
+        session.send("/app/matches/" + matchId + "/sync", sync);
+
+        Map<String, Object> error = awaitEvent(privateQueue, "WEBSOCKET_ERROR", 5);
+        assertThat(error).isNotNull();
+        assertThat(payloadOf(error).get("errorCode")).isEqualTo("NOT_IN_MATCH");
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Setup helpers                                                      */
     /* ------------------------------------------------------------------ */
 
@@ -725,6 +863,24 @@ class WebSocketIntegrationTest {
         Map<?, ?> payload = (Map<?, ?>) event.get("payload");
         assertThat(payload.get("senderId").toString()).isEqualTo(senderId.toString());
         assertThat(payload.get("message")).isEqualTo(message);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<?, ?> payloadOf(Map<String, Object> event) {
+        return (Map<?, ?>) event.get("payload");
+    }
+
+    private long number(Object value) {
+        return ((Number) value).longValue();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<?, ?> playerOf(List<?> playerMaps, UUID userId) {
+        return (Map<?, ?>) playerMaps.stream()
+                .map(p -> (Map<?, ?>) p)
+                .filter(p -> p.get("userId").toString().equals(userId.toString()))
+                .findFirst()
+                .orElseThrow();
     }
 
     /* ------------------------------------------------------------------ */

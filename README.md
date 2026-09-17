@@ -276,10 +276,23 @@ curl -s http://localhost:8080/api/health | python -m json.tool
 
 | Module | Feature                                          | Status         |
 |--------|--------------------------------------------------|----------------|
-| 01     | Backend foundation (this module)                 | ✅ Complete     |
-| 02     | User entity, registration, JWT auth endpoints    | 🔜 Next         |
-| 03     | Game room creation, lobby management             | 📋 Planned      |
-| 04     | WebSocket game events, STOMP messaging           | 📋 Planned      |
-| 05     | Character abilities, card logic, game engine     | 📋 Planned      |
-| 06     | Leaderboard, statistics, player profiles         | 📋 Planned      |
-| 07     | Frontend (React / Next.js)                       | 📋 Planned      |
+| 01     | Backend foundation (project scaffolding)         | ✅ Complete     |
+| 02     | User entity, registration, JWT auth              | ✅ Complete     |
+| 03     | Game room creation, lobby management             | ✅ Complete     |
+| 04     | WebSocket game events, STOMP messaging           | ✅ Complete     |
+| 05     | Character abilities, card logic, game engine     | ✅ Complete     |
+| 06     | Leaderboard, statistics, player profiles         | ✅ Complete     |
+| 07     | Frontend (React / Next.js)                       | ✅ Complete     |
+| 11     | Income action (আয়)                              | ✅ Complete     |
+| 12     | Foreign aid action (বিদেশি অনুদান)               | ✅ Complete     |
+| 13     | Tax action with Minister claim (কর)              | ✅ Complete     |
+| 14     | Steal action with Dalal claim (চুরি)             | ✅ Complete     |
+| 15     | Exchange action with Amla claim (অদলবদল)         | ✅ Complete     |
+| 16     | Assassination action (হত্যা)                     | ✅ Complete     |
+| 17     | Coup action (ক্ষমতা দখল)                         | ✅ Complete     |
+| 18     | Challenge manager + challenge resolution          | ✅ Complete     |
+| 19     | Block manager + block challenges                  | ✅ Complete     |
+| 20     | Action resolver (authoritative verdicts)          | ✅ Complete     |
+| 21     | Winner manager + match finish                     | ✅ Complete     |
+| 22     | WebSocket event streaming + realtime room chat    | ✅ Complete     |
+| 23     | Realtime game-state sync (stateVersion + resync)  | ✅ Complete     |

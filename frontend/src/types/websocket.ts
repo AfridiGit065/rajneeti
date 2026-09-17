@@ -17,7 +17,9 @@ export type WebSocketEventType =
   | "ROOM_CREATED"
   | "ROOM_CANCELLED"
   | "HOST_CHANGED"
-  | "ROOM_UPDATED";
+  | "ROOM_UPDATED"
+  | "STATE_UPDATED"
+  | "PRIVATE_STATE";
 
 export interface WebSocketEvent<T = unknown> {
   eventType: WebSocketEventType;
@@ -115,3 +117,13 @@ export interface ChatMessage {
 
 /** Inbound client command over STOMP, e.g. { message } to /app/rooms/{roomId}/chat. */
 export type ClientCommand<T = unknown> = T;
+
+/**
+ * Module 23 — payload for POST /app/matches/{matchId}/sync. The client echoes
+ * the revision it currently holds so the server can serve a fresh snapshot
+ * without re-running the game.
+ */
+export interface MatchSyncRequest {
+  requestId: string;
+  version: number;
+}

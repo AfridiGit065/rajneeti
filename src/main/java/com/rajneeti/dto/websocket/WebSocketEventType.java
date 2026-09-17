@@ -10,6 +10,11 @@ package com.rajneeti.dto.websocket;
  * types (ROOM_CREATED, ROOM_CANCELLED, HOST_CHANGED, ROOM_UPDATED) are kept so
  * the existing Module 04 room broadcasts map onto the same envelope instead of
  * producing two incompatible event shapes.
+ *
+ * <p>Module 23 — STATE_UPDATED (full, viewer-neutral GameStateResponse snapshot
+ * broadcast to the match topic after every broadcastable mutation) and
+ * PRIVATE_STATE (full per-viewer snapshot routed to a single user's queue, used
+ * for resync replies and for private card/exchange-pool data).
  */
 public enum WebSocketEventType {
     JOIN_ROOM,
@@ -28,5 +33,7 @@ public enum WebSocketEventType {
     ROOM_CREATED,
     ROOM_CANCELLED,
     HOST_CHANGED,
-    ROOM_UPDATED
+    ROOM_UPDATED,
+    STATE_UPDATED,
+    PRIVATE_STATE
 }
