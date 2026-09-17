@@ -55,18 +55,14 @@ export function OwnCards({
                 <InfluenceCard
                   characterId={card.characterId}
                   state={card.revealed ? "discarded" : "revealed"}
-                  size="lg"
-                  className="lg:hidden"
-                  animation="draw"
-                  style={{ animationDelay: `${index * 120}ms` }}
-                />
-                <InfluenceCard
-                  characterId={card.characterId}
-                  state={card.revealed ? "discarded" : "revealed"}
                   size="xl"
-                  className="hidden lg:block"
                   animation="draw"
-                  style={{ animationDelay: `${index * 120}ms` }}
+                  style={{
+                    // Height-responsive width: scales with viewport HEIGHT not width.
+                    // 18svh ≈ 194px at 1080px tall (desktop target), ≈138px at 768px (compact).
+                    width: "min(18svh, 224px)",
+                    animationDelay: `${index * 120}ms`,
+                  }}
                 />
               </div>
               {/* Card status pill */}

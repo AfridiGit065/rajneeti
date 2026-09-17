@@ -131,7 +131,7 @@ function ActiveAction({ game }: { game: GameState }) {
       )}
       role="region"
       aria-label="Active Game Action"
-      style={{ width: 450, minHeight: 140, maxWidth: "90vw" }}
+      style={{ width: 450, minHeight: "clamp(88px, 11vh, 140px)", maxWidth: "90vw" }}
     >
       {/* Ambient radial glow */}
       {active && (
@@ -150,7 +150,7 @@ function ActiveAction({ game }: { game: GameState }) {
       />
 
       {active && action ? (
-        <div className="flex flex-col justify-between h-full p-5 min-h-[140px]">
+        <div className="flex flex-col justify-between h-full p-4 lg:p-5" style={{ minHeight: "clamp(88px, 11vh, 140px)" }}>
           {/* Header row */}
           <div className="flex items-center justify-between gap-2 border-b border-gold-500/20 pb-2.5 mb-2">
             <div className="flex items-center gap-2">
@@ -217,7 +217,7 @@ function ActiveAction({ game }: { game: GameState }) {
         </div>
       ) : (
         /* Waiting state */
-        <div className="flex flex-col items-center justify-center gap-3 p-6 text-center min-h-[140px]">
+        <div className="flex flex-col items-center justify-center gap-2 p-4 lg:p-6 text-center" style={{ minHeight: "clamp(88px, 11vh, 140px)" }}>
           <div className="flex items-center gap-2">
             <span className="relative flex size-2.5">
               <span className="absolute inset-0 animate-ping rounded-full bg-gold-400/60" />
@@ -682,41 +682,41 @@ export function GameBoard({ matchId }: { matchId: string }) {
             </div>
           </div>
 
-          {/* Challenge Resolution — below active action */}
-          {game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING ? (
-            <div className="mt-3 w-full" style={{ minWidth: 420, maxWidth: 500 }}>
-              <ChallengeFlow game={game} selfId={selfId} onResolved={adoptState} />
-            </div>
-          ) : null}
+          {/* Challenge Resolution — below active action.
+               ChallengeFlow renders null at view=="idle" so no wrapper height is wasted. */}
+          {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
+            <ChallengeFlow game={game} selfId={selfId} onResolved={adoptState} />
+          )}
         </div>
 
         {/* ══════════════════════════════════════════
             BOTTOM STATION — guaranteed clear of center stage.
-            Uses BOTH top (clamp) + bottom CSS constraints so it
-            always starts below the Active Action panel (top:17%,
-            minHeight≈155px), leaving ≥30px breathing room.
-            justify-end packs content toward the bottom edge so
-            the top of OwnCards never rises into the center stage.
+            dual top+bottom constraint with clamp():
+              top = max(17% + 110px, 44%) — always below center-stage bottom
+              bottom = 8px — always above viewport edge
+            justify-end packs content downward so OwnCards label
+            never rises into the center stage.
         ══════════════════════════════════════════ */}
         <div
           className="absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end select-none pointer-events-auto"
           style={{
-            // Always start at or below: 17% (center-stage top) + 155px (min-height) + 30px (gap)
-            // Prefer 44% on larger screens for better visual balance
-            top: "clamp(calc(17% + 185px), 44%, 65%)",
+            // Center stage: top 17% + minHeight clamp(88px,11vh,140px) ≈ 17%+100px on short screens.
+            // Add 35px clear buffer → minimum top = 17% + 135px.
+            // Prefer 44% on larger screens for visual balance.
+            top: "clamp(calc(17% + 135px), 44%, 68%)",
             bottom: "8px",
           }}
         >
           {/* 1. Own Influence Cards */}
           <OwnCards cards={currentPlayer.influenceCards} />
 
-          {/* 2. Own Player Status — 20px gap below cards */}
-          <div className="mt-5 min-w-[320px] max-w-[480px]">
+          {/* 2. Own Player Status — 18px gap below cards */}
+          <div className="mt-[18px] min-w-[320px] max-w-[480px]">
             <PlayerSeat player={currentPlayer} />
           </div>
 
-          {/* 3. Floating Action Dock — 16px gap below player, compact fit-content */}
-          <div className="mt-4">
+          {/* 3. Floating Action Dock — 14px gap below player, compact fit-content */}
+          <div className="mt-[14px]">
             <ActionPanel
               player={currentPlayer}
               opponents={opponents}
