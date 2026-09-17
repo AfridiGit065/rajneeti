@@ -94,7 +94,9 @@ class RoomControllerTest {
     @Test
     @DisplayName("POST /api/rooms - Success")
     void createRoom_Success() throws Exception {
-        CreateRoomRequest request = new CreateRoomRequest(6);
+        CreateRoomRequest request = CreateRoomRequest.builder()
+                .maxPlayers(6)
+                .build();
 
         RoomResponse response = RoomResponse.builder()
                 .id(testRoomId)

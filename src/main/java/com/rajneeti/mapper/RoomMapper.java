@@ -32,6 +32,9 @@ public class RoomMapper {
                 .seatNumber(player.getSeatNumber())
                 .ready(player.getReady())
                 .isHost(isHost)
+                .isBot(Boolean.TRUE.equals(player.getUser().getIsBot()))
+                .botDifficulty(player.getUser().getBotDifficulty())
+                .botPersonality(player.getUser().getBotPersonality())
                 .joinedAt(player.getJoinedAt())
                 .build();
     }

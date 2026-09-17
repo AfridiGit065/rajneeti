@@ -87,6 +87,34 @@ jwt:
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}       # 24 hours
   refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 days
 
+# ── AI bots (Module 25) ───────────────────────────────────────
+# LLM provider settings. Keys are ALWAYS injected via environment; leaving
+# them blank simply routes every bot decision to the heuristic fallback.
+ai:
+  provider: ${AI_PROVIDER:openai}
+  base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+  model: ${AI_MODEL:gpt-4o-mini}
+  api-key-1: ${AI_API_KEY_1:}
+  api-key-2: ${AI_API_KEY_2:}
+  api-key-3: ${AI_API_KEY_3:}
+  use-key-rotation: ${AI_USE_KEY_ROTATION:true}
+  key-cooldown-seconds: ${AI_KEY_COOLDOWN_SECONDS:60}
+  max-key-retries: ${AI_MAX_KEY_RETRIES:3}
+  request-timeout-ms: ${AI_REQUEST_TIMEOUT_MS:5000}
+
+bot:
+  # Master switch: false forces the deterministic heuristic strategy for every bot.
+  use-llm: ${BOT_USE_LLM:true}
+  # Human-like "thinking" delay before a bot acts (disabled in tests).
+  think-delay-enabled: ${BOT_THINK_DELAY_ENABLED:true}
+  min-think-delay-ms: ${BOT_MIN_THINK_DELAY_MS:800}
+  max-think-delay-ms: ${BOT_MAX_THINK_DELAY_MS:2000}
+  # How long a bot ACTOR waits after declaring an action before auto-resolving,
+  # giving human opponents a real chance to challenge/block.
+  window-grace-ms: ${BOT_WINDOW_GRACE_MS:8000}
+  # Scheduler poll interval. Set large in tests so bots only drive on demand.
+  scheduler-interval-ms: ${BOT_SCHEDULER_INTERVAL_MS:500}
+
 # ── WebSocket ─────────────────────────────────────────────────
 websocket:
   allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}

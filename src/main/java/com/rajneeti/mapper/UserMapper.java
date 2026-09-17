@@ -24,6 +24,9 @@ public class UserMapper {
                 .totalMatches(user.getTotalMatches())
                 .wins(user.getWins())
                 .losses(user.getLosses())
+                .isBot(user.getIsBot())
+                .botDifficulty(user.getBotDifficulty())
+                .botPersonality(user.getBotPersonality())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

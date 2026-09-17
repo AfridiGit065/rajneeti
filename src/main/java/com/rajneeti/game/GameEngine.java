@@ -180,6 +180,9 @@ public class GameEngine {
                             ? matchPlayer.getPlayerStatus() : PlayerStatus.ACTIVE)
                     .coins(STARTING_COINS)
                     .host(host != null && host.getId().equals(user.getId()))
+                    .isBot(Boolean.TRUE.equals(user.getIsBot()))
+                    .botDifficulty(user.getBotDifficulty())
+                    .botPersonality(user.getBotPersonality())
                     .cards(new ArrayList<>())
                     .build();
 
@@ -671,7 +674,8 @@ public class GameEngine {
         for (GameCard card : returned) {
             cardManager.returnToDeck(state.getDeck(), card);
         }
-        cardManager.assertDeckIntegrity(state.getDeck(), state.getPlayers());
+        cardManager.assertDeckIntegrity(state.getDeck(), state.getPlayers(),
+                state.getRevealedCardsCount());
 
         state.setPendingAction(null);
         state.setActionExecuted(true);

@@ -43,6 +43,15 @@ public class GamePlayerDto {
 
     private int influenceCount;
 
+    /** Module 25 — true when this seat is controlled by an AI bot. */
+    private boolean isBot;
+
+    /** Module 25 — bot difficulty (null for humans). */
+    private String botDifficulty;
+
+    /** Module 25 — bot personality (null for humans). */
+    private String botPersonality;
+
     /** Own cards only; null (omitted) for opponents. */
     private List<GameCardDto> cards;
 }

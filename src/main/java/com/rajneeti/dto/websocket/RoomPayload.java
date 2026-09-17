@@ -28,4 +28,5 @@ public class RoomPayload {
     private Integer playerCount;
     private UUID newHostId;
     private String newHostUsername;
+    private Boolean isBot;
 }

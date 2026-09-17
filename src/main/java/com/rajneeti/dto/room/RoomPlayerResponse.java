@@ -25,5 +25,8 @@ public class RoomPlayerResponse {
     private Integer seatNumber;
     private Boolean ready;
     private Boolean isHost;
+    private Boolean isBot;
+    private String botDifficulty;
+    private String botPersonality;
     private LocalDateTime joinedAt;
 }
