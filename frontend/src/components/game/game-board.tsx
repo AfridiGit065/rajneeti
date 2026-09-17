@@ -691,26 +691,32 @@ export function GameBoard({ matchId }: { matchId: string }) {
         </div>
 
         {/* ══════════════════════════════════════════
-            BOTTOM STATION (Centered, Guaranteed Zero Overlap):
-            1. YOUR INFLUENCE CARDS
-                 ↓ (24px)
-            2. YOUR PLAYER
-                 ↓ (20px)
-            3. ACTION DOCK (Floating, fit-content)
+            BOTTOM STATION — guaranteed clear of center stage.
+            Uses BOTH top (clamp) + bottom CSS constraints so it
+            always starts below the Active Action panel (top:17%,
+            minHeight≈155px), leaving ≥30px breathing room.
+            justify-end packs content toward the bottom edge so
+            the top of OwnCards never rises into the center stage.
         ══════════════════════════════════════════ */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 bottom-2 sm:bottom-3 z-30 flex flex-col items-center select-none pointer-events-auto"
+          className="absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end select-none pointer-events-auto"
+          style={{
+            // Always start at or below: 17% (center-stage top) + 155px (min-height) + 30px (gap)
+            // Prefer 44% on larger screens for better visual balance
+            top: "clamp(calc(17% + 185px), 44%, 65%)",
+            bottom: "8px",
+          }}
         >
           {/* 1. Own Influence Cards */}
           <OwnCards cards={currentPlayer.influenceCards} />
 
-          {/* 2. Own Player Status (comfortable 20–35px gap below cards) */}
-          <div className="mt-4 sm:mt-5 min-w-[340px] max-w-[480px]">
+          {/* 2. Own Player Status — 20px gap below cards */}
+          <div className="mt-5 min-w-[320px] max-w-[480px]">
             <PlayerSeat player={currentPlayer} />
           </div>
 
-          {/* 3. Floating Action Dock (18–28px gap below player, compact fit-content) */}
-          <div className="mt-4 sm:mt-5">
+          {/* 3. Floating Action Dock — 16px gap below player, compact fit-content */}
+          <div className="mt-4">
             <ActionPanel
               player={currentPlayer}
               opponents={opponents}

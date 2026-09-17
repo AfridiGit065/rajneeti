@@ -55,7 +55,16 @@ export function OwnCards({
                 <InfluenceCard
                   characterId={card.characterId}
                   state={card.revealed ? "discarded" : "revealed"}
+                  size="lg"
+                  className="lg:hidden"
+                  animation="draw"
+                  style={{ animationDelay: `${index * 120}ms` }}
+                />
+                <InfluenceCard
+                  characterId={card.characterId}
+                  state={card.revealed ? "discarded" : "revealed"}
                   size="xl"
+                  className="hidden lg:block"
                   animation="draw"
                   style={{ animationDelay: `${index * 120}ms` }}
                 />
