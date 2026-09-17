@@ -12,21 +12,11 @@ export interface GameRepository {
     matchId: string,
     claimedCharacter: string,
   ): Promise<Result<GameState>>;
-  endTurn(matchId: string, playerId: string): Promise<Result<GameState>>;
   getGameResult(matchId: string): Promise<Result<GameResult>>;
-  resolveForeignAid(
-    matchId: string,
-    blocked: boolean,
-  ): Promise<Result<GameState>>;
   confirmExchange(
     matchId: string,
     keepCardIds: string[],
   ): Promise<Result<GameState>>;
-  resolveAssassinate(
-    matchId: string,
-    succeeded: boolean,
-  ): Promise<Result<GameState>>;
-  resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>>;
   /** Module 20 — resolves the pending action authoritatively (no boolean). */
   resolve(matchId: string): Promise<Result<GameState>>;
 }

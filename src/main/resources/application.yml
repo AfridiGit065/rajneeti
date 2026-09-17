@@ -82,8 +82,11 @@ server:
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
 
 # ── JWT ───────────────────────────────────────────────────────
+# IMPORTANT: The signing secret is NEVER defaulted in code. Startup fails
+# fast if JWT_SECRET is blank or shorter than 32 bytes (see JwtTokenProvider).
+# Generate one with:  openssl rand -base64 48
 jwt:
-  secret: ${JWT_SECRET:THIS_IS_A_VERY_LONG_DEV_SECRET_CHANGE_IN_PRODUCTION_MIN_256_BITS}
+  secret: ${JWT_SECRET:}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}       # 24 hours
   refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 days
 

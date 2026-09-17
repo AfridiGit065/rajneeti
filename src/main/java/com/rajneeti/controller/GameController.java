@@ -33,10 +33,12 @@ import java.util.UUID;
  * gameplay actions.
  *
  * <p>Instant actions that resolve without a block/challenge window (income)
- * and block-window actions with a minimal resolve seam (foreign aid, tax,
- * steal, exchange, assassination) live here. Challenges against claim-based
- * actions are resolved by the {@link ChallengeManager} (Module 18) and block
- * claims by the {@link BlockManager} (Module 19).
+ * and claim-based actions (foreign aid, exchange, assassination, tax, steal)
+ * are declared here. Challenge claims are resolved server-side by the
+ * {@link ChallengeManager} (Module 18), block claims by the
+ * {@link BlockManager} (Module 19), and the final verdict is applied by the
+ * {@link ActionResolver} (Module 20) through {@code POST /resolve}. No
+ * client-supplied outcome boolean is accepted.
  */
 @Slf4j
 @RestController
@@ -104,35 +106,6 @@ public class GameController {
                 userPrincipal.getUsername(), matchId);
 
         GameStateResponse response = gameEngine.performForeignAid(matchId, userPrincipal.getId());
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
-     * POST /api/matches/{matchId}/foreign-aid/resolve
-     * Resolves the pending Foreign Aid block window.
-     *
-     * <p>Minimal seam for Module 19 (Block Manager): once a full block
-     * manager exists it will call this after processing the real
-     * block/challenge flow. Today the frontend calls it when the demo
-     * block dialog is dismissed.
-     *
-     * @param blocked {@code true} if the Minister block succeeded,
-     *                {@code false} if no block or block failed
-     */
-    @PostMapping("/{matchId}/foreign-aid/resolve")
-    public ResponseEntity<ApiResponse<GameStateResponse>> resolveForeignAid(
-            @PathVariable UUID matchId,
-            @RequestParam boolean blocked,
-            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
-            @AuthenticationPrincipal UserPrincipal userPrincipal) {
-
-        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
-
-        log.info("Player '{}' resolving Foreign Aid (blocked={}) in match: {}",
-                userPrincipal.getUsername(), blocked, matchId);
-
-        GameStateResponse response = gameEngine.resolveForeignAid(
-                matchId, userPrincipal.getId(), blocked);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -211,36 +184,6 @@ public class GameController {
     }
 
     /**
-     * POST /api/matches/{matchId}/assassinate/resolve
-     * Resolves the pending Assassination block/challenge window.
-     *
-     * <p>Minimal seam for the future Block/Challenge Manager: once those
-     * managers exist they will call this after processing the real flow.
-     * Today the frontend calls it when the demo block dialog is dismissed
-     * (succeeded = no block / block failed, failed = block succeeded).
-     *
-     * @param succeeded {@code true} if the Assassination goes through (pay 3
-     *                  coins, target loses one influence card), {@code false}
-     *                  if it was prevented (no payment, no card loss)
-     */
-    @PostMapping("/{matchId}/assassinate/resolve")
-    public ResponseEntity<ApiResponse<GameStateResponse>> resolveAssassinate(
-            @PathVariable UUID matchId,
-            @RequestParam boolean succeeded,
-            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
-            @AuthenticationPrincipal UserPrincipal userPrincipal) {
-
-        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
-
-        log.info("Player '{}' resolving Assassination (succeeded={}) in match: {}",
-                userPrincipal.getUsername(), succeeded, matchId);
-
-        GameStateResponse response = gameEngine.resolveAssassinate(
-                matchId, userPrincipal.getId(), succeeded);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
      * POST /api/matches/{matchId}/coup
      * Launches a Coup against an opponent. Coup cannot be blocked or
      * challenged: after validation it deducts 7 coins, removes one influence
@@ -268,7 +211,7 @@ public class GameController {
     /**
      * POST /api/matches/{matchId}/tax
      * Declares Tax, claiming Minister. Opens a challenge window. Coins are
-     * awarded only when the action resolves via {@code /tax/resolve}.
+     * awarded only when the action resolves server-side via {@code /resolve}.
      */
     @PostMapping("/{matchId}/tax")
     public ResponseEntity<ApiResponse<GameStateResponse>> performTax(
@@ -286,34 +229,10 @@ public class GameController {
     }
 
     /**
-     * POST /api/matches/{matchId}/tax/resolve
-     * Resolves a pending Tax challenge window.
-     *
-     * @param granted {@code true} awards the 3 coin gain (truthful claim),
-     *                {@code false} cancels the Tax without awarding coins
-     */
-    @PostMapping("/{matchId}/tax/resolve")
-    public ResponseEntity<ApiResponse<GameStateResponse>> resolveTax(
-            @PathVariable UUID matchId,
-            @RequestParam boolean granted,
-            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
-            @AuthenticationPrincipal UserPrincipal userPrincipal) {
-
-        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
-
-        log.info("Player '{}' resolving Tax (granted={}) in match: {}",
-                userPrincipal.getUsername(), granted, matchId);
-
-        GameStateResponse response = gameEngine.resolveTax(
-                matchId, userPrincipal.getId(), granted);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
      * POST /api/matches/{matchId}/steal
      * Declares Steal, claiming Dalal, targeting an opponent. Opens a challenge
-     * window. Coins are transferred only when the action resolves via
-     * {@code /steal/resolve}.
+     * window. Coins are transferred only when the action resolves server-side
+     * via {@code /resolve}.
      *
      * @param request body containing the {@code targetPlayerId}
      */
@@ -332,31 +251,6 @@ public class GameController {
 
         GameStateResponse response = gameEngine.performSteal(
                 matchId, userPrincipal.getId(), targetPlayerId);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    /**
-     * POST /api/matches/{matchId}/steal/resolve
-     * Resolves a pending Steal challenge window.
-     *
-     * @param granted {@code true} transfers up to 2 coins from the target to the
-     *                actor (truthful claim), {@code false} cancels the Steal
-     *                without transferring coins
-     */
-    @PostMapping("/{matchId}/steal/resolve")
-    public ResponseEntity<ApiResponse<GameStateResponse>> resolveSteal(
-            @PathVariable UUID matchId,
-            @RequestParam boolean granted,
-            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
-            @AuthenticationPrincipal UserPrincipal userPrincipal) {
-
-        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
-
-        log.info("Player '{}' resolving Steal (granted={}) in match: {}",
-                userPrincipal.getUsername(), granted, matchId);
-
-        GameStateResponse response = gameEngine.resolveSteal(
-                matchId, userPrincipal.getId(), granted);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

@@ -14,16 +14,12 @@
 # ============================================================
 
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /build
 
 # Cache dependencies separately from source for faster layer cache hits
 COPY pom.xml .
-COPY .mvn/ .mvn/
-# Uncomment if using the Maven wrapper:
-# COPY mvnw .
-# RUN chmod +x mvnw
 
 # Download dependencies (offline cache layer)
 RUN --mount=type=cache,target=/root/.m2 \
@@ -62,7 +58,7 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport \
                -Dfile.encoding=UTF-8 \
                -Duser.timezone=UTC"
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
 
 # ── Healthcheck ───────────────────────────────────────────────────────────────
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

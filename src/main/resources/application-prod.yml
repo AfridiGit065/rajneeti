@@ -1,0 +1,46 @@
+# ============================================================
+#  RAJNEETI - Production Profile Configuration
+#  Enforces strict security, minimal logging, and environment-driven secrets.
+# ============================================================
+
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      idle-timeout: 300000
+      max-lifetime: 1200000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        generate_statistics: false
+
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+logging:
+  level:
+    root: WARN
+    com.rajneeti: INFO
+    org.springframework.security: WARN
+    org.springframework.web.socket: WARN
+    org.hibernate: ERROR
+    com.zaxxer.hikari: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

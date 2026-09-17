@@ -216,6 +216,14 @@
                 </configuration>
             </plugin>
 
+            <!-- maven-clean-plugin 3.1.0 crashes on JDK 21 (org.codehaus.plexus.util.Os);
+                 pin a JDK-21-compatible release. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.3.2</version>
+            </plugin>
+
         </plugins>
     </build>
 

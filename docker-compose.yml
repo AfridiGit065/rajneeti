@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 
   # ── MySQL Database ─────────────────────────────────────────────────────────
@@ -50,16 +48,39 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-changeme}
       # JPA
       JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
-      JPA_SHOW_SQL: "false"
-      # JWT – NEVER commit real secrets; use .env or Docker secrets in production
-      JWT_SECRET: ${JWT_SECRET:-dGhpcy1pcy1hLWRldi1zZWNyZXQtY2hhbmdlLWluLXByb2Q=}
+      JPA_SHOW_SQL: ${JPA_SHOW_SQL:-false}
+      # JWT – required. No secret is committed: startup fails fast if unset.
+      # Generate with: openssl rand -base64 48 ; then export JWT_SECRET=...
+      JWT_SECRET: ${JWT_SECRET:-}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
-      # CORS
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      # CORS / WebSocket
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       WS_ALLOWED_ORIGINS: ${WS_ALLOWED_ORIGINS:-http://localhost:3000}
       # Logging
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
-      LOG_LEVEL_APP: ${LOG_LEVEL_APP:-INFO}
+      LOG_LEVEL_ROOT: ${LOG_LEVEL_ROOT:-INFO}
+      LOG_LEVEL_APP: ${LOG_LEVEL_APP:-DEBUG}
+      LOG_LEVEL_WS: ${LOG_LEVEL_WS:-INFO}
+      LOG_LEVEL_SQL: ${LOG_LEVEL_SQL:-WARN}
+      LOG_FILE: ${LOG_FILE:-logs/rajneeti.log}
+      # AI bots (Module 25) – leave keys blank for heuristic-only play
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_API_KEY_1: ${AI_API_KEY_1:-}
+      AI_API_KEY_2: ${AI_API_KEY_2:-}
+      AI_API_KEY_3: ${AI_API_KEY_3:-}
+      AI_USE_KEY_ROTATION: ${AI_USE_KEY_ROTATION:-true}
+      AI_KEY_COOLDOWN_SECONDS: ${AI_KEY_COOLDOWN_SECONDS:-60}
+      AI_MAX_KEY_RETRIES: ${AI_MAX_KEY_RETRIES:-3}
+      AI_REQUEST_TIMEOUT_MS: ${AI_REQUEST_TIMEOUT_MS:-5000}
+      BOT_USE_LLM: ${BOT_USE_LLM:-true}
+      BOT_THINK_DELAY_ENABLED: ${BOT_THINK_DELAY_ENABLED:-true}
+      BOT_MIN_THINK_DELAY_MS: ${BOT_MIN_THINK_DELAY_MS:-800}
+      BOT_MAX_THINK_DELAY_MS: ${BOT_MAX_THINK_DELAY_MS:-2000}
+      BOT_WINDOW_GRACE_MS: ${BOT_WINDOW_GRACE_MS:-8000}
+      BOT_SCHEDULER_INTERVAL_MS: ${BOT_SCHEDULER_INTERVAL_MS:-500}
     volumes:
       - app_logs:/app/logs
     healthcheck:
@@ -68,6 +89,26 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  # ── Next.js Frontend ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8080/ws}
+    container_name: rajneeti-frontend
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8080/ws}
 
 volumes:
   mysql_data:

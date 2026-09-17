@@ -22,6 +22,13 @@ spring:
   main:
     banner-mode: off
 
+# ── JWT ───────────────────────────────────────────────────────
+# Fixed test secret (base64 of a 39-byte string). The JWT guard requires a
+# non-blank secret of at least 32 bytes; individual test classes may still
+# override with @TestPropertySource.
+jwt:
+  secret: dGVzdC1zZWNyZXQtdGhhdC1pcy1sb25nLWVub3VnaC1mb3ItaG1hYy1zaGEyNTY=
+
 # ── AI bots (Module 25) ─────────────────────────────────────────
 # Tests choose deterministic heuristics and drive matches on demand:
 # LLM off, no think delays, no grace wait, scheduler effectively disabled.
