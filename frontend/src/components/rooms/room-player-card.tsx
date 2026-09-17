@@ -3,7 +3,8 @@
 import type { RoomPlayer } from "@/types/room";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
-import { Check, Crown } from "@/components/ui/icons";
+import { botDifficultyLabel } from "@/lib/game/bot";
+import { Bot, Check, Crown } from "@/components/ui/icons";
 
 interface RoomPlayerCardProps {
   player: RoomPlayer;
@@ -32,6 +33,12 @@ export function RoomPlayerCard({ player, isMe = false }: RoomPlayerCardProps) {
               <Badge tone="gold" className="shrink-0">
                 <Crown className="size-3" aria-hidden />
                 Host
+              </Badge>
+            ) : null}
+            {player.isBot ? (
+              <Badge tone="parchment" className="shrink-0">
+                <Bot className="size-3" aria-hidden />
+                {botDifficultyLabel(player.botDifficulty)}
               </Badge>
             ) : null}
             {isMe ? <Badge tone="parchment">You</Badge> : null}

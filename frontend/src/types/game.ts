@@ -1,4 +1,5 @@
 import type { CharacterId } from "./character";
+import type { BotDifficulty } from "./room";
 
 export type GameActionId =
   | "income"
@@ -114,6 +115,8 @@ export interface GamePlayer {
   isHost: boolean;
   isAlive: boolean;
   isTurn: boolean;
+  isBot?: boolean;
+  botDifficulty?: BotDifficulty;
   coins: number;
   /** Only the local player sees their own cards fully */
   influenceCards: InfluenceCard[];

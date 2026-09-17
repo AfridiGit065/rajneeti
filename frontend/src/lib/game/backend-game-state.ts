@@ -3,6 +3,7 @@ import type {
   BackendGamePlayer,
   BackendPendingAction,
 } from "@/types/backend";
+import type { BotDifficulty } from "@/types/room";
 import {
   MatchStatus,
   type ActionIntent,
@@ -18,6 +19,14 @@ import {
 const CHARACTER_IDS = ["minister", "ghatok", "dalal", "amla", "goyenda"] as const;
 
 type CharacterId = (typeof CHARACTER_IDS)[number];
+
+const BOT_DIFFICULTIES = ["EASY", "MEDIUM", "HARD"] as const;
+
+function toBotDifficulty(value?: string): BotDifficulty | undefined {
+  return BOT_DIFFICULTIES.includes(value as (typeof BOT_DIFFICULTIES)[number])
+    ? (value as BotDifficulty)
+    : undefined;
+}
 
 function toCharacterId(value: string): CharacterId {
   return CHARACTER_IDS.includes(value as CharacterId) ? (value as CharacterId) : "minister";
@@ -195,6 +204,8 @@ export function toGameState(backend: BackendGameState): GameState {
     isHost: player.host,
     isAlive: player.alive,
     isTurn: player.turn,
+    isBot: player.isBot ?? false,
+    botDifficulty: toBotDifficulty(player.botDifficulty),
     coins: player.coins,
     influenceCards: toInfluenceCards(player),
     seatIndex: player.seatIndex,
