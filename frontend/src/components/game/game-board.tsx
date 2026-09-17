@@ -690,25 +690,23 @@ export function GameBoard({ matchId }: { matchId: string }) {
         </div>
 
         {/* ══════════════════════════════════════════
-            OWN INFLUENCE CARDS — center, below action
-            Positioned at ~56% from top
+            OWN PLAYER STATUS — docked bottom-left (Screenshot 2)
         ══════════════════════════════════════════ */}
         <div
-          className="absolute left-1/2 z-20"
-          style={{ top: "57%", transform: "translateX(-50%)", width: "max-content", maxWidth: "90vw" }}
+          className="absolute z-30"
+          style={{ bottom: 18, left: 24, width: 230 }}
         >
-          <OwnCards cards={currentPlayer.influenceCards} />
+          <PlayerSeat player={currentPlayer} />
         </div>
 
         {/* ══════════════════════════════════════════
-            OWN PLAYER STATUS — centered below cards
-            Positioned at ~76% from top
+            OWN INFLUENCE CARDS — center, above action dock
         ══════════════════════════════════════════ */}
         <div
           className="absolute left-1/2 z-20"
-          style={{ top: "76%", transform: "translateX(-50%)", width: 280 }}
+          style={{ bottom: 106, transform: "translateX(-50%)", width: "max-content", maxWidth: "90vw" }}
         >
-          <PlayerSeat player={currentPlayer} />
+          <OwnCards cards={currentPlayer.influenceCards} />
         </div>
 
         {/* ══════════════════════════════════════════
@@ -716,7 +714,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
         ══════════════════════════════════════════ */}
         <div
           className="absolute left-1/2 z-30"
-          style={{ bottom: 18, transform: "translateX(-50%)", width: "max-content", maxWidth: "calc(100vw - 32px)" }}
+          style={{ bottom: 14, transform: "translateX(-50%)", width: "max-content", maxWidth: "calc(100vw - 280px)" }}
         >
           <ActionPanel
             player={currentPlayer}

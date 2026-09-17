@@ -61,7 +61,7 @@ export function ActionPanel({
 
   function handleActionClick(actionId: GameActionId) {
     if (actionId === "income") {
-      setModalStep({ type: "income_success" });
+      onAction("income");
     } else if (actionId === "foreign_aid") {
       setModalStep({ type: "foreign_aid_block_window" });
     } else if (actionId === "tax") {
