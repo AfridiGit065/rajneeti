@@ -258,6 +258,13 @@ export function GameBoard({ matchId }: { matchId: string }) {
 
   // Module 23 — supersede the REST seed with authoritative snapshots as they
   // arrive over WebSocket (public broadcasts + private per-player replies).
+  //
+  // IMPORTANT: appliedVersionRef must reflect the snapshot's actual scope so
+  // that a PRIVATE_STATE (same stateVersion, scope="private") is never dropped
+  // after a public STATE_UPDATED has already been applied. Without this fix,
+  // adoptState() marks the ref as "private", the public snapshot then overwrites
+  // it with "public", and the following private snapshot is rejected as a
+  // duplicate (private-over-private = superseded), hiding the player's own cards.
   useEffect(() => {
     if (!gameSnapshot) return;
     const incoming: VersionKey = {
@@ -265,9 +272,37 @@ export function GameBoard({ matchId }: { matchId: string }) {
       scope: gameSnapshot.scope,
     };
     if (isSuperseded(appliedVersionRef.current, incoming)) return;
+    // Use the snapshot's real scope — NOT hardcoded "private" — so the next
+    // PRIVATE_STATE of the same version is still accepted by isSuperseded.
     appliedVersionRef.current = incoming;
-    setGame(toGameState(gameSnapshot.state));
-  }, [gameSnapshot]);
+    setGame((prev) => {
+      const next = toGameState(gameSnapshot.state);
+      // If a public broadcast arrives without private card data, preserve the
+      // player's own cards that were already seeded or received privately.
+      if (gameSnapshot.scope === "public" && prev) {
+        const prevMe = prev.players.find((p) => p.userId === selfId);
+        const hasRealCards =
+          prevMe &&
+          prevMe.influenceCards.length > 0 &&
+          !prevMe.influenceCards[0].id.startsWith("hidden-");
+        if (hasRealCards) {
+          return {
+            ...next,
+            players: next.players.map((p) => {
+              if (p.userId === selfId) {
+                return {
+                  ...p,
+                  influenceCards: prevMe.influenceCards.slice(0, p.influenceCards.length),
+                };
+              }
+              return p;
+            }),
+          };
+        }
+      }
+      return next;
+    });
+  }, [gameSnapshot, selfId]);
 
   // Request a private snapshot whenever the socket (re)connects, so the board
   // re-syncs after reconnects without waiting for the next action.

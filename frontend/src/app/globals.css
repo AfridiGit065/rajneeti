@@ -378,6 +378,7 @@ body {
 }
 
 .influence-card.is-revealed .influence-card-inner,
+.influence-card-inner.is-revealed,
 .influence-card.is-discarded .influence-card-inner {
   transform: rotateY(180deg);
 }

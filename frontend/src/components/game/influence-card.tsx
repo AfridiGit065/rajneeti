@@ -137,6 +137,7 @@ export function InfluenceCard({
         animationClass,
         onClick && "cursor-pointer ring-gold-focus",
         state === "discarded" && "is-discarded opacity-80 grayscale",
+        flipped && "is-revealed",
         className,
       )}
       style={style}
