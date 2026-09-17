@@ -41,7 +41,7 @@ public class RoomController {
     @PostMapping
     public ResponseEntity<ApiResponse<RoomResponse>> createRoom(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestBody(required = false) CreateRoomRequest request) {
+            @Valid @RequestBody(required = false) CreateRoomRequest request) {
 
         log.info("Player '{}' requested to create a room", userPrincipal.getUsername());
         CreateRoomRequest safeRequest = (request != null) ? request : new CreateRoomRequest();

@@ -2,6 +2,7 @@ package com.rajneeti.dto.room;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateRoomRequest {
+
+    /** Optional human-friendly room name (displayed in the lobby). */
+    @Size(max = 60, message = "Room name must be at most 60 characters")
+    private String name;
 
     @Min(value = 2, message = "Minimum players in a room is 2")
     @Max(value = 6, message = "Maximum players in a room is 6")

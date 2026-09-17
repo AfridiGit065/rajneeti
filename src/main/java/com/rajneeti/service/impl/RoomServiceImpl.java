@@ -66,8 +66,13 @@ public class RoomServiceImpl implements RoomService {
 
         String roomCode = generateUniqueRoomCode();
 
+        String roomName = (request != null && request.getName() != null)
+                ? request.getName().trim()
+                : null;
+
         Room room = Room.builder()
                 .roomCode(roomCode)
+                .name((roomName != null && !roomName.isEmpty()) ? roomName : null)
                 .host(host)
                 .status(RoomStatus.WAITING)
                 .maxPlayers(maxPlayers)

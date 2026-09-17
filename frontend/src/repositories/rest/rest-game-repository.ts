@@ -5,13 +5,6 @@ import type { GameRepository } from "../game-repository";
 import { type ActionIntent, type GameResult, type GameState } from "@/types/game";
 import { err, ok, type Result } from "@/types/api";
 
-const notImplemented = (): Result<GameState> =>
-  err<GameState>({
-    status: 501,
-    error: "NOT_IMPLEMENTED",
-    message: "Gameplay actions are not implemented in this build yet.",
-  });
-
 /**
  * REST-backed game repository.
  *
@@ -69,7 +62,11 @@ export class RestGameRepository implements GameRepository {
       );
       return result.ok ? { ok: true, data: toGameState(result.data) } : result;
     }
-    return notImplemented();
+    return err<GameState>({
+      status: 400,
+      error: "UNKNOWN_ACTION",
+      message: `Unsupported action '${intent.action}'.`,
+    });
   }
 
   async challenge(matchId: string): Promise<Result<GameState>> {
@@ -86,10 +83,6 @@ export class RestGameRepository implements GameRepository {
       payload,
     );
     return result.ok ? { ok: true, data: toGameState(result.data) } : result;
-  }
-
-  async endTurn(_matchId: string, _playerId: string): Promise<Result<GameState>> {
-    return notImplemented();
   }
 
   async getGameResult(matchId: string): Promise<Result<GameResult>> {
@@ -115,31 +108,10 @@ export class RestGameRepository implements GameRepository {
     });
   }
 
-  async resolveForeignAid(matchId: string, blocked: boolean): Promise<Result<GameState>> {
-    const result = await apiClient.post<BackendGameState>(
-      `/api/matches/${matchId}/foreign-aid/resolve?blocked=${blocked}`,
-    );
-    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
-  }
-
   async confirmExchange(matchId: string, keepCardIds: string[]): Promise<Result<GameState>> {
     const result = await apiClient.post<BackendGameState>(
       `/api/matches/${matchId}/exchange/confirm`,
       { keepCardIds },
-    );
-    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
-  }
-
-  async resolveAssassinate(matchId: string, succeeded: boolean): Promise<Result<GameState>> {
-    const result = await apiClient.post<BackendGameState>(
-      `/api/matches/${matchId}/assassinate/resolve?succeeded=${succeeded}`,
-    );
-    return result.ok ? { ok: true, data: toGameState(result.data) } : result;
-  }
-
-  async resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>> {
-    const result = await apiClient.post<BackendGameState>(
-      `/api/matches/${matchId}/steal/resolve?granted=${granted}`,
     );
     return result.ok ? { ok: true, data: toGameState(result.data) } : result;
   }

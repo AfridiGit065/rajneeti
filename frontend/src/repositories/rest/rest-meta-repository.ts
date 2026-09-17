@@ -125,7 +125,7 @@ export class RestMetaRepository implements MetaRepository {
         wins: stats.wins,
         losses: stats.losses,
         draws: 0,
-        winRate: stats.winRate / 100,
+        winRate: stats.winRate,
         gamesPlayed: stats.totalMatches,
         totalCoinsEarned: stats.totalCoinsEarned,
         bluffsSucceeded: 0,

@@ -28,8 +28,8 @@ function RankCell({ rank }: { rank: number }) {
 }
 
 function winRateClass(rate: number) {
-  if (rate >= 0.6) return "text-forest-300";
-  if (rate >= 0.5) return "text-gold-300";
+  if (rate >= 60) return "text-forest-300";
+  if (rate >= 50) return "text-gold-300";
   return "text-muted";
 }
 
@@ -123,7 +123,7 @@ export function LeaderboardTable({
                     winRateClass(entry.winRate),
                   )}
                 >
-                  {Math.round(entry.winRate * 100)}%
+                  {Math.round(entry.winRate)}%
                 </td>
               </tr>
             );

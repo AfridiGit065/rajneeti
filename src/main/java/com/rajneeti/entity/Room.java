@@ -62,6 +62,11 @@ public class Room extends BaseEntity {
     @Column(name = "room_code", nullable = false, unique = true, length = 10)
     private String roomCode;
 
+    /** Optional human-friendly room name shown in the lobby UI. */
+    @Size(max = 60, message = "Room name must be at most 60 characters")
+    @Column(name = "name", length = 60)
+    private String name;
+
     @NotNull(message = "Host is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "host_id", nullable = false)

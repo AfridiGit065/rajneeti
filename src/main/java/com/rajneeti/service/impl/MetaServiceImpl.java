@@ -51,7 +51,7 @@ public class MetaServiceImpl implements MetaService {
             Integer totalMatches = row.getTotalMatches() != null ? row.getTotalMatches() : 0;
             Integer wins = row.getWins() != null ? row.getWins() : 0;
             double winRate = totalMatches > 0
-                    ? Math.round(((double) wins / totalMatches) * 10000.0) / 10000.0
+                    ? Math.round(((double) wins / totalMatches) * 100.0 * 100.0) / 100.0
                     : 0.0;
             entries.add(LeaderboardEntryDto.builder()
                     .rank(row.getRank() != null ? row.getRank() : sequentialRank)

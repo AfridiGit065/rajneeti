@@ -56,6 +56,7 @@ public class RoomMapper {
         return RoomResponse.builder()
                 .id(room.getId())
                 .roomCode(room.getRoomCode())
+                .name(room.getName())
                 .hostId(room.getHost() != null ? room.getHost().getId() : null)
                 .hostUsername(room.getHost() != null ? room.getHost().getUsername() : null)
                 .status(room.getStatus())

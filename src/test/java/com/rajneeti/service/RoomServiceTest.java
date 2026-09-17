@@ -90,6 +90,7 @@ class RoomServiceTest {
     @DisplayName("Create Room - Success")
     void createRoom_Success() {
         CreateRoomRequest request = CreateRoomRequest.builder()
+                .name("  Table of Chiefs  ")
                 .maxPlayers(6)
                 .build();
 
@@ -105,12 +106,36 @@ class RoomServiceTest {
         RoomResponse response = roomService.createRoom(hostId, request);
 
         assertThat(response).isNotNull();
+        assertThat(response.getName()).isEqualTo("Table of Chiefs");
         assertThat(response.getHostUsername()).isEqualTo("hostPlayer");
         assertThat(response.getStatus()).isEqualTo(RoomStatus.WAITING);
         assertThat(response.getCurrentPlayers()).isEqualTo(1);
         assertThat(response.getPlayers().get(0).getSeatNumber()).isEqualTo(1);
         assertThat(response.getPlayers().get(0).getIsHost()).isTrue();
         assertThat(response.getPlayers().get(0).getReady()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Create Room - blank name is stored as null")
+    void createRoom_BlankNameBecomesNull() {
+        CreateRoomRequest request = CreateRoomRequest.builder()
+                .name("   ")
+                .maxPlayers(4)
+                .build();
+
+        when(userRepository.findById(hostId)).thenReturn(Optional.of(hostUser));
+        when(roomRepository.existsByRoomCode(any())).thenReturn(false);
+        when(roomRepository.save(any(Room.class))).thenAnswer(inv -> {
+            Room r = inv.getArgument(0);
+            r.setId(UUID.randomUUID());
+            return r;
+        });
+        when(roomPlayerRepository.save(any(RoomPlayer.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        RoomResponse response = roomService.createRoom(hostId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getName()).isNull();
     }
 
     @Test
