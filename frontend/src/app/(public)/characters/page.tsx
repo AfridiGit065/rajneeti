@@ -5,13 +5,17 @@ import { Sparkles, ScrollText } from "@/components/ui/icons";
 import { CHARACTERS } from "@/lib/game/characters";
 import { CharacterCard } from "@/components/characters/character-card";
 import { CharacterDetailModal } from "@/components/characters/character-detail-modal";
+import { PageBackground } from "@/components/layout";
 import type { Character } from "@/types/character";
 
 export default function CharactersPage() {
   const [selected, setSelected] = useState<Character | null>(null);
 
   return (
-    <div className="space-y-10 pb-16">
+    <>
+      <PageBackground variant="dark" />
+      <div className="space-y-10 pb-16">
+
       {/* ── Page Header ─────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-3xl border border-forest-500/25 bg-surface panel-emboss panel-texture p-8 sm:p-10 text-center">
         <div
@@ -121,5 +125,7 @@ export default function CharactersPage() {
         />
       )}
     </div>
+    </>
   );
 }
+

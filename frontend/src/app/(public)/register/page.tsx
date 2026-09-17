@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,7 @@ import {
   validateUsername,
 } from "@/lib/validation/auth";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { PageBackground } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
@@ -130,7 +131,9 @@ export default function RegisterPage() {
   const confirmError = touched.confirm ? errors.confirm : undefined;
 
   return (
-    <AuthShell
+    <>
+      <PageBackground variant="lobby" />
+      <AuthShell
       eyebrow="Join the Court"
       title="Sign Up"
       subtitle="A new contender enters the political fray."
@@ -153,7 +156,7 @@ export default function RegisterPage() {
             <CheckCheck className="size-7 text-forest-300" aria-hidden />
           </span>
           <h2 className="text-xl font-semibold text-ivory">Registration Successful!</h2>
-          <p className="mt-2 text-sm text-muted">Redirecting to login…</p>
+          <p className="mt-2 text-sm text-muted">Redirecting to loginâ€¦</p>
           <Link
             href="/login"
             className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-400 transition-colors hover:text-gold-300"
@@ -288,5 +291,6 @@ export default function RegisterPage() {
         </form>
       )}
     </AuthShell>
+    </>
   );
 }

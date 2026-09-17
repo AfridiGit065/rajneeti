@@ -14,6 +14,8 @@ import { MetaService } from "@/services/meta-service";
 import { useAuthStore } from "@/store/auth-store";
 import { cn } from "@/lib/cn";
 import type { MatchHistoryEntry } from "@/types/user";
+import { PageBackground } from "@/components/layout";
+
 
 const FILTERS = [
   { value: "all", label: "All" },
@@ -119,48 +121,51 @@ export default function HistoryPage() {
   const shown = matches.filter((m) => filter === "all" || m.result === filter);
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-          Past Matches
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-ivory">Match History</h1>
-        <p className="mt-1 text-sm text-muted">Results and rating changes from your previous games.</p>
-      </header>
+    <>
+      <PageBackground variant="dark" />
+      <div className="space-y-6">
+        <header>
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
+            Past Matches
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-ivory">Match History</h1>
+          <p className="mt-1 text-sm text-muted">Results and rating changes from your previous games.</p>
+        </header>
 
-      <FilterPills value={filter} counts={counts} onChange={setFilter} />
+        <FilterPills value={filter} counts={counts} onChange={setFilter} />
 
-      {loading ? (
-        <LoadingState label="Loading match history…" />
-      ) : error !== null ? (
-        <ErrorState
-          title="Could not load history"
-          message={error}
-          action={
-            <Button variant="premium" onClick={retry}>
-              Try Again
-            </Button>
-          }
-        />
-      ) : shown.length === 0 ? (
-        <EmptyState
-          icon={<FileQuestion className="size-6" aria-hidden />}
-          title={filter === "all" ? "No matches played yet" : "No matches in this filter"}
-          description={
-            filter === "all"
-              ? "Your match history will appear here once you finish a game."
-              : "Switch filters to view all matches."
-          }
-        />
-      ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {shown.map((match) => (
-            <MatchHistoryCard key={match.matchId} match={match} onSelect={setSelected} />
-          ))}
-        </div>
-      )}
+        {loading ? (
+          <LoadingState label="Loading match history…" />
+        ) : error !== null ? (
+          <ErrorState
+            title="Could not load history"
+            message={error}
+            action={
+              <Button variant="premium" onClick={retry}>
+                Try Again
+              </Button>
+            }
+          />
+        ) : shown.length === 0 ? (
+          <EmptyState
+            icon={<FileQuestion className="size-6" aria-hidden />}
+            title={filter === "all" ? "No matches played yet" : "No matches in this filter"}
+            description={
+              filter === "all"
+                ? "Your match history will appear here once you finish a game."
+                : "Switch filters to view all matches."
+            }
+          />
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {shown.map((match) => (
+              <MatchHistoryCard key={match.matchId} match={match} onSelect={setSelected} />
+            ))}
+          </div>
+        )}
 
-      <MatchDetailsModal match={selected} onClose={() => setSelected(null)} />
-    </div>
+        <MatchDetailsModal match={selected} onClose={() => setSelected(null)} />
+      </div>
+    </>
   );
-}
+}

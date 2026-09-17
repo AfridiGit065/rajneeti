@@ -33,7 +33,7 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
   const links = mode === "app" ? APP_LINKS : PUBLIC_LINKS;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-forest-500/20 bg-deep-950/85 backdrop-blur-lg">
+    <header className="sticky top-0 z-40 border-b border-gold-500/15 bg-[#03130e]/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Brand size="sm" />
 
