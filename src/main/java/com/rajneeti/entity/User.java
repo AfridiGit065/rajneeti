@@ -66,6 +66,23 @@ public class User extends BaseEntity {
     @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
 
+    /**
+     * Whether this account is an AI-controlled bot player rather than a human.
+     * Bots never log in through AuthService; they are created and driven by the
+     * Module 25 bot pipeline and always join rooms as auto-ready seats.
+     */
+    @Builder.Default
+    @Column(name = "is_bot", nullable = false)
+    private Boolean isBot = false;
+
+    /** Difficulty level for AI bots (EASY / MEDIUM / HARD). Null for humans. */
+    @Column(name = "bot_difficulty", length = 20)
+    private String botDifficulty;
+
+    /** Behaviour profile for AI bots (BALANCED / AGGRESSIVE / ...). Null for humans. */
+    @Column(name = "bot_personality", length = 20)
+    private String botPersonality;
+
     @Builder.Default
     @Column(name = "rating", nullable = false)
     private Integer rating = 1000;

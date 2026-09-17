@@ -27,5 +27,8 @@ public class UserResponse {
     private Integer totalMatches;
     private Integer wins;
     private Integer losses;
+    private Boolean isBot;
+    private String botDifficulty;
+    private String botPersonality;
     private LocalDateTime createdAt;
 }

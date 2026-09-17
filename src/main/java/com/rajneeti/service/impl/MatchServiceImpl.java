@@ -23,6 +23,7 @@ import com.rajneeti.exception.MatchNotFoundException;
 import com.rajneeti.exception.NotRoomHostException;
 import com.rajneeti.exception.RoomNotFoundException;
 import com.rajneeti.game.GameEngine;
+import com.rajneeti.bot.driver.BotMatchRegistry;
 import com.rajneeti.mapper.MatchMapper;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
@@ -59,6 +60,7 @@ public class MatchServiceImpl implements MatchService {
     private final MatchMapper             matchMapper;
     private final TurnManager             turnManager;
     private final WebSocketEventPublisher webSocketEventPublisher;
+    private final BotMatchRegistry        botMatchRegistry;
 
     @Override
     @Transactional
@@ -119,6 +121,17 @@ public class MatchServiceImpl implements MatchService {
         }
 
         savedMatch.setPlayers(matchPlayers);
+
+        // 8b. Module 25 — hand every AI bot seat to the bot driver so the
+        // scheduler starts playing them as soon as the game state initializes.
+        List<UUID> botIds = matchPlayers.stream()
+                .filter(mp -> Boolean.TRUE.equals(mp.getUser().getIsBot()))
+                .map(mp -> mp.getUser().getId())
+                .toList();
+        if (!botIds.isEmpty()) {
+            botMatchRegistry.register(savedMatch.getId(), botIds);
+            log.info("Registered {} AI bot(s) to drive match {}", botIds.size(), savedMatch.getId());
+        }
 
         // 9. Assign the first turn (deterministic: lowest seat number) and set startedAt
         savedMatch.setStartedAt(LocalDateTime.now());

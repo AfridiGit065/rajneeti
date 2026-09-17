@@ -41,4 +41,18 @@ public class GamePlayerState {
     private List<GameCard> cards = new ArrayList<>();
 
     private boolean host;
+
+    /**
+     * Module 25 — whether this player is an AI bot. Carried from the User
+     * entity so the bot pipeline and the public projection both know which
+     * seats are controlled by an AI.
+     */
+    @Builder.Default
+    private boolean isBot = false;
+
+    /** Difficulty level for AI bots. Null for humans. */
+    private String botDifficulty;
+
+    /** Behaviour profile for AI bots. Null for humans. */
+    private String botPersonality;
 }

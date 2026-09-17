@@ -179,13 +179,22 @@ public class CardManager {
 
     /**
      * Verifies the single-location invariant of the whole game: every physical
-     * card must exist in exactly one place (deck or exactly one player's hand)
-     * and the union must equal the full 15-card deck.
+     * card still in circulation (deck or exactly one player's hand) must appear
+     * exactly once, and the union must equal the standard deck minus the cards
+     * already revealed this match.
+     *
+     * <p>Coup semantics: a card revealed by losing a challenge (or to an
+     * assassination / coup) leaves the 15-card pool forever, so the expected
+     * count shrinks by {@code revealedCardsCount}. The claimant-proof path keeps
+     * its own hand whole by returning the proven card to the deck and drawing a
+     * replacement, which nets zero — the single dropped card per resolution is
+     * the challenger's.
      *
      * @throws BusinessException {@code DECK_INTEGRITY} or {@code DUPLICATE_CARD}
      *                           when the invariant is violated
      */
-    public void assertDeckIntegrity(List<GameCard> deck, List<GamePlayerState> players) {
+    public void assertDeckIntegrity(List<GameCard> deck, List<GamePlayerState> players,
+                                    int revealedCardsCount) {
         Set<UUID> seen = new HashSet<>();
         for (GameCard card : deck) {
             register(seen, card, "deck");
@@ -195,11 +204,20 @@ public class CardManager {
                 register(seen, card, "player '" + player.getUserId() + "'");
             }
         }
-        if (seen.size() != DECK_SIZE) {
+        int expected = DECK_SIZE - Math.max(0, revealedCardsCount);
+        if (seen.size() != expected) {
             throw new BusinessException("DECK_INTEGRITY",
-                    "Deck integrity violated: expected " + DECK_SIZE + " unique cards "
+                    "Deck integrity violated: expected " + expected + " unique cards "
                             + "in play, found " + seen.size() + ".");
         }
+    }
+
+    /**
+     * Setup-phase variant of {@link #assertDeckIntegrity(List, List, int)} used
+     * while no card has been revealed yet.
+     */
+    public void assertDeckIntegrity(List<GameCard> deck, List<GamePlayerState> players) {
+        assertDeckIntegrity(deck, players, 0);
     }
 
     private void register(Set<UUID> seen, GameCard card, String location) {

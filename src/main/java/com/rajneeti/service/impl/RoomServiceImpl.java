@@ -18,6 +18,7 @@ import com.rajneeti.exception.RoomFullException;
 import com.rajneeti.exception.RoomNotFoundException;
 import com.rajneeti.exception.RoomNotJoinableException;
 import com.rajneeti.mapper.RoomMapper;
+import com.rajneeti.bot.service.BotUserService;
 import com.rajneeti.repository.RoomPlayerRepository;
 import com.rajneeti.repository.RoomRepository;
 import com.rajneeti.repository.UserRepository;
@@ -50,6 +51,7 @@ public class RoomServiceImpl implements RoomService {
     private final UserRepository            userRepository;
     private final RoomMapper                roomMapper;
     private final WebSocketEventPublisher   webSocketEventPublisher;
+    private final BotUserService            botUserService;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -85,7 +87,22 @@ public class RoomServiceImpl implements RoomService {
         RoomPlayer savedPlayer = roomPlayerRepository.save(hostPlayer);
         List<RoomPlayer> players = List.of(savedPlayer);
 
-        log.info("Room '{}' ({}) created by host '{}'", roomCode, savedRoom.getId(), host.getUsername());
+        // Module 25 — seed AI bots (auto-ready) right after the host joins. The
+        // host always keeps seat 1 and stays human; bots take the next seats.
+        int requestedBots = (request != null && request.getBotCount() != null)
+                ? Math.max(0, Math.min(maxPlayers - 1, request.getBotCount()))
+                : 0;
+        if (requestedBots > 0) {
+            String difficulty = request.getBotDifficulty() != null
+                    ? request.getBotDifficulty().toUpperCase() : "MEDIUM";
+            String personality = request.getBotPersonality() != null
+                    ? request.getBotPersonality().toUpperCase() : "BALANCED";
+            botUserService.seedBots(savedRoom, requestedBots, difficulty, personality);
+            players = roomPlayerRepository.findByRoomIdOrderBySeatNumberAsc(savedRoom.getId());
+        }
+
+        log.info("Room '{}' ({}) created by host '{}' with {} bot(s)",
+                roomCode, savedRoom.getId(), host.getUsername(), requestedBots);
 
         RoomResponse response = roomMapper.toRoomResponse(savedRoom, players);
 
