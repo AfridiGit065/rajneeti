@@ -36,7 +36,7 @@ import {
   EliminationOverlay,
 } from "./card-reveal-elimination";
 import { ExchangeSelection } from "./exchange-selection";
-import { getAction } from "@/lib/game/actions";
+import { getAction, canChallenge } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { GameService } from "@/services/game-service";
 import { useAuthStore } from "@/store/auth-store";
@@ -383,6 +383,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const [influenceLostReason, setInfluenceLostReason] = useState("");
   const [eliminationPlayer, setEliminationPlayer] = useState<GamePlayer | null>(null);
   const [chronicleOpen, setChronicleOpen] = useState(false);
+  const [challengePanelActive, setChallengePanelActive] = useState(false);
 
   const gameSnapshot = useRealtimeStore((s) => s.gameSnapshots[matchId]);
   const resyncRequested = useRealtimeStore((s) => s.resyncRequested[matchId]);
@@ -580,6 +581,30 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const showActorResolve = blockWindowAction !== null && isActorOfPending && !game.activeAction!.blockerUserId;
 
   // Compute seating positions for all opponents
+  // Response / Interactive window state detection (Challenge / Block / Resolution)
+  const claimant = game.players.find((p) => p.id === game.currentTurnPlayerId);
+  const isChallengeEligible = Boolean(
+    game.activeAction?.claimedCharacter &&
+    game.phase === "action_resolution" &&
+    claimant && claimant.userId !== selfId &&
+    canChallenge(game.activeAction.action)
+  );
+  const isChallengeActive =
+    (isChallengeEligible && challengePanelActive !== false) ||
+    Boolean(game.pendingChallenge) ||
+    Boolean(challengePanelActive);
+
+  const isBlockActive = Boolean(
+    showBlockOffer ||
+    showActorResolve ||
+    blockEvent ||
+    blockResultData ||
+    game.pendingBlock
+  );
+
+  const isResponseState = isBlockActive || isChallengeActive || Boolean(game.lastActionResult);
+
+  // Compute seating positions for all opponents
   const seatPositions = computeSeats(opponents);
 
   return (
@@ -644,86 +669,141 @@ export function GameBoard({ matchId }: { matchId: string }) {
           );
         })}
 
-        {/* ══════════════════════════════════════════
-            CENTER STAGE — Active Action + Deck/Discard
-            Centered at ~30% from top
-        ══════════════════════════════════════════ */}
-        <div
-          className="absolute left-1/2 z-20 flex flex-col items-center gap-0"
-          style={{ top: "17%", transform: "translateX(-50%)" }}
-        >
-          {/* Overlay panels stacked above main action */}
-          {(blockResultData || game.lastActionResult || blockEvent || showBlockOffer || showActorResolve) && (
-            <div className="flex flex-col items-center gap-2 mb-3 w-full" style={{ minWidth: 340, maxWidth: 480 }}>
-              {blockResultData && (
-                <BlockResult result={blockResultData} onDismiss={() => setBlockResultData(null)} />
+                {/* ═══════════════════════════════════════════════════════════════
+            CENTRAL PLAY AREA — STATE-AWARE REFLOW
+            - Normal State: Pristine cinematic layout (Active Action → Cards → Player → Dock)
+            - Response State: Coordinated vertical flow (Block Opportunity → Active Action → Challenge → Cards → Player → Dock)
+        ═══════════════════════════════════════════════════════════════ */}
+        {isResponseState ? (
+          <div
+            className="central-response-stage absolute inset-x-0 top-0 bottom-0 z-20 flex flex-col items-center justify-between pt-[clamp(68px,8.5vh,86px)] pb-2 pointer-events-none overflow-y-auto"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {/* Upper Event Flow: Block Opportunity → Active Action → Challenge Window */}
+            <div className="flex flex-col items-center w-full max-w-[540px] shrink-0">
+              {/* 1. Block Opportunity / Block Results */}
+              {(blockResultData || game.lastActionResult || blockEvent || showBlockOffer || showActorResolve) && (
+                <div className="w-full pointer-events-auto mb-5 sm:mb-6 animate-fade-in">
+                  {blockResultData && (
+                    <BlockResult result={blockResultData} onDismiss={() => setBlockResultData(null)} />
+                  )}
+                  {game.lastActionResult && !blockResultData ? (
+                    <ActionResultSummary result={game.lastActionResult} players={game.players} />
+                  ) : null}
+                  {blockEvent ? (
+                    <BlockPanel
+                      activeBlock={blockEvent}
+                      currentPlayer={currentPlayer}
+                      onOpenDialog={() => setBlockDialogOpen(true)}
+                    />
+                  ) : null}
+                  {showBlockOffer && blockWindowAction && !blockEvent ? (
+                    <BlockOffer action={blockWindowAction} busy={blockBusy} onBlock={handleBlockSubmit} />
+                  ) : null}
+                  {showActorResolve && blockWindowAction && !blockEvent ? (
+                    <BlockWindowPanel
+                      action={blockWindowAction}
+                      busy={blockBusy}
+                      onResolve={() => void resolvePendingAction()}
+                    />
+                  ) : null}
+                </div>
               )}
-              {game.lastActionResult ? (
-                <ActionResultSummary result={game.lastActionResult} players={game.players} />
-              ) : null}
-              {blockEvent ? (
-                <BlockPanel activeBlock={blockEvent} currentPlayer={currentPlayer} onOpenDialog={() => setBlockDialogOpen(true)} />
-              ) : null}
-              {showBlockOffer && blockWindowAction ? (
-                <BlockOffer action={blockWindowAction} busy={blockBusy} onBlock={handleBlockSubmit} />
-              ) : null}
-              {showActorResolve && blockWindowAction ? (
-                <BlockWindowPanel action={blockWindowAction} busy={blockBusy} onResolve={() => void resolvePendingAction()} />
-              ) : null}
+
+              {/* 2. Active Action + Deck/Discard beside it */}
+              <div className="flex items-start gap-4 pointer-events-auto mb-6 sm:mb-7">
+                <ActiveAction game={game} />
+                <div className="shrink-0 pt-6 sm:pt-8">
+                  <DeckDiscard game={game} />
+                </div>
+              </div>
+
+              {/* 3. Challenge Window / Response Panel (below Active Action) */}
+              {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
+                <div className="w-full pointer-events-auto">
+                  <ChallengeFlow
+                    game={game}
+                    selfId={selfId}
+                    onResolved={adoptState}
+                    onPanelVisibilityChange={setChallengePanelActive}
+                  />
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Row: Active Action + Deck/Discard side by side */}
-          <div className="flex items-start gap-4">
-            <ActiveAction game={game} />
-            <div className="shrink-0 pt-8">
-              <DeckDiscard game={game} />
+            {/* Lower Player Station: Own Cards → Your Player → Action Dock */}
+            <div className="flex flex-col items-center w-full max-w-[540px] shrink-0 pointer-events-auto">
+              {/* 4. Own Influence Cards (scaled down to 165–195px in response mode) */}
+              <div className="mb-2 sm:mb-2.5">
+                <OwnCards cards={currentPlayer.influenceCards} responseMode={true} />
+              </div>
+
+              {/* 5. Own Player Status */}
+              <div className="w-full max-w-[460px] mb-2 sm:mb-2.5">
+                <PlayerSeat player={currentPlayer} />
+              </div>
+
+              {/* 6. Floating Action Dock */}
+              <div>
+                <ActionPanel
+                  player={currentPlayer}
+                  opponents={opponents}
+                  busy={busy !== null}
+                  onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
+                />
+              </div>
             </div>
           </div>
+        ) : (
+          <>
+            {/* ── NORMAL STATE: Exact unchanged layout ── */}
+            {/* CENTER STAGE */}
+            <div
+              className="absolute left-1/2 z-20 flex flex-col items-center gap-0"
+              style={{ top: "17%", transform: "translateX(-50%)" }}
+            >
+              <div className="flex items-start gap-4">
+                <ActiveAction game={game} />
+                <div className="shrink-0 pt-8">
+                  <DeckDiscard game={game} />
+                </div>
+              </div>
 
-          {/* Challenge Resolution — below active action.
-               ChallengeFlow renders null at view=="idle" so no wrapper height is wasted. */}
-          {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
-            <ChallengeFlow game={game} selfId={selfId} onResolved={adoptState} />
-          )}
-        </div>
+              {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
+                <ChallengeFlow
+                  game={game}
+                  selfId={selfId}
+                  onResolved={adoptState}
+                  onPanelVisibilityChange={setChallengePanelActive}
+                />
+              )}
+            </div>
 
-        {/* ══════════════════════════════════════════
-            BOTTOM STATION — guaranteed clear of center stage.
-            dual top+bottom constraint with clamp():
-              top = max(17% + 110px, 44%) — always below center-stage bottom
-              bottom = 8px — always above viewport edge
-            justify-end packs content downward so OwnCards label
-            never rises into the center stage.
-        ══════════════════════════════════════════ */}
-        <div
-          className="absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end select-none pointer-events-auto"
-          style={{
-            // Center stage: top 17% + minHeight clamp(88px,11vh,140px) ≈ 17%+100px on short screens.
-            // Add 35px clear buffer → minimum top = 17% + 135px.
-            // Prefer 44% on larger screens for visual balance.
-            top: "clamp(calc(17% + 135px), 44%, 68%)",
-            bottom: "8px",
-          }}
-        >
-          {/* 1. Own Influence Cards */}
-          <OwnCards cards={currentPlayer.influenceCards} />
+            {/* BOTTOM STATION */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end select-none pointer-events-auto"
+              style={{
+                top: "clamp(calc(17% + 135px), 44%, 68%)",
+                bottom: "8px",
+              }}
+            >
+              <OwnCards cards={currentPlayer.influenceCards} responseMode={false} />
 
-          {/* 2. Own Player Status — 18px gap below cards */}
-          <div className="mt-[18px] min-w-[320px] max-w-[480px]">
-            <PlayerSeat player={currentPlayer} />
-          </div>
+              <div className="mt-[18px] min-w-[320px] max-w-[480px]">
+                <PlayerSeat player={currentPlayer} />
+              </div>
 
-          {/* 3. Floating Action Dock — 14px gap below player, compact fit-content */}
-          <div className="mt-[14px]">
-            <ActionPanel
-              player={currentPlayer}
-              opponents={opponents}
-              busy={busy !== null}
-              onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
-            />
-          </div>
-        </div>
+              <div className="mt-[14px]">
+                <ActionPanel
+                  player={currentPlayer}
+                  opponents={opponents}
+                  busy={busy !== null}
+                  onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* ══════════════════════════════════════════
             CHRONICLE DRAWER — fixed right overlay

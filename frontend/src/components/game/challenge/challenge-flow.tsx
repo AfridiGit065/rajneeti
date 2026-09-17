@@ -25,6 +25,7 @@ interface ChallengeFlowProps {
   game: GameState;
   selfId: string;
   onResolved?: (next: GameState) => void;
+  onPanelVisibilityChange?: (visible: boolean) => void;
 }
 
 const STAGE_DURATION_MS: Partial<Record<FlowStage, number>> = {
@@ -47,7 +48,12 @@ const STAGE_NEXT: Partial<Record<FlowStage, FlowStage>> = {
  * from the backend Challenge Manager (returned as `lastChallenge`); the local
  * mock is kept only as a fallback when the server response is unavailable.
  */
-export function ChallengeFlow({ game, selfId, onResolved }: ChallengeFlowProps) {
+export function ChallengeFlow({
+  game,
+  selfId,
+  onResolved,
+  onPanelVisibilityChange,
+}: ChallengeFlowProps) {
   const [stage, setStage] = useState<FlowStage>("idle");
   const [simulation, setSimulation] = useState<ChallengeSimulation | null>(null);
   const [handledKey, setHandledKey] = useState<string | null>(null);
@@ -75,6 +81,10 @@ export function ChallengeFlow({ game, selfId, onResolved }: ChallengeFlowProps) 
 
   const view: FlowStage =
     stage === "idle" ? (panelVisible ? "panel" : "idle") : stage;
+
+  useEffect(() => {
+    onPanelVisibilityChange?.(view !== "idle");
+  }, [view, onPanelVisibilityChange]);
 
   useEffect(() => {
     if (stage === "idle" || stage === "panel" || stage === "confirm") return;
