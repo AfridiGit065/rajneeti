@@ -82,7 +82,7 @@ export function ActionPanel({
   }
 
   return (
-    <div className={cn("w-full select-none", className)}>
+    <div className={cn("select-none", className)}>
       {/* Mandatory Coup Banner if 10+ coins */}
       {mandatoryCoup && (
         <div className="mb-2 flex items-center justify-center gap-2 rounded-xl border border-crimson-500/50 bg-crimson-950/80 px-4 py-1.5 text-xs font-bold text-crimson-200 animate-pulse">

@@ -67,18 +67,18 @@ function isBlockable(id: GameActionId): boolean {
 
 function DeckDiscard({ game }: { game: GameState }) {
   return (
-    <div className="flex items-center gap-3 sm:gap-4 select-none shrink-0">
-      {/* Draw Pile / Deck Stack */}
+    <div className="flex items-center gap-3 select-none shrink-0">
+      {/* Draw Pile */}
       <div className="flex flex-col items-center gap-1 group">
         <span className="font-cinzel text-[10px] font-bold uppercase tracking-widest text-gold-400">
           DECK
         </span>
         <div
-          className="relative flex h-16 w-12 sm:h-20 sm:w-14 items-center justify-center rounded-xl border border-gold-500/60 bg-gradient-to-b from-[#0e3b2e] to-[#041610] shadow-[2px_2px_0_rgba(201,165,60,0.3),5px_5px_0_rgba(0,0,0,0.6)] cursor-default transition-transform hover:-translate-y-1"
-          title={`${game.deckCount} cards remaining in draw pile`}
+          className="relative flex h-[72px] w-[52px] items-center justify-center rounded-xl border border-gold-500/60 bg-gradient-to-b from-[#0e3b2e] to-[#041610] shadow-[2px_2px_0_rgba(201,165,60,0.3),5px_5px_0_rgba(0,0,0,0.6)] cursor-default transition-transform hover:-translate-y-1"
+          title={`${game.deckCount} cards remaining`}
         >
-          <div className="flex size-6 sm:size-7 items-center justify-center rounded-full border border-gold-400/70 bg-deep-950/80 shadow-inner">
-            <span className="font-bengali text-xs sm:text-sm font-bold text-gold-300">র</span>
+          <div className="flex size-7 items-center justify-center rounded-full border border-gold-400/70 bg-deep-950/80 shadow-inner">
+            <span className="font-bengali text-sm font-bold text-gold-300">র</span>
           </div>
         </div>
         <span className="font-mono text-xs font-bold text-gold-300 bg-deep-950/90 px-2 py-0.5 rounded-full border border-gold-500/25">
@@ -86,22 +86,22 @@ function DeckDiscard({ game }: { game: GameState }) {
         </span>
       </div>
 
-      {/* Discard Pile Stack */}
+      {/* Discard Pile */}
       <div className="flex flex-col items-center gap-1 group">
         <span className="font-cinzel text-[10px] font-bold uppercase tracking-widest text-crimson-400">
           DISCARD
         </span>
         <div
           className={cn(
-            "relative flex h-16 w-12 sm:h-20 sm:w-14 items-center justify-center rounded-xl border cursor-default transition-transform hover:-translate-y-1",
+            "relative flex h-[72px] w-[52px] items-center justify-center rounded-xl border cursor-default transition-transform hover:-translate-y-1",
             game.revealedCardsCount > 0
               ? "border-crimson-500/50 bg-gradient-to-b from-[#2a0e14] to-[#120508] shadow-[2px_2px_0_rgba(180,40,60,0.3),5px_5px_0_rgba(0,0,0,0.6)]"
               : "border-forest-500/20 bg-deep-950/40 border-dashed",
           )}
-          title={`${game.revealedCardsCount} revealed/lost cards in discard pile`}
+          title={`${game.revealedCardsCount} revealed cards`}
         >
           {game.revealedCardsCount > 0 ? (
-            <Landmark className="size-4 sm:size-5 text-crimson-400" aria-hidden />
+            <Landmark className="size-5 text-crimson-400" aria-hidden />
           ) : (
             <span className="text-[10px] text-muted/40 font-mono">0</span>
           )}
@@ -124,31 +124,38 @@ function ActiveAction({ game }: { game: GameState }) {
   return (
     <div
       className={cn(
-        "action-focal-card relative overflow-hidden rounded-2xl border transition-all select-none w-full",
+        "action-focal-card relative overflow-hidden rounded-2xl border transition-all select-none",
         active
-          ? "border-gold-500/70 bg-[#061d15]/95 shadow-[0_0_35px_rgba(201,165,60,0.25)] active-action-glow"
+          ? "border-gold-500/70 bg-[#061d15]/95 shadow-[0_0_40px_rgba(201,165,60,0.30)] active-action-glow"
           : "border-forest-500/30 bg-[#041610]/90 backdrop-blur-md",
       )}
       role="region"
       aria-label="Active Game Action"
+      style={{ minWidth: 340, maxWidth: 480 }}
     >
       {/* Ambient radial glow */}
       {active && (
         <div
           className="pointer-events-none absolute inset-0 rounded-2xl"
           style={{
-            background: "radial-gradient(ellipse 75% 65% at 50% 0%, rgba(201,165,60,0.18) 0%, transparent 70%)",
+            background: "radial-gradient(ellipse 80% 65% at 50% 0%, rgba(201,165,60,0.22) 0%, transparent 70%)",
           }}
         />
       )}
 
+      {/* Top decorative gold line */}
+      <div
+        className="absolute top-0 left-8 right-8 h-px pointer-events-none"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(217,183,91,0.6), transparent)" }}
+      />
+
       {active && action ? (
-        <div className="flex flex-col gap-0 px-4 py-3 sm:px-6 sm:py-4">
-          {/* Header row: ACTIVE ACTION badge + Phase */}
-          <div className="flex items-center justify-between gap-2 border-b border-gold-500/20 pb-2.5 mb-3">
+        <div className="flex flex-col gap-0 px-5 py-4">
+          {/* Header row */}
+          <div className="flex items-center justify-between gap-2 border-b border-gold-500/20 pb-3 mb-3">
             <div className="flex items-center gap-1.5">
               <Swords className="size-4 text-gold-400" aria-hidden />
-              <span className="font-cinzel text-xs font-bold uppercase tracking-widest text-gold-300">
+              <span className="font-cinzel text-[11px] font-bold uppercase tracking-[0.2em] text-gold-300">
                 Active Action
               </span>
             </div>
@@ -158,41 +165,41 @@ function ActiveAction({ game }: { game: GameState }) {
             </div>
           </div>
 
-          {/* Main Action Content */}
-          <div className="flex items-center gap-4 sm:gap-5">
-            {/* Character portrait or Action Icon */}
+          {/* Main content */}
+          <div className="flex items-center gap-4">
+            {/* Portrait */}
             <div className="relative shrink-0">
               {claimedChar ? (
-                <div className="relative size-16 sm:size-20 overflow-hidden rounded-xl border-2 border-gold-400/70 bg-deep-900 shadow-gold">
+                <div className="relative size-[72px] overflow-hidden rounded-xl border-2 border-gold-400/70 bg-deep-900 shadow-gold">
                   <Image
                     src={claimedChar.imagePath}
                     alt={claimedChar.nameBn}
                     fill
-                    sizes="80px"
+                    sizes="72px"
                     className="object-cover object-top"
                   />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-deep-950/70 to-transparent" />
                 </div>
               ) : (
-                <div className="flex size-16 sm:size-20 shrink-0 items-center justify-center rounded-xl border-2 border-gold-500/40 bg-gradient-to-b from-gold-500/20 to-gold-500/5 shadow-inner">
+                <div className="flex size-[72px] shrink-0 items-center justify-center rounded-xl border-2 border-gold-500/40 bg-gradient-to-b from-gold-500/20 to-gold-500/5 shadow-inner">
                   <Swords className="size-8 text-gold-400" aria-hidden />
                 </div>
               )}
             </div>
 
             <div className="min-w-0 flex-1 leading-tight">
-              {/* Action name — large and prominent */}
+              {/* Action name */}
               <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-                <h3 className="text-2xl sm:text-3xl font-black text-ivory tracking-tight leading-none font-cinzel">
+                <h3 className="text-2xl font-black text-ivory tracking-tight leading-none font-cinzel">
                   {action.nameEn}
                 </h3>
-                <span className="font-bengali text-base sm:text-lg font-bold text-gold-300 leading-none">
+                <span className="font-bengali text-lg font-bold text-gold-300 leading-none">
                   {action.nameBn}
                 </span>
               </div>
 
-              {/* Claim and target statement */}
-              <p className="mt-2 text-xs sm:text-sm text-muted/90 leading-relaxed">
+              {/* Claim statement */}
+              <p className="mt-2 text-sm text-muted/90 leading-relaxed">
                 <strong className="text-ivory font-bold">{actor?.displayName ?? actor?.username ?? "Player"}</strong>
                 {claimedChar ? (
                   <> claims <span className="text-gold-300 font-bold font-bengali">{claimedChar.nameBn}</span>{" "}
@@ -209,8 +216,8 @@ function ActiveAction({ game }: { game: GameState }) {
           </div>
         </div>
       ) : (
-        /* Prominent Centered Waiting State */
-        <div className="flex flex-col items-center justify-center gap-1.5 py-4 px-6 text-center">
+        /* Waiting state */
+        <div className="flex flex-col items-center justify-center gap-2 py-5 px-6 text-center">
           <div className="flex items-center gap-2">
             <span className="relative flex size-2.5">
               <span className="absolute inset-0 animate-ping rounded-full bg-gold-400/60" />
@@ -221,7 +228,7 @@ function ActiveAction({ game }: { game: GameState }) {
             </span>
           </div>
 
-          <p className="text-sm font-semibold text-ivory/90 mt-0.5">
+          <p className="text-sm font-semibold text-ivory/90">
             {actor ? (
               actor.isBot || actor.username.toLowerCase().includes("bot") ? (
                 <span className="inline-flex items-center gap-1 text-gold-200">
@@ -252,7 +259,7 @@ function ActiveAction({ game }: { game: GameState }) {
   );
 }
 
-/** Module 20 — compact summary of the last authoritative verdict produced by the backend Action Resolver. */
+/** Module 20 — compact summary of the last authoritative verdict. */
 function ActionResultSummary({
   result,
   players,
@@ -270,7 +277,7 @@ function ActionResultSummary({
     : undefined;
 
   return (
-    <div className="w-full max-w-lg rounded-xl border border-forest-500/25 bg-deep-900/85 backdrop-blur-md px-4 py-2.5 text-xs select-none shadow-md animate-fade-in">
+    <div className="w-full rounded-xl border border-forest-500/25 bg-deep-900/85 backdrop-blur-md px-4 py-2.5 text-xs select-none shadow-md animate-fade-in">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-forest-500/15 pb-1.5">
         <div className="flex items-center gap-2">
           <span className="font-bold text-gold-300 font-bengali">{action.nameBn}</span>
@@ -302,6 +309,65 @@ function ActionResultSummary({
   );
 }
 
+/* ─────────────────────────────────────────────────────────────
+   SEATING MAP CALCULATION
+   Returns positions (as % of game arena) for opponents
+───────────────────────────────────────────────────────────── */
+interface SeatPosition {
+  player: GamePlayer;
+  top: string;   // CSS top % within game arena
+  left: string;  // CSS left % within game arena
+  transform?: string;
+}
+
+function computeSeats(opponents: GamePlayer[]): SeatPosition[] {
+  const n = opponents.length;
+  if (n === 0) return [];
+
+  // All positions expressed as percent of the game-arena container
+  // Arena spans below the header bar.
+  // We center the top group and put side opponents at ~30-45% vertical.
+
+  const seats: SeatPosition[] = [];
+
+  if (n === 1) {
+    // Single top center
+    seats.push({ player: opponents[0]!, top: "7%", left: "50%", transform: "translateX(-50%)" });
+  } else if (n === 2) {
+    // Two top: spread horizontally
+    seats.push({ player: opponents[0]!, top: "7%", left: "34%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "7%", left: "66%", transform: "translateX(-50%)" });
+  } else if (n === 3) {
+    // 1 top center, 1 left, 1 right
+    seats.push({ player: opponents[0]!, top: "7%",  left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "31%", left: "3%" });
+    seats.push({ player: opponents[2]!, top: "31%", left: "auto" });
+    // override right side using CSS right instead — handled via inline style below
+  } else if (n === 4) {
+    // 1 top center, 2 left, 1 right
+    seats.push({ player: opponents[0]!, top: "6%",  left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "25%", left: "3%" });
+    seats.push({ player: opponents[2]!, top: "43%", left: "3%" });
+    seats.push({ player: opponents[3]!, top: "34%", left: "auto" });
+  } else {
+    // 5+ opponents: 1 top, 2 left, 2+ right
+    seats.push({ player: opponents[0]!, top: "6%",  left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "22%", left: "3%" });
+    seats.push({ player: opponents[2]!, top: "41%", left: "3%" });
+    seats.push({ player: opponents[3]!, top: "22%", left: "auto" });
+    seats.push({ player: opponents[4]!, top: "41%", left: "auto" });
+    // Any 6th+ opponent: put below top center
+    for (let i = 5; i < n; i++) {
+      seats.push({ player: opponents[i]!, top: "14%", left: `${30 + (i - 5) * 18}%` });
+    }
+  }
+
+  return seats;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MAIN GAME BOARD
+───────────────────────────────────────────────────────────── */
 export function GameBoard({ matchId }: { matchId: string }) {
   const [game, setGame] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -513,59 +579,35 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const showBlockOffer = blockWindowAction !== null && !game.activeAction!.blockerUserId && !game.pendingChallenge && currentPlayer.isAlive && !isActorOfPending;
   const showActorResolve = blockWindowAction !== null && isActorOfPending && !game.activeAction!.blockerUserId;
 
-  // ── Seating Distribution (matches reference screenshot layout) ──
-  // Opponents sit to the LEFT (stacked) and TOP CENTER
-  // 1 opp  → top
-  // 2 opps → 1 left + 1 top
-  // 3 opps → 2 left + 1 top          (matches screenshot with 3 bots)
-  // 4 opps → 2 left + 1 top + 1 right
-  // 5 opps → 2 left + 1 top + 2 right
-  const numOpponents = opponents.length;
-  let topOpponents: GamePlayer[] = [];
-  let leftColOpponents: GamePlayer[] = [];
-  let rightColOpponents: GamePlayer[] = [];
-
-  if (numOpponents === 1) {
-    topOpponents = [opponents[0]];
-  } else if (numOpponents === 2) {
-    leftColOpponents = [opponents[0]];
-    topOpponents = [opponents[1]];
-  } else if (numOpponents === 3) {
-    leftColOpponents = [opponents[0], opponents[1]];
-    topOpponents = [opponents[2]];
-  } else if (numOpponents === 4) {
-    leftColOpponents = [opponents[0], opponents[1]];
-    topOpponents = [opponents[2]];
-    rightColOpponents = [opponents[3]];
-  } else {
-    leftColOpponents = [opponents[0], opponents[1]];
-    topOpponents = [opponents[2]];
-    rightColOpponents = [opponents[3], opponents[4]];
-  }
-
-  const hasLeftCol = leftColOpponents.length > 0;
-  const hasRightCol = rightColOpponents.length > 0;
+  // Compute seating positions for all opponents
+  const seatPositions = computeSeats(opponents);
 
   return (
     <div className="relative flex h-screen max-h-screen flex-col overflow-hidden select-none">
-      {/* ── Layer 0: Cinematic Table Background ── */}
+      {/* ── Layer 0: Table Background — full viewport ── */}
       <div
-        className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url("/assets/game/rajneeti-table-bg.png.png")' }}
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: 'url("/assets/game/rajneeti-table-bg.png.png")',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
         aria-hidden="true"
       />
+      {/* ── Layer 1: Subtle dark vignette — keeps bg objects visible ── */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(ellipse 85% 70% at 50% 48%, rgba(8,58,41,0.18) 0%, rgba(3,19,14,0.55) 100%), " +
-            "linear-gradient(180deg, rgba(3,19,14,0.32) 0%, rgba(2,12,9,0.50) 100%)",
-          boxShadow: "inset 0 0 140px 40px rgba(0,0,0,0.5)",
+            "radial-gradient(ellipse 75% 65% at 50% 48%, rgba(4,18,12,0.08) 0%, rgba(2,10,7,0.28) 100%), " +
+            "linear-gradient(180deg, rgba(2,10,7,0.22) 0%, rgba(2,10,7,0.32) 100%)",
+          boxShadow: "inset 0 0 120px 60px rgba(0,0,0,0.38)",
         }}
         aria-hidden="true"
       />
 
-      {/* ── Header ── */}
+      {/* ── Top Bar ── */}
       <GameHeader
         game={game}
         selfId={selfId}
@@ -574,48 +616,45 @@ export function GameBoard({ matchId }: { matchId: string }) {
         chronicleCount={game.log.length}
       />
 
-      {/* ── Main Arena: Table + Chronicle ── */}
-      <div className="relative flex flex-1 min-h-0 overflow-hidden z-10">
+      {/* ── Game Arena: full area below header ── */}
+      <div className="relative flex-1 min-h-0 overflow-hidden z-10" id="game-arena">
 
-        {/* ── LEFT COLUMN: Opponents stacked vertically ── */}
-        {hasLeftCol && (
-          <div className="hidden lg:flex flex-col justify-center gap-3 p-3 w-52 xl:w-56 shrink-0">
-            {leftColOpponents.map((player) => (
-              <OpponentSeat key={player.id} player={player} />
-            ))}
-          </div>
-        )}
-
-        {/* ── CENTER: The Game Table ── */}
-        <div className="flex flex-1 flex-col min-w-0">
-
-          {/* TOP: Top opponent(s) + mobile scrollable row */}
-          <div className="shrink-0 flex justify-center items-start pt-2 px-2 gap-3">
-            {/* Mobile: all opponents in a scrollable row */}
-            <div className="flex lg:hidden items-center justify-start gap-2 overflow-x-auto pb-1 w-full max-w-full">
-              {opponents.map((player) => (
-                <div key={player.id} className="min-w-[180px] max-w-[220px] shrink-0">
-                  <OpponentSeat player={player} compact />
-                </div>
-              ))}
+        {/* ══════════════════════════════════════════
+            OPPONENT SEATS — absolutely positioned
+        ══════════════════════════════════════════ */}
+        {seatPositions.map(({ player, top, left, transform }, _idx) => {
+          const isRight = left === "auto";
+          return (
+            <div
+              key={player.id}
+              className="absolute z-20"
+              style={{
+                top,
+                ...(isRight
+                  ? { right: "3%" }
+                  : { left, transform }),
+                width: 210,
+                maxWidth: "22vw",
+                minWidth: 160,
+              }}
+              aria-label={`Opponent seat: ${player.displayName ?? player.username}`}
+            >
+              <OpponentSeat player={player} />
             </div>
-            {/* Desktop: top center seat(s) */}
-            <div className="hidden lg:flex items-center justify-center gap-4">
-              {topOpponents.map((player) => (
-                <div key={player.id} className="w-56 xl:w-60">
-                  <OpponentSeat player={player} />
-                </div>
-              ))}
-              {topOpponents.length === 0 && (
-                <p className="text-xs text-muted/50 py-2 font-bengali">একক খেলা চলছে…</p>
-              )}
-            </div>
-          </div>
+          );
+        })}
 
-          {/* CENTER ARENA: Active Action + Deck/Discard + overlays */}
-          <div className="flex flex-1 items-center justify-center gap-4 px-3 min-h-0 py-2">
-            {/* Action column */}
-            <div className="flex flex-col items-center gap-2 w-full max-w-md">
+        {/* ══════════════════════════════════════════
+            CENTER STAGE — Active Action + Deck/Discard
+            Centered at ~30% from top
+        ══════════════════════════════════════════ */}
+        <div
+          className="absolute left-1/2 z-20 flex flex-col items-center gap-0"
+          style={{ top: "28%", transform: "translateX(-50%)" }}
+        >
+          {/* Overlay panels stacked above main action */}
+          {(blockResultData || game.lastActionResult || blockEvent || showBlockOffer || showActorResolve) && (
+            <div className="flex flex-col items-center gap-2 mb-3 w-full" style={{ minWidth: 340, maxWidth: 480 }}>
               {blockResultData && (
                 <BlockResult result={blockResultData} onDismiss={() => setBlockResultData(null)} />
               )}
@@ -631,68 +670,81 @@ export function GameBoard({ matchId }: { matchId: string }) {
               {showActorResolve && blockWindowAction ? (
                 <BlockWindowPanel action={blockWindowAction} busy={blockBusy} onResolve={() => void resolvePendingAction()} />
               ) : null}
-
-              {/* Active Action focal card */}
-              <div className="w-full">
-                <ActiveAction game={game} />
-              </div>
-
-              {/* Challenge Resolution */}
-              {game.status === MatchStatus.IN_PROGRESS ? (
-                <ChallengeFlow game={game} selfId={selfId} onResolved={adoptState} />
-              ) : null}
             </div>
+          )}
 
-            {/* Deck / Discard stacks */}
-            <DeckDiscard game={game} />
+          {/* Row: Active Action + Deck/Discard side by side */}
+          <div className="flex items-start gap-4">
+            <ActiveAction game={game} />
+            <div className="shrink-0 pt-8">
+              <DeckDiscard game={game} />
+            </div>
           </div>
 
-          {/* BOTTOM STATION: Player pod (left) + Own Cards (center) + spacer (right) */}
-          <div className="shrink-0 flex items-end justify-between gap-3 px-3 pb-1">
-            {/* Player Info Pod — bottom left */}
-            <div className="w-52 xl:w-56 shrink-0">
-              <PlayerSeat player={currentPlayer} />
+          {/* Challenge Resolution — below active action */}
+          {game.status === MatchStatus.IN_PROGRESS ? (
+            <div className="mt-3 w-full" style={{ minWidth: 340, maxWidth: 480 }}>
+              <ChallengeFlow game={game} selfId={selfId} onResolved={adoptState} />
             </div>
-
-            {/* Own Influence Cards — bottom center */}
-            <div className="flex-1 flex justify-center">
-              <OwnCards cards={currentPlayer.influenceCards} />
-            </div>
-
-            {/* Balancing spacer equal to player pod width */}
-            <div className="w-52 xl:w-56 shrink-0" />
-          </div>
-
-          {/* ACTION DOCK — full width at bottom */}
-          <div className="shrink-0 px-2 pb-2">
-            <ActionPanel
-              player={currentPlayer}
-              opponents={opponents}
-              busy={busy !== null}
-              onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
-              className="w-full"
-            />
-          </div>
+          ) : null}
         </div>
 
-        {/* ── RIGHT COLUMN: Opponents (4-5 player games) ── */}
-        {hasRightCol && (
-          <div className="hidden lg:flex flex-col justify-center gap-3 p-3 w-52 xl:w-56 shrink-0">
-            {rightColOpponents.map((player) => (
-              <OpponentSeat key={player.id} player={player} />
-            ))}
-          </div>
-        )}
+        {/* ══════════════════════════════════════════
+            OWN INFLUENCE CARDS — center, below action
+            Positioned at ~56% from top
+        ══════════════════════════════════════════ */}
+        <div
+          className="absolute left-1/2 z-20"
+          style={{ top: "57%", transform: "translateX(-50%)", width: "max-content", maxWidth: "90vw" }}
+        >
+          <OwnCards cards={currentPlayer.influenceCards} />
+        </div>
 
-        {/* ── CHRONICLE PANEL: Inline right panel (not a drawer) ── */}
+        {/* ══════════════════════════════════════════
+            OWN PLAYER STATUS — centered below cards
+            Positioned at ~76% from top
+        ══════════════════════════════════════════ */}
+        <div
+          className="absolute left-1/2 z-20"
+          style={{ top: "76%", transform: "translateX(-50%)", width: 280 }}
+        >
+          <PlayerSeat player={currentPlayer} />
+        </div>
+
+        {/* ══════════════════════════════════════════
+            FLOATING ACTION DOCK — compact, bottom center
+        ══════════════════════════════════════════ */}
+        <div
+          className="absolute left-1/2 z-30"
+          style={{ bottom: 18, transform: "translateX(-50%)", width: "max-content", maxWidth: "calc(100vw - 32px)" }}
+        >
+          <ActionPanel
+            player={currentPlayer}
+            opponents={opponents}
+            busy={busy !== null}
+            onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
+          />
+        </div>
+
+        {/* ══════════════════════════════════════════
+            CHRONICLE DRAWER — fixed right overlay
+            Does NOT shrink the game board
+        ══════════════════════════════════════════ */}
+        {/* Backdrop (mobile only) */}
+        {chronicleOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs lg:hidden"
+            onClick={() => setChronicleOpen(false)}
+            aria-hidden
+          />
+        )}
         {chronicleOpen && (
           <aside
-            className={cn(
-              "hidden lg:flex w-64 xl:w-72 shrink-0 flex-col border-l border-forest-500/25",
-              "bg-[#03120d]/92 backdrop-blur-xl",
-            )}
+            className="chronicle-drawer fixed right-0 z-50 flex flex-col border-l border-forest-500/20"
+            style={{ top: 56, height: "calc(100vh - 56px)", width: 340 }}
             aria-label="Match Chronicle"
           >
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-forest-500/20 px-4 py-3 bg-[#020d09]/70 shrink-0">
               <div className="flex items-center gap-2">
                 <ScrollText className="size-4 text-gold-400" aria-hidden />
@@ -717,43 +769,11 @@ export function GameBoard({ matchId }: { matchId: string }) {
             </div>
           </aside>
         )}
-
-        {/* Mobile Chronicle: slide-over drawer */}
-        {chronicleOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
-              onClick={() => setChronicleOpen(false)}
-              aria-hidden
-            />
-            <aside
-              className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[340px] flex-col border-l border-forest-500/25 bg-[#04150f]/97 backdrop-blur-2xl lg:hidden"
-            >
-              <div className="flex items-center justify-between border-b border-forest-500/20 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <ScrollText className="size-4 text-gold-400" aria-hidden />
-                  <h2 className="font-cinzel text-xs font-bold uppercase tracking-widest text-ivory">
-                    Game Log ({game.log.length})
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setChronicleOpen(false)}
-                  className="rounded-lg p-1.5 text-muted hover:text-ivory hover:bg-forest-900/40 transition-colors cursor-pointer"
-                  aria-label="Close Chronicle"
-                >
-                  <X className="size-4" aria-hidden />
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden p-2">
-                <GameLog entries={game.log} />
-              </div>
-            </aside>
-          </>
-        )}
       </div>
 
-      {/* Action Decision Modals & Dialogs */}
+      {/* ══════════════════════════════════════════
+          MODALS & OVERLAYS (above everything)
+      ══════════════════════════════════════════ */}
       {showExchangeSelection ? (
         <ExchangeSelection matchId={game.matchId} cards={game.exchangePool!} onResolved={adoptState} />
       ) : null}

@@ -530,8 +530,9 @@ html.reduce-motion *::after {
   border-left: 1px solid rgb(58 138 102 / 0.16);
 }
 
-/* Compact game control bar */
+/* Compact floating game control bar — fit-content width, not full-width */
 .action-dock {
+  width: max-content;
   background: linear-gradient(180deg, rgb(12 28 22 / 0.92) 0%, rgb(7 18 14 / 0.96) 100%);
   backdrop-filter: blur(16px);
   border: 1px solid rgb(201 165 60 / 0.25);
@@ -576,13 +577,14 @@ html.reduce-motion *::after {
   animation: active-action-pulse 2.2s ease-in-out infinite;
 }
 
-/* Focal active action banner */
+/* Focal active action banner — enforced minimum size */
 .action-focal-card {
   background: linear-gradient(180deg, rgb(14 34 27 / 0.92) 0%, rgb(8 21 16 / 0.96) 100%);
   backdrop-filter: blur(16px);
   box-shadow:
     inset 0 1px 0 rgb(244 241 232 / 0.08),
     0 16px 40px -10px rgb(0 0 0 / 0.7);
+  min-width: 340px;
 }
 
 /* Smooth transitions for layout shifts */
@@ -656,12 +658,20 @@ html.reduce-motion *::after {
   z-index: 2;
 }
 
-/* Floating Action Dock styling */
+/* Floating Action Dock styling — always fit-content width */
 .action-dock {
+  width: max-content;
   background: rgba(4, 20, 15, 0.92);
   border: 1px solid rgba(201, 165, 60, 0.35);
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(201, 165, 60, 0.15);
   backdrop-filter: blur(14px);
+}
+
+/* Chronicle overlay drawer surface */
+.chronicle-drawer {
+  background: rgba(2, 13, 9, 0.96);
+  backdrop-filter: blur(20px);
+  box-shadow: -4px 0 32px -4px rgba(0, 0, 0, 0.7), inset 1px 0 0 rgba(201, 165, 60, 0.08);
 }
 
 /* Card stack styling */
