@@ -36,6 +36,8 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        type:
+          preferred_uuid_jdbc_type: VARCHAR
         format_sql: true
         use_sql_comments: true
         jdbc:
