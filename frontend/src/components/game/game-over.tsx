@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/icons";
 import { CoinDisplay } from "./coin-display";
 import { InfluenceCard } from "./influence-card";
+import { PageBackground } from "@/components/layout";
 import type { GamePlayer, GameState } from "@/types/game";
 
 interface RankingEntry {
@@ -99,7 +100,8 @@ export function GameOverScreen({
   const standings = buildStandings(game);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-app">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#03130e]/75 backdrop-blur-md">
+      <PageBackground variant="game-over" />
       <div className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-12">
         {/* Cinematic backdrop */}
         <div className="pointer-events-none absolute inset-0 animate-victory-flare" aria-hidden>

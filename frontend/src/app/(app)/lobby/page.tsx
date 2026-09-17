@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DoorOpen, Plus } from "@/components/ui/icons";
 import { LobbyHeader, RoomList } from "@/components/lobby";
+import { PageBackground } from "@/components/layout/page-background";
 import { RoomService } from "@/services/room-service";
 import type { RoomSummary } from "@/types/room";
 
@@ -44,8 +45,10 @@ export default function LobbyPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <LobbyHeader />
+    <>
+      <PageBackground variant="lobby" />
+      <div className="space-y-6">
+        <LobbyHeader />
 
       <section className="flex flex-col items-start gap-4 rounded-2xl border border-gold-500/25 bg-surface px-5 py-6 panel-emboss sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -75,5 +78,6 @@ export default function LobbyPage() {
 
       <RoomList rooms={rooms} loading={loading} error={error} onRetry={retry} />
     </div>
+    </>
   );
 }

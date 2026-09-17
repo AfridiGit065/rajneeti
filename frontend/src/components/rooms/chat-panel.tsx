@@ -15,8 +15,14 @@ function formatTime(timestamp: string): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+const EMPTY_MESSAGES: NonNullable<
+  ReturnType<typeof useRealtimeStore.getState>["chatMessages"][string]
+> = [];
+
 export function ChatPanel({ roomId }: { roomId: string }) {
-  const messages = useRealtimeStore((s) => s.chatMessages[roomId] ?? []);
+  const messages = useRealtimeStore(
+    (s) => s.chatMessages[roomId] ?? EMPTY_MESSAGES,
+  );
   const currentUser = useAuthStore((s) => s.user);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);

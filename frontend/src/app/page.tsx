@@ -4,6 +4,7 @@ import { RULES } from "@/lib/game/rules";
 import { CharacterCard } from "@/components/game/character-card";
 import { TopNav } from "@/components/layout/top-nav";
 import { Footer } from "@/components/layout/footer";
+import { PageBackground } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Crown, Swords, ScrollText, Users, Landmark, BookOpen, ShieldAlert, Sparkles, EyeOff } from "@/components/ui/icons";
@@ -17,6 +18,7 @@ const HERO_FEATURES = [
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-app flex flex-col selection:bg-gold-500/30 selection:text-gold-200">
+      <PageBackground variant="lobby" />
       {/* ── Fixed Navigation Bar ─────────────────────────── */}
       <TopNav mode="public" />
 

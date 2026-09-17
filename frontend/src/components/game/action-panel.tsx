@@ -4,8 +4,6 @@ import { useState } from "react";
 import { ACTIONS } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { cn } from "@/lib/cn";
-import { Badge } from "@/components/ui/badge";
-import { CoinDisplay } from "./coin-display";
 import {
   Coins,
   Globe,
@@ -14,6 +12,7 @@ import {
   RefreshCw,
   Skull,
   Crown,
+  AlertTriangle,
   type LucideIcon,
 } from "@/components/ui/icons";
 import { ActionModals, type ActionModalStep } from "./action-modals";
@@ -62,7 +61,7 @@ export function ActionPanel({
 
   function handleActionClick(actionId: GameActionId) {
     if (actionId === "income") {
-      setModalStep({ type: "income_success" });
+      onAction("income");
     } else if (actionId === "foreign_aid") {
       setModalStep({ type: "foreign_aid_block_window" });
     } else if (actionId === "tax") {
@@ -83,55 +82,23 @@ export function ActionPanel({
   }
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border bg-surface panel-emboss shadow-lg transition-all",
-        isTurn ? "border-gold-500/35" : "border-forest-500/20",
-        className,
-      )}
-    >
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-forest-500/20 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-ivory">Select Action</h2>
-          <span className="font-cinzel text-xs text-muted uppercase tracking-wider">
-            (Action System)
-          </span>
+    <div className={cn("select-none", className)}>
+      {/* Mandatory Coup Banner if 10+ coins */}
+      {mandatoryCoup && (
+        <div className="mb-2 flex items-center justify-center gap-2 rounded-xl border border-crimson-500/50 bg-crimson-950/80 px-4 py-1.5 text-xs font-bold text-crimson-200 animate-pulse">
+          <AlertTriangle className="size-4 text-crimson-400" aria-hidden />
+          <span>১০+ কয়েন সংগৃহীত: অভ্যুত্থান (Coup) বাধ্যতামূলক!</span>
         </div>
-        {mandatoryCoup ? (
-          <Badge tone="crimson" className="animate-pulse">
-            ⚠️ 10+ Coins: Mandatory Coup!
-          </Badge>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">Your Treasury:</span>
-            <CoinDisplay coins={coins} size="sm" />
-          </div>
-        )}
-      </div>
+      )}
 
-      <div className="p-4">
-        {!isTurn ? (
-          <p className="mb-3 text-xs sm:text-sm text-muted">
-            {isAlive
-              ? "Not your turn — waiting for other players."
-              : "You are eliminated — observing match."}
-          </p>
-        ) : mandatoryCoup ? (
-          <p className="mb-3 text-xs sm:text-sm text-crimson-300">
-            You hold 10 or more coins. By game rules, you must launch a Coup.
-          </p>
-        ) : null}
-
-        {/* Action Grid */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+      {/* Action Control Dock */}
+      <div className="action-dock rounded-2xl p-1.5 sm:p-2">
+        <div className="flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto py-0.5">
           {ACTIONS.map((action) => {
             const disabled = isDisabled(action);
             const isCoup = action.id === "coup";
             const Icon = ACTION_ICONS[action.id];
-            const character = action.requiresCharacter
-              ? CHARACTER_MAP[action.requiresCharacter]
-              : null;
+            const character = action.requiresCharacter ? CHARACTER_MAP[action.requiresCharacter] : null;
 
             return (
               <button
@@ -140,91 +107,58 @@ export function ActionPanel({
                 disabled={disabled || busy}
                 onClick={() => handleActionClick(action.id)}
                 className={cn(
-                  "group relative flex flex-col justify-between rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer select-none",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400",
+                  "action-btn group relative flex min-w-[70px] sm:min-w-[92px] flex-col items-center justify-between rounded-xl px-2 py-2 text-center transition-all cursor-pointer",
+                  "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-gold-400",
                   disabled
-                    ? "cursor-not-allowed border-forest-500/15 bg-deep-950/40 text-muted/40 opacity-60"
-                    : "border-forest-500/25 bg-deep-850 hover:border-gold-400/80 hover:bg-deep-800 hover:shadow-gold hover:-translate-y-0.5",
-                  isCoup && mandatoryCoup &&
-                    "border-crimson-500/80 bg-crimson-950/40 text-crimson-200 ring-2 ring-crimson-500/60 animate-pulse",
+                    ? "cursor-not-allowed border border-transparent bg-deep-950/40 text-muted/30 opacity-40"
+                    : isCoup && mandatoryCoup
+                      ? "border border-crimson-500/80 bg-crimson-950/60 text-crimson-200 shadow-crimson ring-1 ring-crimson-400/80 animate-pulse"
+                      : "border border-forest-500/20 bg-deep-900/70 hover:border-gold-400 hover:bg-deep-850 hover:shadow-gold",
                 )}
+                title={`${action.nameEn} (${action.nameBn}) — ${
+                  character ? `Claims ${character.nameBn}` : "No character needed"
+                }${action.cost ? ` | Cost: ${action.cost} coins` : ""}${action.gain ? ` | Gain: +${action.gain} coins` : ""}`}
               >
-                {/* Top: Icon + Name */}
-                <div className="space-y-1.5 w-full">
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={cn(
-                        "flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors",
-                        action.cost
-                          ? "border-crimson-500/30 bg-crimson-600/15 text-crimson-300 group-hover:border-crimson-400"
-                          : "border-gold-500/30 bg-gold-500/10 text-gold-400 group-hover:border-gold-400",
-                      )}
-                    >
-                      <Icon className="size-4" aria-hidden />
-                    </span>
-
-                    {/* Cost / Gain tag */}
-                    {typeof action.gain === "number" && action.gain > 0 ? (
-                      <span className="font-cinzel text-xs font-bold text-forest-300">
-                        +{action.gain}
-                      </span>
-                    ) : action.cost ? (
-                      <span className="font-cinzel text-xs font-bold text-crimson-300">
-                        -{action.cost}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-parchment-300">
-                        Swap
-                      </span>
+                {/* Cost / Gain Pill or Character Tag */}
+                <div className="flex items-center justify-between w-full px-0.5 mb-1">
+                  <span
+                    className={cn(
+                      "flex size-5 shrink-0 items-center justify-center rounded-md text-[10px]",
+                      action.cost
+                        ? "bg-crimson-600/20 text-crimson-300"
+                        : action.gain
+                          ? "bg-forest-600/20 text-forest-300"
+                          : "bg-gold-500/15 text-gold-400",
                     )}
-                  </div>
+                  >
+                    <Icon className="size-3" aria-hidden />
+                  </span>
 
-                  <div>
-                    <h3 className="text-sm font-bold text-ivory group-hover:text-gold-300 transition-colors">
-                      {action.nameEn}
-                    </h3>
-                    <p className="font-bengali text-[10px] text-muted">
-                      {action.nameBn}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Requirement & Chips */}
-                <div className="mt-2 pt-2 border-t border-forest-500/15 w-full space-y-1">
-                  {character ? (
-                    <div className="flex items-center gap-1 text-[10px] text-gold-400">
-                      <span>Requires:</span>
-                      <span className="font-bold text-gold-300 font-bengali">{character.nameBn}</span>
-                    </div>
+                  {typeof action.gain === "number" && action.gain > 0 ? (
+                    <span className="font-mono text-[10px] font-bold text-forest-300">+{action.gain}</span>
+                  ) : action.cost ? (
+                    <span className="font-mono text-[10px] font-bold text-crimson-300">−{action.cost}</span>
                   ) : (
-                    <div className="text-[10px] text-muted">
-                      No Character Required
-                    </div>
+                    <span className="text-[10px] text-muted/40">•</span>
                   )}
-
-                  <div className="flex flex-wrap gap-1 text-[9px]">
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.2 border",
-                        action.challengeable
-                          ? "border-gold-500/20 bg-gold-500/10 text-gold-400/90"
-                          : "border-white/5 bg-deep-900 text-muted/60",
-                      )}
-                    >
-                      {action.challengeable ? "Challengeable" : "No Challenge"}
-                    </span>
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.2 border",
-                        action.blockable
-                          ? "border-crimson-500/20 bg-crimson-500/10 text-crimson-300/90"
-                          : "border-white/5 bg-deep-900 text-muted/60",
-                      )}
-                    >
-                      {action.blockable ? "Blockable" : "Unblockable"}
-                    </span>
-                  </div>
                 </div>
+
+                {/* English Name */}
+                <span className="text-[11px] sm:text-xs font-bold leading-tight text-ivory group-hover:text-gold-200 transition-colors">
+                  {action.nameEn}
+                </span>
+
+                {/* Bangla Name */}
+                <span className="font-bengali text-[10px] sm:text-[11px] text-muted/80 leading-tight mt-0.5">
+                  {action.nameBn}
+                </span>
+
+                {/* Claimed Character Pill */}
+                {character && !disabled && (
+                  <span className="mt-1 inline-block truncate rounded px-1 py-0.2 font-bengali text-[9px] font-medium text-gold-400/90 bg-gold-500/10 border border-gold-500/20">
+                    {character.nameBn}
+                  </span>
+                )}
               </button>
             );
           })}

@@ -141,12 +141,19 @@ function toInfluenceCards(player: BackendGamePlayer): InfluenceCard[] {
       revealed: false,
     }),
   );
-  const own: InfluenceCard[] =
-    (player.cards ?? []).map((card) => ({
-      id: card.cardId,
-      characterId: toCharacterId(card.characterId),
-      revealed: false,
-    })) ?? [];
+
+  const seenIds = new Set<string>();
+  const own: InfluenceCard[] = [];
+  for (const card of player.cards ?? []) {
+    if (card?.cardId && !seenIds.has(card.cardId)) {
+      seenIds.add(card.cardId);
+      own.push({
+        id: card.cardId,
+        characterId: toCharacterId(card.characterId),
+        revealed: false,
+      });
+    }
+  }
 
   // The backend only ever sends real cards for the requesting player.
   return own.length > 0 ? own : hidden;

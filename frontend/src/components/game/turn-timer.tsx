@@ -18,15 +18,15 @@ export function TurnTimer({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex items-center gap-2", className)}>
       <span
         className={cn(
-          "flex items-center gap-1.5 text-sm font-medium",
+          "flex items-center gap-1.5 text-xs font-semibold",
           isSelf ? "text-gold-300" : "text-muted",
         )}
       >
-        <Flame className="size-4 text-gold-400" aria-hidden />
-        {isSelf ? "Your Turn" : `${playerName}'s Turn`}
+        <Flame className="size-3 text-gold-400" aria-hidden />
+        {isSelf ? "You" : playerName}
       </span>
       <Timer key={turnNumber} seconds={seconds} compact label="s" />
     </div>

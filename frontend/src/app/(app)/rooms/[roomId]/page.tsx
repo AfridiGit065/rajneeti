@@ -16,6 +16,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ChatPanel } from "@/components/rooms/chat-panel";
 import { RealtimeStatusBadge } from "@/components/layout/realtime-status-badge";
+import { PageBackground } from "@/components/layout/page-background";
 import {
   RoomCodeDisplay,
   Seat,
@@ -195,7 +196,9 @@ export default function RoomDetailPage() {
   );
 
   return (
-    <div className="animate-fade-up">
+    <>
+      <PageBackground variant="lobby" />
+      <div className="animate-fade-up">
       <Link
         href="/lobby"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-gold-300"
@@ -356,5 +359,6 @@ export default function RoomDetailPage() {
         loading={startLoading}
       />
     </div>
+    </>
   );
 }

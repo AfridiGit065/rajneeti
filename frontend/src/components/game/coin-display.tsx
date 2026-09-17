@@ -10,16 +10,17 @@ export function CoinDisplay({
   className,
 }: {
   coins: number;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   animate?: boolean;
   className?: string;
 }) {
   const sizes = {
+    xs: "gap-0.5 text-xs",
     sm: "gap-1 text-sm",
     md: "gap-1.5 text-base",
     lg: "gap-2 text-xl",
   };
-  const iconSizes = { sm: "size-3.5", md: "size-4.5", lg: "size-6" };
+  const iconSizes = { xs: "size-2.5", sm: "size-3.5", md: "size-4.5", lg: "size-6" };
 
   return (
     <span

@@ -15,6 +15,8 @@ import {
 import { MetaService } from "@/services/meta-service";
 import { useAuthStore } from "@/store/auth-store";
 import type { LeaderboardEntry } from "@/types/user";
+import { PageBackground } from "@/components/layout";
+
 
 export default function LeaderboardPage() {
   const [tab, setTab] = useState<LeaderboardTab>("global");
@@ -78,49 +80,52 @@ export default function LeaderboardPage() {
         : "Invite friends to start competing on the leaderboard.";
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
-          Rankings
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-ivory">Leaderboard</h1>
-        <p className="mt-1 text-sm text-muted">Player rankings and competitive statistics.</p>
-      </header>
+    <>
+      <PageBackground variant="dark" />
+      <div className="space-y-6">
+        <header>
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold-400">
+            Rankings
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-ivory">Leaderboard</h1>
+          <p className="mt-1 text-sm text-muted">Player rankings and competitive statistics.</p>
+        </header>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <LeaderboardTabs value={tab} onChange={setTab} />
-        <div className="w-full sm:w-72">
-          <Input
-            aria-label="Search players"
-            placeholder="Search players…"
-            leadingIcon={<Search className="size-4" aria-hidden />}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <LeaderboardTabs value={tab} onChange={setTab} />
+          <div className="w-full sm:w-72">
+            <Input
+              aria-label="Search players"
+              placeholder="Search players…"
+              leadingIcon={<Search className="size-4" aria-hidden />}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </div>
         </div>
-      </div>
 
-      {loading ? (
-        <LoadingState label="Loading leaderboard…" />
-      ) : error !== null ? (
-        <ErrorState
-          title="Could not load leaderboard"
-          message={error}
-          action={
-            <Button variant="premium" onClick={retry}>
-              Try Again
-            </Button>
-          }
-        />
-      ) : isGlobal && shown.length > 0 ? (
-        <LeaderboardTable entries={shown} currentUserId={currentUserId} />
-      ) : (
-        <EmptyState
-          icon={<Trophy className="size-6" aria-hidden />}
-          title={emptyTitle}
-          description={emptyDescription}
-        />
-      )}
-    </div>
+        {loading ? (
+          <LoadingState label="Loading leaderboard…" />
+        ) : error !== null ? (
+          <ErrorState
+            title="Could not load leaderboard"
+            message={error}
+            action={
+              <Button variant="premium" onClick={retry}>
+                Try Again
+              </Button>
+            }
+          />
+        ) : isGlobal && shown.length > 0 ? (
+          <LeaderboardTable entries={shown} currentUserId={currentUserId} />
+        ) : (
+          <EmptyState
+            icon={<Trophy className="size-6" aria-hidden />}
+            title={emptyTitle}
+            description={emptyDescription}
+          />
+        )}
+      </div>
+    </>
   );
-}
+}

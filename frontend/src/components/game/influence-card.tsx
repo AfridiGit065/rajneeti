@@ -10,13 +10,14 @@ import type { Character, CharacterId } from "@/types/character";
 
 export type InfluenceCardState = "hidden" | "revealed" | "discarded";
 export type InfluenceCardAnimation = "none" | "draw" | "return" | "discard" | "reveal";
-export type InfluenceCardSize = "xs" | "sm" | "md" | "lg";
+export type InfluenceCardSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 export const INFLUENCE_CARD_WIDTHS: Record<InfluenceCardSize, string> = {
   xs: "w-10 sm:w-12",
   sm: "w-12 sm:w-16",
   md: "w-16 sm:w-24 lg:w-28",
-  lg: "w-24 sm:w-32 lg:w-40",
+  lg: "w-28 sm:w-36 lg:w-44",
+  xl: "w-40 sm:w-48 lg:w-56",
 };
 
 const SHOW_DETAILS: Record<InfluenceCardSize, { en: boolean; role: boolean; ability: boolean }> = {
@@ -24,6 +25,7 @@ const SHOW_DETAILS: Record<InfluenceCardSize, { en: boolean; role: boolean; abil
   sm: { en: false, role: true, ability: false },
   md: { en: true, role: true, ability: true },
   lg: { en: true, role: true, ability: true },
+  xl: { en: true, role: true, ability: true },
 };
 
 const ACCENT_MAP: Record<
@@ -132,11 +134,12 @@ export function InfluenceCard({
           : undefined
       }
       className={cn(
-        "influence-card relative aspect-[3/4] select-none",
+        "influence-card relative aspect-[3/4] select-none table-card-hover",
         INFLUENCE_CARD_WIDTHS[size],
         animationClass,
         onClick && "cursor-pointer ring-gold-focus",
         state === "discarded" && "is-discarded opacity-80 grayscale",
+        flipped && "is-revealed",
         className,
       )}
       style={style}

@@ -140,15 +140,17 @@ body {
 }
 
 .bg-surface {
-  background-color: rgb(14 32 25 / 0.72);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgb(58 138 102 / 0.22);
+  background-color: rgba(5, 25, 19, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(217, 183, 91, 0.16);
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(245, 240, 223, 0.05);
 }
 
 .bg-surface-strong {
-  background-color: rgb(18 42 33 / 0.9);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgb(58 138 102 / 0.3);
+  background-color: rgba(5, 20, 15, 0.94);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(217, 183, 91, 0.24);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(245, 240, 223, 0.08);
 }
 
 .panel-texture {
@@ -378,6 +380,7 @@ body {
 }
 
 .influence-card.is-revealed .influence-card-inner,
+.influence-card-inner.is-revealed,
 .influence-card.is-discarded .influence-card-inner {
   transform: rotateY(180deg);
 }
@@ -446,4 +449,329 @@ html.reduce-motion *::after {
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background-color: var(--color-forest-600);
   border-radius: 9999px;
-}
+}
+
+/* ============================================================
+   GAME TABLE / ARENA
+   ============================================================ */
+
+.game-table {
+  position: relative;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 45%, rgb(46 110 82 / 0.12), transparent 75%),
+    radial-gradient(ellipse 95% 85% at 50% 50%, rgb(201 165 60 / 0.05), transparent 70%),
+    linear-gradient(180deg, rgba(3, 19, 14, 0.2) 0%, rgba(3, 19, 14, 0.4) 50%, rgba(3, 19, 14, 0.6) 100%);
+  border: 1px solid rgb(201 165 60 / 0.25);
+  box-shadow:
+    inset 0 0 80px -20px rgb(46 110 82 / 0.2),
+    inset 0 1px 0 rgb(244 241 232 / 0.1),
+    0 0 60px -10px rgb(0 0 0 / 0.7);
+}
+
+.game-table::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgb(201 165 60 / 0.15);
+  border-radius: 1.5rem;
+  pointer-events: none;
+}
+
+
+
+
+/* Turn pulse for the active player seat */
+@keyframes turn-glow {
+  0%, 100% {
+    box-shadow: 0 0 18px -2px rgb(201 165 60 / 0.35), inset 0 0 10px -2px rgb(201 165 60 / 0.12);
+    border-color: rgb(201 165 60 / 0.55);
+  }
+  50% {
+    box-shadow: 0 0 32px 2px rgb(201 165 60 / 0.65), inset 0 0 18px -1px rgb(201 165 60 / 0.22);
+    border-color: rgb(240 224 166 / 0.85);
+  }
+}
+
+.your-turn-glow {
+  animation: turn-glow 2.2s ease-in-out infinite;
+}
+
+/* Opponent Pod sitting at the table */
+.opponent-pod {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  background: linear-gradient(180deg, rgb(14 32 25 / 0.85) 0%, rgb(10 24 18 / 0.9) 100%);
+  border: 1px solid rgb(58 138 102 / 0.2);
+  backdrop-filter: blur(12px);
+}
+.opponent-pod:hover {
+  transform: translateY(-1px);
+  border-color: rgb(201 165 60 / 0.35);
+}
+
+/* Compact board-game card element */
+.board-card-stack {
+  position: relative;
+  background: linear-gradient(145deg, #132b22, #091712);
+  border: 1px solid rgb(201 165 60 / 0.25);
+  box-shadow:
+    inset 0 1px 0 rgb(244 241 232 / 0.08),
+    0 6px 20px -4px rgb(0 0 0 / 0.6);
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+.board-card-stack:hover {
+  border-color: rgb(201 165 60 / 0.5);
+  transform: translateY(-1px);
+}
+
+/* Streamlined floating game log */
+.game-log-stream {
+  background: linear-gradient(180deg, rgb(8 19 15 / 0.88) 0%, rgb(5 14 11 / 0.94) 100%);
+  backdrop-filter: blur(16px);
+  border-left: 1px solid rgb(58 138 102 / 0.16);
+}
+
+/* Compact floating game control bar — fit-content width, not full-width */
+.action-dock {
+  width: max-content;
+  background: linear-gradient(180deg, rgb(12 28 22 / 0.92) 0%, rgb(7 18 14 / 0.96) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgb(201 165 60 / 0.25);
+  box-shadow:
+    inset 0 1px 0 rgb(244 241 232 / 0.06),
+    0 8px 32px -8px rgb(0 0 0 / 0.7);
+}
+
+/* Compact action button (game control bar) */
+.action-btn {
+  transition: all 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.action-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+.action-btn:not(:disabled):active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Character card hover dynamics */
+.table-card-hover {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease;
+}
+.table-card-hover:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 30px -6px rgb(201 165 60 / 0.35);
+}
+
+/* Active action focal point pulse */
+@keyframes active-action-pulse {
+  0%, 100% {
+    box-shadow: 0 0 24px -4px rgb(201 165 60 / 0.35);
+    border-color: rgb(201 165 60 / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 44px 0px rgb(201 165 60 / 0.6);
+    border-color: rgb(240 224 166 / 0.8);
+  }
+}
+
+.active-action-glow {
+  animation: active-action-pulse 2.2s ease-in-out infinite;
+}
+
+/* Focal active action banner — enforced minimum size */
+.action-focal-card {
+  background: linear-gradient(180deg, rgb(14 34 27 / 0.92) 0%, rgb(8 21 16 / 0.96) 100%);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 1px 0 rgb(244 241 232 / 0.08),
+    0 16px 40px -10px rgb(0 0 0 / 0.7);
+  min-width: 340px;
+}
+
+/* Smooth transitions for layout shifts */
+.game-board-section {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+/* Responsive: compact opponent panels on tablet */
+@media (max-width: 1023px) {
+  .game-table {
+    background:
+      radial-gradient(ellipse 70% 55% at 50% 40%, rgb(46 110 82 / 0.12), transparent 70%),
+      linear-gradient(180deg, rgba(3, 19, 14, 0.3) 0%, rgba(3, 19, 14, 0.55) 100%);
+  }
+  .game-table::before {
+    inset: 6px;
+    border-radius: 1rem;
+  }
+}
+
+/* Mobile: stack layout */
+@media (max-width: 639px) {
+  .game-table {
+    background:
+      radial-gradient(ellipse 90% 50% at 50% 20%, rgb(46 110 82 / 0.12), transparent 65%),
+      linear-gradient(180deg, rgba(3, 19, 14, 0.35) 0%, rgba(3, 19, 14, 0.65) 100%);
+    border-width: 0;
+    box-shadow: none;
+  }
+  .game-table::before {
+    display: none;
+  }
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+.animate-dot-1 { animation: dot-pulse 1.4s infinite ease-in-out; }
+.animate-dot-2 { animation: dot-pulse 1.4s infinite ease-in-out 0.2s; }
+.animate-dot-3 { animation: dot-pulse 1.4s infinite ease-in-out 0.4s; }
+
+
+/* ============================================================
+   PREMIUM GAME TABLE — Extra polish layer
+   ============================================================ */
+
+/* Center arena soft radial glow (applied via inline style in game-board) */
+.arena-glow {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 50%, rgb(201 165 60 / 0.09) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 35% at 50% 50%, rgb(46 110 82 / 0.14) 0%, transparent 60%);
+}
+
+/* Game table ambient lighting — top vignette for depth */
+.game-table::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 85% 45% at 50% 0%, rgb(46 110 82 / 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgb(0 0 0 / 0.45) 0%, transparent 65%);
+  box-shadow: inset 0 0 140px 40px rgb(0 0 0 / 0.55);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* All game table children need to appear above the after pseudo */
+.game-table > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Floating Action Dock styling — always fit-content width */
+.action-dock {
+  width: max-content;
+  background: rgba(4, 20, 15, 0.92);
+  border: 1px solid rgba(201, 165, 60, 0.35);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(201, 165, 60, 0.15);
+  backdrop-filter: blur(14px);
+}
+
+/* Chronicle overlay drawer surface */
+.chronicle-drawer {
+  background: rgba(2, 13, 9, 0.96);
+  backdrop-filter: blur(20px);
+  box-shadow: -4px 0 32px -4px rgba(0, 0, 0, 0.7), inset 1px 0 0 rgba(201, 165, 60, 0.08);
+}
+
+/* Card stack styling */
+.board-card-stack {
+  background: linear-gradient(135deg, #0e3b2e 0%, #061e16 100%);
+  border: 1px solid rgba(201, 165, 60, 0.5);
+  box-shadow: 2px 2px 0 rgba(201, 165, 60, 0.25), 4px 4px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* Action dock — enhanced hover shimmer */
+.action-btn:not(:disabled)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgb(244 241 232 / 0.06) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+.action-btn:not(:disabled):hover::before {
+  opacity: 1;
+}
+
+/* Mandatory coup shimmer pulse */
+@keyframes coup-danger {
+  0%, 100% {
+    box-shadow:
+      0 0 12px -2px rgb(185 58 76 / 0.5),
+      inset 0 0 8px -2px rgb(185 58 76 / 0.2);
+    border-color: rgb(185 58 76 / 0.7);
+  }
+  50% {
+    box-shadow:
+      0 0 24px 2px rgb(185 58 76 / 0.75),
+      inset 0 0 16px -1px rgb(185 58 76 / 0.35);
+    border-color: rgb(219 140 152 / 0.9);
+  }
+}
+
+/* Opponent row — table top edge felt texture */
+.table-top-rim {
+  position: relative;
+}
+.table-top-rim::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(201 165 60 / 0.28) 25%,
+    rgb(201 165 60 / 0.45) 50%,
+    rgb(201 165 60 / 0.28) 75%,
+    transparent 100%
+  );
+}
+
+/* Player station — warm bottom anchor */
+.player-station {
+  position: relative;
+}
+.player-station::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(201 165 60 / 0.22) 30%,
+    rgb(201 165 60 / 0.38) 50%,
+    rgb(201 165 60 / 0.22) 70%,
+    transparent 100%
+  );
+}
+
+/* Game table center spotlight effect (extra depth) */
+.table-center-spotlight {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  height: 50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(46 110 82 / 0.12) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
