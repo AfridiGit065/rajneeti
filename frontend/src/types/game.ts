@@ -157,6 +157,8 @@ export interface GameState {
    * player when they have a pending Exchange; undefined for everyone else.
    */
   exchangePool?: InfluenceCard[];
+  /** Module 23 — monotonic revision counter from the backend game state. */
+  stateVersion?: number;
   log: GameLogEntry[];
   startedAt: string;
   endedAt?: string;

@@ -5,6 +5,7 @@ import { realtimeSocket } from "@/lib/websocket/stomp-client";
 import { useRealtimeStore } from "@/store/realtime-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useUiStore } from "@/store/ui-store";
+import type { BackendGameState } from "@/types/backend";
 import type {
   CardRevealPayload,
   WebSocketErrorPayload,
@@ -19,6 +20,7 @@ export function RealtimeController() {
   const setStatus = useRealtimeStore((s) => s.setStatus);
   const setErrorMessage = useRealtimeStore((s) => s.setErrorMessage);
   const setLastDraw = useRealtimeStore((s) => s.setLastDraw);
+  const applyPrivateState = useRealtimeStore((s) => s.applyPrivateState);
   const pushToast = useUiStore((s) => s.pushToast);
 
   useEffect(() => {
@@ -51,8 +53,20 @@ export function RealtimeController() {
           });
         }
       }
+      // Module 23 — private snapshot replies (initial connect, resync
+      // requests, and every synced action). Full cartoon-safe per-viewer
+      // state including the local player's own cards.
+      if (event.eventType === "PRIVATE_STATE") {
+        const payload = event.payload as BackendGameState;
+        const matchId =
+          (typeof payload?.matchId === "string" ? payload.matchId : null) ??
+          event.matchId;
+        if (matchId && payload) {
+          applyPrivateState(matchId, payload);
+        }
+      }
     });
-  }, [setErrorMessage, setLastDraw, pushToast]);
+  }, [setErrorMessage, setLastDraw, pushToast, applyPrivateState]);
 
   return null;
 }

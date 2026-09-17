@@ -72,9 +72,12 @@ class BlockManagerTest {
         WinnerManager winnerManager = new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher);
-        blockManager = new BlockManager(gameEngine, webSocketEventPublisher);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher);
+                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+        blockManager = new BlockManager(gameEngine, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
         gameStore.remove(matchId);
     }
 

@@ -85,9 +85,12 @@ class WinnerManagerTest {
         winnerManager = new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher);
-        actionResolver = new ActionResolver(gameEngine, gameStateMapper, winnerManager);
+                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+        actionResolver = new ActionResolver(gameEngine, gameStateMapper, winnerManager,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
         gameStore.remove(matchId);
     }
 
@@ -459,7 +462,8 @@ class WinnerManagerTest {
         byId(state, otherId).setStatus(PlayerStatus.ELIMINATED);
         winnerManager.checkAndFinish(state);
 
-        BlockManager blockManager = new BlockManager(gameEngine, webSocketEventPublisher);
+        BlockManager blockManager = new BlockManager(gameEngine, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
         assertThatThrownBy(() -> blockManager.block(matchId, otherId, GameEngine.CHARACTER_MINISTER))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())

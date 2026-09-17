@@ -1,6 +1,6 @@
 "use client";
 
-import { Client } from "@stomp/stompjs";
+import { Client, ReconnectionTimeMode } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import type { WebSocketEvent } from "@/types/websocket";
 
@@ -63,7 +63,11 @@ class RealtimeSocket {
     const client = new Client({
       webSocketFactory: () => new SockJS(SOCKET_URL) as unknown as WebSocket,
       connectHeaders: { Authorization: `Bearer ${token}` },
-      reconnectDelay: 5000,
+      // Module 23 — capped exponential backoff between reconnect attempts:
+      // 1s, 2s, 4s, … capped at 30s, instead of a fixed 5s retry delay.
+      reconnectDelay: 1000,
+      maxReconnectDelay: 30000,
+      reconnectTimeMode: ReconnectionTimeMode.EXPONENTIAL,
       heartbeatIncoming: 0,
       heartbeatOutgoing: 0,
     });
@@ -142,6 +146,14 @@ class RealtimeSocket {
 
   sendChat(roomId: string, message: string) {
     this.sendJson(`/app/rooms/${roomId}/chat`, { message });
+  }
+
+  /**
+   * Module 23 — requests a fresh private snapshot for a match. The server
+   * never bumps the version for this and replies with a PRIVATE_STATE event.
+   */
+  sendSync(matchId: string, requestId: string, version: number) {
+    this.sendJson(`/app/matches/${matchId}/sync`, { requestId, version });
   }
 }
 

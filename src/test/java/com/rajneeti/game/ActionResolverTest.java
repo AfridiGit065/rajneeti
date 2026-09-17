@@ -77,10 +77,14 @@ class ActionResolverTest {
         WinnerManager winnerManager = new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
-                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher);
-        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher);
-        blockManager = new BlockManager(gameEngine, webSocketEventPublisher);
-        actionResolver = new ActionResolver(gameEngine, gameStateMapper, winnerManager);
+                cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+        challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+        blockManager = new BlockManager(gameEngine, webSocketEventPublisher,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+        actionResolver = new ActionResolver(gameEngine, gameStateMapper, winnerManager,
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
         gameStore.remove(matchId);
     }
 

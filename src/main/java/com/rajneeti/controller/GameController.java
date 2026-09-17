@@ -11,6 +11,7 @@ import com.rajneeti.game.ActionResolver;
 import com.rajneeti.game.BlockManager;
 import com.rajneeti.game.ChallengeManager;
 import com.rajneeti.game.GameEngine;
+import com.rajneeti.game.DuplicateRequestGuard;
 import com.rajneeti.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,6 +48,7 @@ public class GameController {
     private final ChallengeManager challengeManager;
     private final BlockManager blockManager;
     private final ActionResolver actionResolver;
+    private final DuplicateRequestGuard duplicateRequestGuard;
 
     /**
      * GET /api/matches/{matchId}/game
@@ -72,7 +75,10 @@ public class GameController {
     @PostMapping("/{matchId}/income")
     public ResponseEntity<ApiResponse<GameStateResponse>> performIncome(
             @PathVariable UUID matchId,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' performing Income in match: {}",
                 userPrincipal.getUsername(), matchId);
@@ -89,7 +95,10 @@ public class GameController {
     @PostMapping("/{matchId}/foreign-aid")
     public ResponseEntity<ApiResponse<GameStateResponse>> performForeignAid(
             @PathVariable UUID matchId,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' performing Foreign Aid in match: {}",
                 userPrincipal.getUsername(), matchId);
@@ -114,7 +123,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> resolveForeignAid(
             @PathVariable UUID matchId,
             @RequestParam boolean blocked,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' resolving Foreign Aid (blocked={}) in match: {}",
                 userPrincipal.getUsername(), blocked, matchId);
@@ -133,7 +145,10 @@ public class GameController {
     @PostMapping("/{matchId}/exchange")
     public ResponseEntity<ApiResponse<GameStateResponse>> performExchange(
             @PathVariable UUID matchId,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' performing Exchange in match: {}",
                 userPrincipal.getUsername(), matchId);
@@ -153,7 +168,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> confirmExchange(
             @PathVariable UUID matchId,
             @RequestBody ExchangeConfirmRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' resolving Exchange in match: {} (keeping {} cards)",
                 userPrincipal.getUsername(), matchId,
@@ -178,7 +196,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> performAssassinate(
             @PathVariable UUID matchId,
             @RequestBody AssassinateRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         UUID targetPlayerId = request != null ? request.getTargetPlayerId() : null;
         log.info("Player '{}' performing Assassination on '{}' in match: {}",
@@ -206,7 +227,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> resolveAssassinate(
             @PathVariable UUID matchId,
             @RequestParam boolean succeeded,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' resolving Assassination (succeeded={}) in match: {}",
                 userPrincipal.getUsername(), succeeded, matchId);
@@ -228,7 +252,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> performCoup(
             @PathVariable UUID matchId,
             @RequestBody CoupRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         UUID targetPlayerId = request != null ? request.getTargetPlayerId() : null;
         log.info("Player '{}' launching a Coup on '{}' in match: {}",
@@ -246,7 +273,10 @@ public class GameController {
     @PostMapping("/{matchId}/tax")
     public ResponseEntity<ApiResponse<GameStateResponse>> performTax(
             @PathVariable UUID matchId,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' performing Tax in match: {}",
                 userPrincipal.getUsername(), matchId);
@@ -266,7 +296,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> resolveTax(
             @PathVariable UUID matchId,
             @RequestParam boolean granted,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' resolving Tax (granted={}) in match: {}",
                 userPrincipal.getUsername(), granted, matchId);
@@ -288,7 +321,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> performSteal(
             @PathVariable UUID matchId,
             @RequestBody StealRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         UUID targetPlayerId = request != null ? request.getTargetPlayerId() : null;
         log.info("Player '{}' performing Steal on '{}' in match: {}",
@@ -311,7 +347,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> resolveSteal(
             @PathVariable UUID matchId,
             @RequestParam boolean granted,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' resolving Steal (granted={}) in match: {}",
                 userPrincipal.getUsername(), granted, matchId);
@@ -342,7 +381,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> challenge(
             @PathVariable UUID matchId,
             @RequestParam(value = "loserCardId", required = false) UUID loserCardId,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' challenging the pending action in match: {}",
                 userPrincipal.getUsername(), matchId);
@@ -364,7 +406,10 @@ public class GameController {
     public ResponseEntity<ApiResponse<GameStateResponse>> block(
             @PathVariable UUID matchId,
             @RequestBody BlockRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         String claimedCharacter = request != null ? request.getClaimedCharacter() : null;
         log.info("Player '{}' claiming a block (character={}) in match: {}",
@@ -390,7 +435,10 @@ public class GameController {
     @PostMapping("/{matchId}/resolve")
     public ResponseEntity<ApiResponse<GameStateResponse>> resolveAction(
             @PathVariable UUID matchId,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        duplicateRequestGuard.rejectDuplicate(userPrincipal.getId().toString(), requestId);
 
         log.info("Player '{}' resolving the pending action in match: {}",
                 userPrincipal.getUsername(), matchId);

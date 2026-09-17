@@ -191,6 +191,8 @@ export interface BackendGameState {
   status: BackendGameStatus;
   phase: "setup" | "in_progress" | "game_over";
   hostUserId: string;
+  /** Module 23 — monotonic revision counter shared by the realtime snapshots. */
+  stateVersion?: number;
   players: BackendGamePlayer[];
   currentTurnPlayerId?: string;
   turnNumber: number;

@@ -85,6 +85,7 @@ public class GameStateMapper {
                 .matchId(state.getMatchId())
                 .roomId(state.getRoomId())
                 .roomCode(state.getRoomCode())
+                .stateVersion(state.getStateVersion())
                 .status(state.getStatus())
                 .phase(state.getPhase())
                 .hostUserId(state.getHostUserId())

@@ -120,4 +120,41 @@ class GameStateMapperTest {
         assertThat(response.getPlayers()).hasSize(2);
         assertThat(response.getLog()).hasSize(1);
     }
+
+    @Test
+    @DisplayName("Projection - a null viewer (public broadcast) leaks no cards and is versioned")
+    void toResponse_nullViewerIsPerspectiveNeutralAndCarriesVersion() {
+        UUID viewerId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        UUID card1 = UUID.randomUUID();
+        UUID card2 = UUID.randomUUID();
+
+        GameState state = buildState(
+                List.of(player(viewerId, "viewer", card1, card2),
+                        player(otherId, "other", card1, card2)),
+                viewerId);
+
+        GameStateResponse response = mapper.toResponse(state, null);
+
+        // Deterministic public snapshot: NO viewer sees any card, not even their own.
+        assertThat(response.getPlayers()).hasSize(2);
+        assertThat(response.getPlayers())
+                .allSatisfy(p -> assertThat(p.getCards()).isNull());
+        assertThat(response.getPlayers())
+                .allSatisfy(p -> assertThat(p.getInfluenceCount()).isEqualTo(2));
+        assertThat(response.getStateVersion()).isZero();
+    }
+
+    @Test
+    @DisplayName("Projection - the authoritative state version is exposed on every snapshot")
+    void toResponse_carriesTheStateVersion() {
+        GameState state = buildState(
+                List.of(player(UUID.randomUUID(), "a"), player(UUID.randomUUID(), "b")),
+                UUID.randomUUID());
+        state.setStateVersion(9);
+
+        GameStateResponse response = mapper.toResponse(state, null);
+
+        assertThat(response.getStateVersion()).isEqualTo(9);
+    }
 }

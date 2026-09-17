@@ -71,6 +71,17 @@ public class WebSocketEventPublisher {
 
     /** Sends an event to a single user's private queue ({@code /user/{id}/queue/events}). */
     public void sendToUser(UUID userId, WebSocketEventType type, UUID senderId, Object payload) {
+        sendToUser(userId, null, type, senderId, payload);
+    }
+
+    /**
+     * Sends an event to a single user's private queue, carrying a matchId.
+     *
+     * <p>Module 23 — private events that pertain to a specific match (resync
+     * replies, private card draws, per-viewer snapshots) must carry the matchId
+     * so the frontend can route them to the right match's store.
+     */
+    public void sendToUser(UUID userId, UUID matchId, WebSocketEventType type, UUID senderId, Object payload) {
         if (userId == null) {
             return;
         }
@@ -78,7 +89,7 @@ public class WebSocketEventPublisher {
             // The STOMP principal name is the user UUID (see WebSocketPrincipal),
             // so convertAndSendToUser resolves the private queue by userId.
             messagingTemplate.convertAndSendToUser(userId.toString(), ROOM_QUEUE,
-                    build(type, null, null, senderId, payload));
+                    build(type, null, matchId, senderId, payload));
         } catch (Exception ex) {
             log.warn("Failed to send {} to user {}: {}", type, userId, ex.getMessage());
         }

@@ -31,6 +31,9 @@ public class GameStateResponse {
 
     private String roomCode;
 
+    /** Module 23 — the state version this snapshot was taken at. */
+    private Long stateVersion;
+
     private MatchStatus status;
 
     /** Coarse lifecycle phase: "setup", "in_progress", "game_over". */

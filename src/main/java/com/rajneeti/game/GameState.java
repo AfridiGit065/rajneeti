@@ -30,6 +30,16 @@ public class GameState {
 
     private final String roomCode;
 
+    /**
+     * Module 23 — monotonically increasing state version. Incremented by
+     * {@link GameStateSyncService} on every broadcastable mutation so every
+     * STATE_UPDATED / PRIVATE_STATE snapshot (and the synced client's local
+     * view) can be ordered, de-duplicated and gap-detected via a single
+     * counter.
+     */
+    @Builder.Default
+    private long stateVersion = 0;
+
     private MatchStatus status;
 
     /**

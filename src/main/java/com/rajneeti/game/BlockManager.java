@@ -55,6 +55,7 @@ public class BlockManager {
 
     private final GameEngine gameEngine;
     private final WebSocketEventPublisher webSocketEventPublisher;
+    private final GameStateSyncService gameStateSyncService;
 
     /**
      * Records a block claim by {@code blockerId} against the currently pending
@@ -149,6 +150,10 @@ public class BlockManager {
                         .actionType(pending.getType())
                         .blockedCharacter(normalized)
                         .build());
+
+        // Module 23 — the block claim mutates the pending action, so every
+        // client's board must move in lockstep with the authoritative snapshot.
+        gameStateSyncService.sync(state);
 
         return gameEngine.getSafeGameState(matchId, blockerId);
     }

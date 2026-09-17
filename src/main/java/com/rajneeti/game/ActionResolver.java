@@ -55,6 +55,7 @@ public class ActionResolver {
     private final GameEngine gameEngine;
     private final GameStateMapper gameStateMapper;
     private final WinnerManager winnerManager;
+    private final GameStateSyncService gameStateSyncService;
 
     /**
      * Resolves the currently pending action on behalf of its actor.
@@ -106,6 +107,11 @@ public class ActionResolver {
         // Winner Manager. It is the single authority that decides whether the
         // last opponent was eliminated and finishes the match.
         winnerManager.checkAndFinish(state);
+
+        // Module 23 — the engine seam above already broadcast its own snapshot,
+        // but the lastActionResult recording is only finished HERE, so sync
+        // again so the authoritative verdict reaches every client.
+        gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, pending.getActorUserId());
     }

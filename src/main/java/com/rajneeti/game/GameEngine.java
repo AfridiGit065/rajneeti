@@ -126,6 +126,7 @@ public class GameEngine {
     private final GameStateMapper gameStateMapper;
     private final WinnerManager winnerManager;
     private final WebSocketEventPublisher webSocketEventPublisher;
+    private final GameStateSyncService gameStateSyncService;
 
     /**
      * Initializes a live game instance for an existing match.
@@ -214,6 +215,9 @@ public class GameEngine {
 
         log.info("Game state initialized for match '{}' ({} players, {} cards dealt, {} left in deck)",
                 matchId, players.size(), players.size() * STARTING_INFLUENCE, deck.size());
+
+        // Module 23 — broadcast the authoritative initial snapshot (version 1).
+        gameStateSyncService.sync(state);
 
         return state;
     }
@@ -333,6 +337,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, "INCOME", null, ACTION_OUTCOME_RESOLVED);
 
+        gameStateSyncService.sync(state);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -403,6 +409,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_FOREIGN_AID, null, ACTION_OUTCOME_PENDING);
 
+        gameStateSyncService.sync(state);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -471,6 +479,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_FOREIGN_AID, null,
                 blocked ? ACTION_OUTCOME_CANCELLED : ACTION_OUTCOME_RESOLVED);
+
+        gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -571,6 +581,8 @@ public class GameEngine {
                 player.getUsername(), matchId, drawn.size());
 
         publishPlayAction(state, userId, ACTION_EXCHANGE, null, ACTION_OUTCOME_PENDING);
+
+        gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -676,6 +688,8 @@ public class GameEngine {
                 matchId, kept.size(), returned.size(), match.getTurnNumber());
 
         publishPlayAction(state, userId, ACTION_EXCHANGE, null, ACTION_OUTCOME_RESOLVED);
+
+        gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -791,6 +805,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_ASSASSINATE, targetPlayerId, ACTION_OUTCOME_PENDING);
 
+        gameStateSyncService.sync(state);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -898,6 +914,8 @@ public class GameEngine {
         publishPlayAction(state, userId, ACTION_ASSASSINATE, targetId,
                 succeeded ? ACTION_OUTCOME_RESOLVED : ACTION_OUTCOME_CANCELLED);
 
+        gameStateSyncService.sync(state);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -970,6 +988,8 @@ public class GameEngine {
                 player.getUsername(), matchId);
 
         publishPlayAction(state, userId, ACTION_TAX, null, ACTION_OUTCOME_PENDING);
+
+        gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -1074,6 +1094,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_STEAL, targetPlayerId, ACTION_OUTCOME_PENDING);
 
+        gameStateSyncService.sync(state);
+
         return gameStateMapper.toResponse(state, userId);
     }
 
@@ -1138,6 +1160,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_TAX, null,
                 granted ? ACTION_OUTCOME_RESOLVED : ACTION_OUTCOME_CANCELLED);
+
+        gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -1216,6 +1240,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_STEAL, targetId,
                 granted ? ACTION_OUTCOME_RESOLVED : ACTION_OUTCOME_CANCELLED);
+
+        gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
@@ -1352,6 +1378,8 @@ public class GameEngine {
                 match.getTurnNumber());
 
         publishPlayAction(state, userId, "COUP", targetPlayerId, ACTION_OUTCOME_RESOLVED);
+
+        gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
     }
