@@ -10,8 +10,8 @@ import {
   MatchDetailsModal,
   MatchHistoryCard,
 } from "@/components/history";
-import { MOCK_CURRENT_USER } from "@/mocks/users";
 import { MetaService } from "@/services/meta-service";
+import { useAuthStore } from "@/store/auth-store";
 import { cn } from "@/lib/cn";
 import type { MatchHistoryEntry } from "@/types/user";
 
@@ -71,6 +71,7 @@ function FilterPills({
 }
 
 export default function HistoryPage() {
+  const currentUserId = useAuthStore((s) => s.user)?.id ?? "";
   const [matches, setMatches] = useState<MatchHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,8 +79,8 @@ export default function HistoryPage() {
   const [selected, setSelected] = useState<MatchHistoryEntry | null>(null);
 
   const fetchHistory = useCallback(
-    () => MetaService.getMatchHistory(MOCK_CURRENT_USER.id),
-    [],
+    () => MetaService.getMatchHistory(currentUserId),
+    [currentUserId],
   );
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import com.rajneeti.entity.User;
 import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
+import com.rajneeti.repository.MatchHistoryRepository;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
 import com.rajneeti.service.TurnManager;
@@ -53,6 +54,9 @@ class WinnerManagerTest {
     private MatchPlayerRepository matchPlayerRepository;
 
     @Mock
+    private MatchHistoryRepository matchHistoryRepository;
+
+    @Mock
     private TurnManager turnManager;
 
     @Mock
@@ -82,7 +86,7 @@ class WinnerManagerTest {
         otherId = UUID.randomUUID();
         thirdId = UUID.randomUUID();
 
-        winnerManager = new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher);
+        winnerManager = new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher, matchHistoryRepository);
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
                 cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher,

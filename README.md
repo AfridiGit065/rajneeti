@@ -1,6 +1,6 @@
 # RAJNEETI – রাজনীতি
 
-> **Real-Time Multiplayer Bluff Strategy Game** | Spring Boot Backend Foundation 
+> **Real-Time Multiplayer Bluff Strategy Game** | Spring Boot + Next.js Full-Stack 
 
 ---
 
@@ -26,8 +26,13 @@
 ## Overview
 
 RAJNEETI is a fictional real-time multiplayer bluff strategy game built as a final-year project.
-This repository contains the **Module 01 backend foundation** – all infrastructure, configuration,
-security scaffolding, and API contracts are in place. No gameplay logic has been implemented yet.
+
+The repository is a full-stack monorepo:
+
+- **`/` (backend)** – Spring Boot 3, JWT auth, REST + WebSocket (STOMP) APIs, the authoritative game engine,
+  leaderboard / match-history / statistics reporting, and a 372-test suite covering the full rule set.
+- **`/frontend`** – Next.js 16 (App Router) + Zustand, repository-based data layer over the REST + STOMP APIs,
+  secure token storage, reconnect logic with state-version resync, and Exchange-confirmation UI.
 
 > **Disclaimer:** This game is entirely fictional and does not represent any real political party,
 > politician, government institution, or real-world political event.
@@ -49,6 +54,17 @@ security scaffolding, and API contracts are in place. No gameplay logic has been
 | Boilerplate      | Lombok                              |
 | Validation       | Jakarta Bean Validation             |
 | Containerisation | Docker + Docker Compose             |
+
+### Frontend
+
+| Layer            | Technology                           |
+|------------------|--------------------------------------|
+| Framework        | Next.js 16 (App Router, Turbopack)   |
+| Language         | TypeScript (Node 24 type-stripping)  |
+| State            | Zustand (auth, room, game, realtime) |
+| Data Layer       | Repository + Service + Hooks pattern |
+| Real-Time        | STOMP over SockJS (reconnect + resync) |
+| Tests            | `node --test` (realtime state-version) |
 
 ---
 
@@ -270,6 +286,30 @@ curl -s http://localhost:8080/api/health | python -m json.tool
 | `WS_ALLOWED_ORIGINS`      | `http://localhost:3000`  | WebSocket handshake allowed origins        |
 | `LOG_LEVEL_APP`           | `DEBUG`                  | Log level for `com.rajneeti`               |
 
+### Frontend Environment Variables
+
+| Variable                | Default                  | Description                                  |
+|-------------------------|--------------------------|----------------------------------------------|
+| `NEXT_PUBLIC_API_URL`   | `http://localhost:8080`  | Backend base URL (REST + WS host)            |
+
+Copy `frontend/.env.local.example` to `frontend/.env.local` and adjust if the backend is not on localhost:8080.
+
+### Run the Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev      # http://localhost:3000
+```
+
+Gates:
+
+```bash
+npm run typecheck && npm run lint
+npm run build
+npm test
+```
+
 ---
 
 ## Module Roadmap
@@ -296,3 +336,4 @@ curl -s http://localhost:8080/api/health | python -m json.tool
 | 21     | Winner manager + match finish                     | ✅ Complete     |
 | 22     | WebSocket event streaming + realtime room chat    | ✅ Complete     |
 | 23     | Realtime game-state sync (stateVersion + resync)  | ✅ Complete     |
+| 24     | Final full-stack integration & polish (real leaderboard / history / profile stats via REST, match-history persistence on finish, Exchange-confirm UI, mock removal, README) | ✅ Complete |

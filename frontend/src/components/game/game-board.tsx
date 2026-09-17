@@ -33,10 +33,10 @@ import {
   InfluenceLostModal,
   EliminationOverlay,
 } from "./card-reveal-elimination";
+import { ExchangeSelection } from "./exchange-selection";
 import { getAction } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { GameService } from "@/services/game-service";
-import { MOCK_CURRENT_USER } from "@/mocks/users";
 import { useAuthStore } from "@/store/auth-store";
 import { useToast } from "@/hooks/use-toast";
 import { MatchStatus, type GameActionId, type GamePhase, type GamePlayer, type GameState, type ActionResult } from "@/types/game";
@@ -189,7 +189,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<GameActionId | null>(null);
   const { success, error: notifyError } = useToast();
-  const selfId = useAuthStore((s) => s.user)?.id ?? MOCK_CURRENT_USER.id;
+  const selfId = useAuthStore((s) => s.user)?.id ?? "";
 
   // Block System State (Module F20 / Module 19 backend)
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
@@ -494,6 +494,13 @@ export function GameBoard({ matchId }: { matchId: string }) {
     };
   })();
 
+  /** Pending Exchange claim by the local player — pick the 2 cards to keep. */
+  const showExchangeSelection =
+    game?.status === MatchStatus.IN_PROGRESS &&
+    game?.activeAction?.action === "exchange" &&
+    (game?.exchangePool?.length ?? 0) > 0 &&
+    game?.currentTurnPlayerId === selfId;
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-app px-4">
@@ -662,6 +669,15 @@ export function GameBoard({ matchId }: { matchId: string }) {
           <GameLog entries={game.log} />
         </aside>
       </main>
+
+      {/* Module 24: Exchange card selection for the pending Exchange actor */}
+      {showExchangeSelection ? (
+        <ExchangeSelection
+          matchId={game.matchId}
+          cards={game.exchangePool!}
+          onResolved={adoptState}
+        />
+      ) : null}
 
       {/* Module F20: Block Dialog Modal */}
       {blockEvent && (

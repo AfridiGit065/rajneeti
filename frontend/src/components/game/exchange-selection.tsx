@@ -124,9 +124,11 @@ export function ExchangeSelection({
         </p>
 
         <div className="flex gap-2">
-          <Button variant="ghost" fullWidth onClick={onClose} disabled={busy}>
-            বাতিল
-          </Button>
+          {onClose ? (
+            <Button variant="ghost" fullWidth onClick={onClose} disabled={busy}>
+              বাতিল
+            </Button>
+          ) : null}
           <Button
             variant="premium"
             fullWidth
