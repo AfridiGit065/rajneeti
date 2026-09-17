@@ -77,7 +77,9 @@ public class LLMBotDecisionProvider implements BotDecisionProvider {
             }
             try {
                 String raw = requestDecision(context, aiProperties.getApiKeys().get(keyIndex));
-                BotDecision decision = parseAndValidate(context, raw);
+                String decisionJson = extractDecisionJson(raw);
+                BotDecision decision = decisionJson == null ? null
+                        : parseAndValidate(context, decisionJson);
                 keyManager.reportSuccess(keyIndex);
                 if (decision == null) {
                     continue;
@@ -105,25 +107,75 @@ public class LLMBotDecisionProvider implements BotDecisionProvider {
 
     private String requestDecision(BotDecisionContext context, String apiKey)
             throws AiHttpException, IOException, InterruptedException {
+        boolean anthropic = "anthropic".equalsIgnoreCase(aiProperties.getProvider());
         String url = aiProperties.getBaseUrl()
                 + (aiProperties.getBaseUrl().endsWith("/") ? "" : "/")
-                + "chat/completions";
+                + (anthropic ? "messages" : "chat/completions");
 
         String systemText = SYSTEM_PROMPT
                 + "\nThe claimed blocked/claimed characters use lower-case ids: minister, ghatok, dalal, amla, goyenda."
                 + "\nExposed snapshot (your private cards may include cardId; opponent records contain NO cards):";
 
-        String body = objectMapper.writeValueAsString(java.util.Map.of(
+        String userText = objectMapper.writeValueAsString(context);
+        String body;
+        if (anthropic) {
+            body = objectMapper.writeValueAsString(java.util.Map.of(
+                    "model", aiProperties.getModel(),
+                    "max_tokens", 300,
+                    "temperature", 0.4,
+                    "system", systemText,
+                    "messages", List.of(java.util.Map.of(
+                            "role", "user",
+                            "content", List.of(java.util.Map.of(
+                                    "type", "text", "text", userText))))));
+            return transport.postMessages(url, apiKey, body, aiProperties.getRequestTimeoutMs());
+        }
+
+        body = objectMapper.writeValueAsString(java.util.Map.of(
                 "model", aiProperties.getModel(),
                 "temperature", 0.4,
                 "max_tokens", 300,
                 "response_format", java.util.Map.of("type", "json_object"),
                 "messages", List.of(
                         java.util.Map.of("role", "system", "content", systemText),
-                        java.util.Map.of("role", "user", "content",
-                                objectMapper.writeValueAsString(context)))));
-
+                        java.util.Map.of("role", "user", "content", userText))));
         return transport.postChat(url, apiKey, body, aiProperties.getRequestTimeoutMs());
+    }
+
+    /**
+     * Pulls the raw decision JSON out of the provider envelope. Works for both
+     * the Anthropic Messages API ({@code content[i].text}) and OpenAI
+     * chat-completions ({@code choices[0].message.content}); a body that is
+     * already the decision JSON (as produced by stub transports) passes through.
+     */
+    private String extractDecisionJson(String raw) {
+        try {
+            JsonNode node = objectMapper.readTree(raw);
+            if (node.path("decisionType").isTextual()) {
+                return raw;
+            }
+            if ("anthropic".equalsIgnoreCase(aiProperties.getProvider())) {
+                JsonNode content = node.path("content");
+                if (content.isArray()) {
+                    for (JsonNode block : content) {
+                        if ("text".equals(block.path("type").asText())) {
+                            String text = block.path("text").asText(null);
+                            if (text != null) {
+                                return text;
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+            String text = node.path("choices").path(0).path("message")
+                    .path("content").asText(null);
+            return text == null ? null : text;
+        } catch (IOException ex) {
+            log.debug("AI returned an unserializable envelope for {}: {}",
+                    aiProperties.getProvider(), ex.getMessage());
+            return null;
+        }
     }
 
     /**
