@@ -67,46 +67,46 @@ function isBlockable(id: GameActionId): boolean {
 
 function DeckDiscard({ game }: { game: GameState }) {
   return (
-    <div className="flex items-center gap-3 select-none shrink-0">
+    <div className="flex items-center gap-4 select-none shrink-0">
       {/* Draw Pile */}
-      <div className="flex flex-col items-center gap-1 group">
-        <span className="font-cinzel text-[10px] font-bold uppercase tracking-widest text-gold-400">
+      <div className="flex flex-col items-center gap-1.5 group">
+        <span className="font-cinzel text-[11px] font-bold uppercase tracking-widest text-gold-400">
           DECK
         </span>
         <div
-          className="relative flex h-[72px] w-[52px] items-center justify-center rounded-xl border border-gold-500/60 bg-gradient-to-b from-[#0e3b2e] to-[#041610] shadow-[2px_2px_0_rgba(201,165,60,0.3),5px_5px_0_rgba(0,0,0,0.6)] cursor-default transition-transform hover:-translate-y-1"
+          className="relative flex h-[90px] w-[64px] items-center justify-center rounded-xl border border-gold-500/70 bg-gradient-to-b from-[#0e3b2e] to-[#041610] shadow-[1px_1px_0_rgba(201,165,60,0.4),3px_3px_0_rgba(10,40,25,0.8),6px_6px_0_rgba(0,0,0,0.7)] cursor-default transition-transform hover:-translate-y-1"
           title={`${game.deckCount} cards remaining`}
         >
-          <div className="flex size-7 items-center justify-center rounded-full border border-gold-400/70 bg-deep-950/80 shadow-inner">
-            <span className="font-bengali text-sm font-bold text-gold-300">র</span>
+          <div className="flex size-8 items-center justify-center rounded-full border border-gold-400/80 bg-deep-950/90 shadow-inner">
+            <span className="font-bengali text-base font-bold text-gold-300">র</span>
           </div>
         </div>
-        <span className="font-mono text-xs font-bold text-gold-300 bg-deep-950/90 px-2 py-0.5 rounded-full border border-gold-500/25">
+        <span className="font-mono text-xs font-bold text-gold-300 bg-deep-950/95 px-2.5 py-0.5 rounded-full border border-gold-500/30 shadow-sm">
           {game.deckCount}
         </span>
       </div>
 
       {/* Discard Pile */}
-      <div className="flex flex-col items-center gap-1 group">
-        <span className="font-cinzel text-[10px] font-bold uppercase tracking-widest text-crimson-400">
+      <div className="flex flex-col items-center gap-1.5 group">
+        <span className="font-cinzel text-[11px] font-bold uppercase tracking-widest text-crimson-400">
           DISCARD
         </span>
         <div
           className={cn(
-            "relative flex h-[72px] w-[52px] items-center justify-center rounded-xl border cursor-default transition-transform hover:-translate-y-1",
+            "relative flex h-[90px] w-[64px] items-center justify-center rounded-xl border cursor-default transition-transform hover:-translate-y-1",
             game.revealedCardsCount > 0
-              ? "border-crimson-500/50 bg-gradient-to-b from-[#2a0e14] to-[#120508] shadow-[2px_2px_0_rgba(180,40,60,0.3),5px_5px_0_rgba(0,0,0,0.6)]"
-              : "border-forest-500/20 bg-deep-950/40 border-dashed",
+              ? "border-crimson-500/60 bg-gradient-to-b from-[#2a0e14] to-[#120508] shadow-[1px_1px_0_rgba(180,40,60,0.4),3px_3px_0_rgba(20,5,8,0.8),6px_6px_0_rgba(0,0,0,0.7)]"
+              : "border-forest-500/25 bg-deep-950/50 border-dashed",
           )}
           title={`${game.revealedCardsCount} revealed cards`}
         >
           {game.revealedCardsCount > 0 ? (
-            <Landmark className="size-5 text-crimson-400" aria-hidden />
+            <Landmark className="size-6 text-crimson-400" aria-hidden />
           ) : (
-            <span className="text-[10px] text-muted/40 font-mono">0</span>
+            <span className="text-xs text-muted/40 font-mono">0</span>
           )}
         </div>
-        <span className="font-mono text-xs font-bold text-crimson-300 bg-deep-950/90 px-2 py-0.5 rounded-full border border-crimson-500/25">
+        <span className="font-mono text-xs font-bold text-crimson-300 bg-deep-950/95 px-2.5 py-0.5 rounded-full border border-crimson-500/30 shadow-sm">
           {game.revealedCardsCount}
         </span>
       </div>
@@ -126,12 +126,12 @@ function ActiveAction({ game }: { game: GameState }) {
       className={cn(
         "action-focal-card relative overflow-hidden rounded-2xl border transition-all select-none",
         active
-          ? "border-gold-500/70 bg-[#061d15]/95 shadow-[0_0_40px_rgba(201,165,60,0.30)] active-action-glow"
-          : "border-forest-500/30 bg-[#041610]/90 backdrop-blur-md",
+          ? "border-gold-500/80 bg-[#061d15]/95 shadow-[0_0_40px_rgba(201,165,60,0.30)] active-action-glow"
+          : "border-forest-500/35 bg-[#041610]/95 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.5)]",
       )}
       role="region"
       aria-label="Active Game Action"
-      style={{ minWidth: 340, maxWidth: 480 }}
+      style={{ width: 450, minHeight: 140, maxWidth: "90vw" }}
     >
       {/* Ambient radial glow */}
       {active && (
@@ -150,18 +150,18 @@ function ActiveAction({ game }: { game: GameState }) {
       />
 
       {active && action ? (
-        <div className="flex flex-col gap-0 px-5 py-4">
+        <div className="flex flex-col justify-between h-full p-5 min-h-[140px]">
           {/* Header row */}
-          <div className="flex items-center justify-between gap-2 border-b border-gold-500/20 pb-3 mb-3">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between gap-2 border-b border-gold-500/20 pb-2.5 mb-2">
+            <div className="flex items-center gap-2">
               <Swords className="size-4 text-gold-400" aria-hidden />
-              <span className="font-cinzel text-[11px] font-bold uppercase tracking-[0.2em] text-gold-300">
-                Active Action
+              <span className="font-cinzel text-xs font-bold uppercase tracking-[0.2em] text-gold-300">
+                ACTIVE ACTION
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge tone="gold" className="text-[10px] py-0">{PHASE_LABEL[game.phase]}</Badge>
-              <span className="font-mono text-[10px] text-muted/60">Round #{game.turnNumber}</span>
+              <Badge tone="gold" className="text-[10px] py-0.5 px-2">{PHASE_LABEL[game.phase]}</Badge>
+              <span className="font-mono text-[11px] text-muted/70">Round #{game.turnNumber}</span>
             </div>
           </div>
 
@@ -170,40 +170,40 @@ function ActiveAction({ game }: { game: GameState }) {
             {/* Portrait */}
             <div className="relative shrink-0">
               {claimedChar ? (
-                <div className="relative size-[72px] overflow-hidden rounded-xl border-2 border-gold-400/70 bg-deep-900 shadow-gold">
+                <div className="relative size-[76px] overflow-hidden rounded-xl border-2 border-gold-400/80 bg-deep-900 shadow-gold">
                   <Image
                     src={claimedChar.imagePath}
                     alt={claimedChar.nameBn}
                     fill
-                    sizes="72px"
+                    sizes="76px"
                     className="object-cover object-top"
                   />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-deep-950/70 to-transparent" />
                 </div>
               ) : (
-                <div className="flex size-[72px] shrink-0 items-center justify-center rounded-xl border-2 border-gold-500/40 bg-gradient-to-b from-gold-500/20 to-gold-500/5 shadow-inner">
-                  <Swords className="size-8 text-gold-400" aria-hidden />
+                <div className="flex size-[76px] shrink-0 items-center justify-center rounded-xl border-2 border-gold-500/50 bg-gradient-to-b from-gold-500/25 to-gold-500/5 shadow-inner">
+                  <Swords className="size-9 text-gold-400" aria-hidden />
                 </div>
               )}
             </div>
 
             <div className="min-w-0 flex-1 leading-tight">
               {/* Action name */}
-              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h3 className="text-2xl font-black text-ivory tracking-tight leading-none font-cinzel">
                   {action.nameEn}
                 </h3>
-                <span className="font-bengali text-lg font-bold text-gold-300 leading-none">
+                <span className="font-bengali text-xl font-bold text-gold-300 leading-none">
                   {action.nameBn}
                 </span>
               </div>
 
               {/* Claim statement */}
-              <p className="mt-2 text-sm text-muted/90 leading-relaxed">
+              <p className="mt-2 text-sm text-parchment-200/90 leading-relaxed">
                 <strong className="text-ivory font-bold">{actor?.displayName ?? actor?.username ?? "Player"}</strong>
                 {claimedChar ? (
                   <> claims <span className="text-gold-300 font-bold font-bengali">{claimedChar.nameBn}</span>{" "}
-                    <span className="text-muted/60">({claimedChar.nameEn})</span>
+                    <span className="text-muted/70">({claimedChar.nameEn.toUpperCase()})</span>
                   </>
                 ) : (
                   <> executes this action</>
@@ -217,22 +217,23 @@ function ActiveAction({ game }: { game: GameState }) {
         </div>
       ) : (
         /* Waiting state */
-        <div className="flex flex-col items-center justify-center gap-2 py-5 px-6 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 p-6 text-center min-h-[140px]">
           <div className="flex items-center gap-2">
             <span className="relative flex size-2.5">
               <span className="absolute inset-0 animate-ping rounded-full bg-gold-400/60" />
               <span className="relative size-2.5 rounded-full bg-gold-400" />
             </span>
             <span className="font-cinzel text-xs font-bold uppercase tracking-[0.25em] text-gold-400">
-              Waiting for Action
+              WAITING FOR ACTION
             </span>
           </div>
 
-          <p className="text-sm font-semibold text-ivory/90">
+          <p className="text-base font-semibold text-ivory/95">
             {actor ? (
               actor.isBot || actor.username.toLowerCase().includes("bot") ? (
-                <span className="inline-flex items-center gap-1 text-gold-200">
-                  <span>{actor.displayName ?? actor.username} is thinking</span>
+                <span className="inline-flex items-center gap-1.5 text-gold-200">
+                  <strong className="text-gold-300 font-bold">{actor.displayName ?? actor.username}</strong>
+                  <span>is deciding next move</span>
                   <span className="flex items-center gap-0.5 ml-0.5">
                     <span className="size-1 rounded-full bg-gold-400 animate-dot-1" />
                     <span className="size-1 rounded-full bg-gold-400 animate-dot-2" />
@@ -250,7 +251,7 @@ function ActiveAction({ game }: { game: GameState }) {
             )}
           </p>
 
-          <p className="font-bengali text-xs text-muted/60">
+          <p className="font-bengali text-xs text-muted/70">
             খেলোয়াড়ের পদক্ষেপের প্রতীক্ষায়…
           </p>
         </div>
@@ -650,7 +651,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
         ══════════════════════════════════════════ */}
         <div
           className="absolute left-1/2 z-20 flex flex-col items-center gap-0"
-          style={{ top: "28%", transform: "translateX(-50%)" }}
+          style={{ top: "17%", transform: "translateX(-50%)" }}
         >
           {/* Overlay panels stacked above main action */}
           {(blockResultData || game.lastActionResult || blockEvent || showBlockOffer || showActorResolve) && (
@@ -682,46 +683,41 @@ export function GameBoard({ matchId }: { matchId: string }) {
           </div>
 
           {/* Challenge Resolution — below active action */}
-          {game.status === MatchStatus.IN_PROGRESS ? (
-            <div className="mt-3 w-full" style={{ minWidth: 340, maxWidth: 480 }}>
+          {game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING ? (
+            <div className="mt-3 w-full" style={{ minWidth: 420, maxWidth: 500 }}>
               <ChallengeFlow game={game} selfId={selfId} onResolved={adoptState} />
             </div>
           ) : null}
         </div>
 
         {/* ══════════════════════════════════════════
-            OWN PLAYER STATUS — docked bottom-left (Screenshot 2)
+            BOTTOM STATION (Centered, Guaranteed Zero Overlap):
+            1. YOUR INFLUENCE CARDS
+                 ↓ (24px)
+            2. YOUR PLAYER
+                 ↓ (20px)
+            3. ACTION DOCK (Floating, fit-content)
         ══════════════════════════════════════════ */}
         <div
-          className="absolute z-30"
-          style={{ bottom: 18, left: 24, width: 230 }}
+          className="absolute left-1/2 -translate-x-1/2 bottom-2 sm:bottom-3 z-30 flex flex-col items-center select-none pointer-events-auto"
         >
-          <PlayerSeat player={currentPlayer} />
-        </div>
-
-        {/* ══════════════════════════════════════════
-            OWN INFLUENCE CARDS — center, above action dock
-        ══════════════════════════════════════════ */}
-        <div
-          className="absolute left-1/2 z-20"
-          style={{ bottom: 106, transform: "translateX(-50%)", width: "max-content", maxWidth: "90vw" }}
-        >
+          {/* 1. Own Influence Cards */}
           <OwnCards cards={currentPlayer.influenceCards} />
-        </div>
 
-        {/* ══════════════════════════════════════════
-            FLOATING ACTION DOCK — compact, bottom center
-        ══════════════════════════════════════════ */}
-        <div
-          className="absolute left-1/2 z-30"
-          style={{ bottom: 14, transform: "translateX(-50%)", width: "max-content", maxWidth: "calc(100vw - 280px)" }}
-        >
-          <ActionPanel
-            player={currentPlayer}
-            opponents={opponents}
-            busy={busy !== null}
-            onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
-          />
+          {/* 2. Own Player Status (comfortable 20–35px gap below cards) */}
+          <div className="mt-4 sm:mt-5 min-w-[340px] max-w-[480px]">
+            <PlayerSeat player={currentPlayer} />
+          </div>
+
+          {/* 3. Floating Action Dock (18–28px gap below player, compact fit-content) */}
+          <div className="mt-4 sm:mt-5">
+            <ActionPanel
+              player={currentPlayer}
+              opponents={opponents}
+              busy={busy !== null}
+              onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
+            />
+          </div>
         </div>
 
         {/* ══════════════════════════════════════════

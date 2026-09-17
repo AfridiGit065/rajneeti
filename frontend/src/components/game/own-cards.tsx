@@ -12,8 +12,16 @@ export function OwnCards({
   cards: InfluenceCardType[];
   className?: string;
 }) {
-  const activeCards = cards.filter((c) => !c.revealed);
-  const lostCards = cards.filter((c) => c.revealed);
+  // Deduplicate cards by id to prevent duplicate rendering
+  const seenIds = new Set<string>();
+  const uniqueCards = cards.filter((c) => {
+    if (!c?.id || seenIds.has(c.id)) return false;
+    seenIds.add(c.id);
+    return true;
+  });
+
+  const activeCards = uniqueCards.filter((c) => !c.revealed);
+  const lostCards = uniqueCards.filter((c) => c.revealed);
 
   return (
     <div className={cn("flex flex-col items-center select-none", className)}>
@@ -36,8 +44,8 @@ export function OwnCards({
 
       {/* Cards — prominent size (~200-230px wide on desktop) */}
       <div className="flex items-end justify-center gap-4 sm:gap-6 lg:gap-8">
-        {cards.length > 0 ? (
-          cards.map((card, index) => (
+        {uniqueCards.length > 0 ? (
+          uniqueCards.map((card, index) => (
             <div key={card.id} className="flex flex-col items-center gap-2 transition-transform hover:-translate-y-1">
               <div className={cn(
                 "relative rounded-2xl",
