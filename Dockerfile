@@ -22,12 +22,12 @@ WORKDIR /build
 COPY pom.xml .
 
 # Download dependencies (offline cache layer)
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,id=s/501dc428-c2b8-455e-a416-23f9b5858282-/root/.m2,target=/root/.m2 \
     mvn dependency:go-offline -B --no-transfer-progress 2>/dev/null || true
 
 # Copy source and build
 COPY src/ src/
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,id=s/501dc428-c2b8-455e-a416-23f9b5858282-/root/.m2,target=/root/.m2 \
     mvn package -DskipTests -B --no-transfer-progress
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
