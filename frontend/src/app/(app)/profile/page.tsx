@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PageBackground } from "@/components/layout";
 import {
   Trophy,
   Swords,
@@ -117,8 +118,10 @@ useEffect(() => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      {loadingProfile ? <p className="text-sm text-muted">Loading profile...</p> : null}
+    <>
+      <PageBackground variant="dark" />
+      <div className="space-y-8 pb-12">
+        {loadingProfile ? <p className="text-sm text-muted">Loading profile...</p> : null}
       {profileError ? <p role="alert" className="text-sm text-crimson-300">{profileError}</p> : null}
       {/* ── Premium Profile Header Banner ───────────────── */}
       <section className="relative overflow-hidden rounded-3xl border border-forest-500/25 bg-surface panel-emboss panel-texture p-6 sm:p-8">
@@ -760,5 +763,7 @@ useEffect(() => {
         }}
       />
     </div>
+    </>
   );
 }
+

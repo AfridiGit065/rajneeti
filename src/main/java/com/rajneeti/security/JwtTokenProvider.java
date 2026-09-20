@@ -9,11 +9,13 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +30,35 @@ import java.util.UUID;
 public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
+
+    /** Cached HMAC signing key, validated once at startup. */
+    private SecretKey signingKey;
+
+    /**
+     * Validates that the configured signing secret exists and has sufficient
+     * entropy, then caches the derived key. Fails fast so a blank or weak
+     * {@code JWT_SECRET} can never be used to sign tokens in production.
+     */
+    @PostConstruct
+    void init() {
+        String secret = jwtProperties.getSecret();
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT_SECRET must be configured: refusing to start with a blank signing secret.");
+        }
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secret);
+        } catch (IllegalArgumentException ex) {
+            keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        }
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException(
+                    "JWT_SECRET must sign with at least 256 bits (32 bytes). Generate one with: openssl rand -base64 48");
+        }
+        signingKey = Keys.hmacShaKeyFor(keyBytes);
+        log.info("JWT signing key initialized ({} bytes).", keyBytes.length);
+    }
 
     /**
      * Generates an access token for an authenticated {@link UserPrincipal}.
@@ -111,24 +142,15 @@ public class JwtTokenProvider {
                 .subject(subject)
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + ttlMs))
-                .signWith(signingKey(), Jwts.SIG.HS256)
+                .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
     }
 
     private Claims parseClaims(String token) {
         return Jwts.parser()
-                .verifyWith(signingKey())
+                .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-    }
-
-    private SecretKey signingKey() {
-        try {
-            byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecret());
-            return Keys.hmacShaKeyFor(keyBytes);
-        } catch (Exception ex) {
-            return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
-        }
     }
 }

@@ -5,8 +5,8 @@ import SockJS from "sockjs-client";
 import type { WebSocketEvent } from "@/types/websocket";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
-
-const SOCKET_URL = `${API_URL.replace(/^http/, "ws")}/ws`;
+const WS_ENV = process.env.NEXT_PUBLIC_WS_URL?.replace(/\/$/, "");
+const SOCKET_URL = WS_ENV ? WS_ENV.replace(/^ws/, "http") : `${API_URL}/ws`;
 
 export type RealtimeStatus = "idle" | "connecting" | "connected" | "disconnected";
 

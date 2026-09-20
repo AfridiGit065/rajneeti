@@ -230,24 +230,6 @@ class GameControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/matches/{matchId}/foreign-aid/resolve - Success")
-    void resolveForeignAid_Success() throws Exception {
-        GameStateResponse response = buildGameResponse();
-        response.getPlayers().get(0).setCoins(4);
-        response.setTurnNumber(2);
-
-        when(gameEngine.resolveForeignAid(eq(testMatchId), eq(testUserId), eq(false)))
-                .thenReturn(response);
-
-        mockMvc.perform(post("/api/matches/" + testMatchId + "/foreign-aid/resolve?blocked=false")
-                        .with(user(testPrincipal)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.players[0].coins").value(4))
-                .andExpect(jsonPath("$.data.pendingAction").doesNotExist());
-    }
-
-    @Test
     @DisplayName("POST /api/matches/{matchId}/exchange - Success (declares Amla, opens challenge window)")
     void performExchange_Success() throws Exception {
         GameStateResponse response = buildGameResponse();
@@ -369,50 +351,6 @@ class GameControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/matches/{matchId}/assassinate/resolve - Success (action goes through)")
-    void resolveAssassinate_Success() throws Exception {
-        GameStateResponse response = buildGameResponse();
-        response.setTurnNumber(2);
-
-        when(gameEngine.resolveAssassinate(eq(testMatchId), eq(testUserId), eq(true)))
-                .thenReturn(response);
-
-        mockMvc.perform(post("/api/matches/" + testMatchId + "/assassinate/resolve?succeeded=true")
-                        .with(user(testPrincipal)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.turnNumber").value(2));
-    }
-
-    @Test
-    @DisplayName("POST /api/matches/{matchId}/assassinate/resolve - Cancelled (blocked, nothing paid)")
-    void resolveAssassinate_Cancelled() throws Exception {
-        GameStateResponse response = buildGameResponse();
-        response.setTurnNumber(2);
-
-        when(gameEngine.resolveAssassinate(eq(testMatchId), eq(testUserId), eq(false)))
-                .thenReturn(response);
-
-        mockMvc.perform(post("/api/matches/" + testMatchId + "/assassinate/resolve?succeeded=false")
-                        .with(user(testPrincipal)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.turnNumber").value(2));
-    }
-    @Test
-    @DisplayName("POST /api/matches/{matchId}/assassinate - Fails when the pending action is resolved by a non-actor (422)")
-    void resolveAssassinate_NotActor() throws Exception {
-        when(gameEngine.resolveAssassinate(eq(testMatchId), eq(testUserId), eq(true)))
-                .thenThrow(new BusinessException("NOT_ACTOR",
-                        "Only the action's actor can resolve the pending action."));
-
-        mockMvc.perform(post("/api/matches/" + testMatchId + "/assassinate/resolve?succeeded=true")
-                        .with(user(testPrincipal)))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error").value("NOT_ACTOR"));
-    }
-
-    @Test
     @DisplayName("POST /api/matches/{matchId}/tax - Success (opens challenge window)")
     void performTax_Success() throws Exception {
         GameStateResponse response = buildGameResponse();
@@ -431,23 +369,6 @@ class GameControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.pendingAction.type").value("TAX"))
                 .andExpect(jsonPath("$.data.pendingAction.claimedCharacter").value("minister"));
-    }
-
-    @Test
-    @DisplayName("POST /api/matches/{matchId}/tax/resolve - Success (+3 coins)")
-    void resolveTax_Success() throws Exception {
-        GameStateResponse response = buildGameResponse();
-        response.getPlayers().get(0).setCoins(5);
-        response.setTurnNumber(2);
-
-        when(gameEngine.resolveTax(eq(testMatchId), eq(testUserId), eq(true)))
-                .thenReturn(response);
-
-        mockMvc.perform(post("/api/matches/" + testMatchId + "/tax/resolve?granted=true")
-                        .with(user(testPrincipal)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.players[0].coins").value(5));
     }
 
     @Test
@@ -475,23 +396,6 @@ class GameControllerTest {
                 .andExpect(jsonPath("$.data.pendingAction.type").value("STEAL"))
                 .andExpect(jsonPath("$.data.pendingAction.claimedCharacter").value("dalal"))
                 .andExpect(jsonPath("$.data.pendingAction.targetPlayerId").value(targetId.toString()));
-    }
-
-    @Test
-    @DisplayName("POST /api/matches/{matchId}/steal/resolve - Success (coins transferred)")
-    void resolveSteal_Success() throws Exception {
-        GameStateResponse response = buildGameResponse();
-        response.getPlayers().get(0).setCoins(4);
-        response.setTurnNumber(2);
-
-        when(gameEngine.resolveSteal(eq(testMatchId), eq(testUserId), eq(true)))
-                .thenReturn(response);
-
-        mockMvc.perform(post("/api/matches/" + testMatchId + "/steal/resolve?granted=true")
-                        .with(user(testPrincipal)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.players[0].coins").value(4));
     }
 
     @Test

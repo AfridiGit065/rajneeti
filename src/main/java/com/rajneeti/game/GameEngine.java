@@ -965,9 +965,9 @@ public class GameEngine {
                     "Eliminated players cannot perform actions.");
         }
 
-        if (player.getCards() == null || player.getCards().isEmpty()) {
-
         enforceMandatoryCoup(player);
+
+        if (player.getCards() == null || player.getCards().isEmpty()) {
             throw new BusinessException("NO_INFLUENCE",
                     "You need at least one influence card to perform an action.");
         }
@@ -1042,9 +1042,9 @@ public class GameEngine {
                     "Eliminated players cannot perform actions.");
         }
 
-        if (player.getCards() == null || player.getCards().isEmpty()) {
-
         enforceMandatoryCoup(player);
+
+        if (player.getCards() == null || player.getCards().isEmpty()) {
             throw new BusinessException("NO_INFLUENCE",
                     "You need at least one influence card to perform an action.");
         }

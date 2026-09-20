@@ -18,23 +18,11 @@ export const GameService = {
   async block(matchId: string, claimedCharacter: string): Promise<Result<GameState>> {
     return repositories.game.block(matchId, claimedCharacter);
   },
-  async endTurn(matchId: string, playerId: string): Promise<Result<GameState>> {
-    return repositories.game.endTurn(matchId, playerId);
-  },
   async getGameResult(matchId: string): Promise<Result<GameResult>> {
     return repositories.game.getGameResult(matchId);
   },
-  async resolveForeignAid(matchId: string, blocked: boolean): Promise<Result<GameState>> {
-    return repositories.game.resolveForeignAid(matchId, blocked);
-  },
   async confirmExchange(matchId: string, keepCardIds: string[]): Promise<Result<GameState>> {
     return repositories.game.confirmExchange(matchId, keepCardIds);
-  },
-  async resolveAssassinate(matchId: string, succeeded: boolean): Promise<Result<GameState>> {
-    return repositories.game.resolveAssassinate(matchId, succeeded);
-  },
-  async resolveSteal(matchId: string, granted: boolean): Promise<Result<GameState>> {
-    return repositories.game.resolveSteal(matchId, granted);
   },
   /** Module 20 — resolves the pending action authoritatively (no boolean). */
   async resolve(matchId: string): Promise<Result<GameState>> {

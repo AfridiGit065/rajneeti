@@ -280,6 +280,30 @@ class GameEngineCoupTest {
     }
 
     @Test
+    @DisplayName("Coup - Tax is rejected when a forced Coup applies (10+ coins, actor still holds cards)")
+    void coup_rejectsTaxWhenForced() {
+        seed(10, 2, actorId, PlayerStatus.ACTIVE);
+
+        assertThatThrownBy(() -> gameEngine.performTax(matchId, actorId))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo("MANDATORY_COUP");
+        verifyNoInteractions(turnManager);
+    }
+
+    @Test
+    @DisplayName("Coup - Steal is rejected when a forced Coup applies (10+ coins, actor still holds cards)")
+    void coup_rejectsStealWhenForced() {
+        seed(10, 2, actorId, PlayerStatus.ACTIVE);
+
+        assertThatThrownBy(() -> gameEngine.performSteal(matchId, actorId, otherId))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo("MANDATORY_COUP");
+        verifyNoInteractions(turnManager);
+    }
+
+    @Test
     @DisplayName("Coup - exactly 9 coins does NOT trigger the forced Coup rule")
     void coup_noForcedCoupBelowTen() {
         GameState state = seed(9, 2, actorId, PlayerStatus.ACTIVE);

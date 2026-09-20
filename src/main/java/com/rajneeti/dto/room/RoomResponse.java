@@ -23,6 +23,7 @@ public class RoomResponse {
 
     private UUID id;
     private String roomCode;
+    private String name;
     private UUID hostId;
     private String hostUsername;
     private RoomStatus status;

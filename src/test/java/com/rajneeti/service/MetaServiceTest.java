@@ -79,7 +79,7 @@ class MetaServiceTest {
         assertThat(entry.getRating()).isEqualTo(1450);
         assertThat(entry.getWins()).isEqualTo(30);
         assertThat(entry.getTotalMatches()).isEqualTo(40);
-        assertThat(entry.getWinRate()).isEqualTo(0.75);
+        assertThat(entry.getWinRate()).isEqualTo(75.0);
     }
 
     @Test

@@ -1,17 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRealtimeStore } from "@/store/realtime-store";
 import { useMatchRealtime } from "@/hooks/use-match-realtime";
 import { realtimeSocket } from "@/lib/websocket/stomp-client";
 import { isSuperseded, type VersionKey } from "@/lib/realtime/state-version";
 import { toGameState } from "@/lib/game/backend-game-state";
+import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
-import { Landmark, ScrollText, Swords, Trophy } from "@/components/ui/icons";
+import { Landmark, Swords, Trophy, ScrollText, X } from "@/components/ui/icons";
 import { GameHeader } from "./game-header";
 import { PlayerSeat } from "./player-seat";
 import { OpponentSeat } from "./opponent-seat";
@@ -34,7 +36,7 @@ import {
   EliminationOverlay,
 } from "./card-reveal-elimination";
 import { ExchangeSelection } from "./exchange-selection";
-import { getAction } from "@/lib/game/actions";
+import { getAction, canChallenge } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { GameService } from "@/services/game-service";
 import { useAuthStore } from "@/store/auth-store";
@@ -65,71 +67,200 @@ function isBlockable(id: GameActionId): boolean {
 
 function DeckDiscard({ game }: { game: GameState }) {
   return (
-    <div className="rounded-2xl border border-forest-500/25 bg-surface p-4 panel-emboss">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-        Deck & Discard
-      </p>
-      <div className="mt-3 flex items-center justify-center gap-10">
-        <div className="flex flex-col items-center gap-2">
-          <div className="relative h-14 w-10">
-            <span className="absolute -left-1 top-1 block size-10 rounded-lg border border-gold-500/30 bg-deep-700" aria-hidden />
-            <span className="absolute -left-0.5 top-0.5 block size-10 rounded-lg border border-gold-500/40 bg-deep-600" aria-hidden />
-            <span className="absolute left-0 top-0 flex size-10 items-center justify-center rounded-lg border border-gold-500/50 bg-gradient-to-b from-deep-600 to-deep-800 shadow-gold">
-              <ScrollText className="size-4 text-gold-400" aria-hidden />
-            </span>
+    <div className="flex items-center gap-4 select-none shrink-0">
+      {/* Draw Pile */}
+      <div className="flex flex-col items-center gap-1.5 group">
+        <span className="font-cinzel text-[11px] font-bold uppercase tracking-widest text-gold-400">
+          DECK
+        </span>
+        <div
+          className="relative flex h-[90px] w-[64px] items-center justify-center rounded-xl border border-gold-500/70 bg-gradient-to-b from-[#0e3b2e] to-[#041610] shadow-[1px_1px_0_rgba(201,165,60,0.4),3px_3px_0_rgba(10,40,25,0.8),6px_6px_0_rgba(0,0,0,0.7)] cursor-default transition-transform hover:-translate-y-1"
+          title={`${game.deckCount} cards remaining`}
+        >
+          <div className="flex size-8 items-center justify-center rounded-full border border-gold-400/80 bg-deep-950/90 shadow-inner">
+            <span className="font-bengali text-base font-bold text-gold-300">র</span>
           </div>
-          <span className="font-mono text-lg font-bold text-gold-300">{game.deckCount}</span>
-          <span className="text-[0.65rem] uppercase tracking-wider text-muted">Deck</span>
         </div>
-        <div className="flex flex-col items-center gap-2">
-          <span className="flex size-10 items-center justify-center rounded-lg border border-crimson-500/30 bg-deep-800 opacity-70">
-            <Landmark className="size-4 text-crimson-300" aria-hidden />
-          </span>
-          <span className="font-mono text-lg font-bold text-crimson-300">
-            {game.revealedCardsCount}
-          </span>
-          <span className="text-[0.65rem] uppercase tracking-wider text-muted">Revealed</span>
+        <span className="font-mono text-xs font-bold text-gold-300 bg-deep-950/95 px-2.5 py-0.5 rounded-full border border-gold-500/30 shadow-sm">
+          {game.deckCount}
+        </span>
+      </div>
+
+      {/* Discard Pile */}
+      <div className="flex flex-col items-center gap-1.5 group">
+        <span className="font-cinzel text-[11px] font-bold uppercase tracking-widest text-crimson-400">
+          DISCARD
+        </span>
+        <div
+          className={cn(
+            "relative flex h-[90px] w-[64px] items-center justify-center rounded-xl border cursor-default transition-transform hover:-translate-y-1",
+            game.revealedCardsCount > 0
+              ? "border-crimson-500/60 bg-gradient-to-b from-[#2a0e14] to-[#120508] shadow-[1px_1px_0_rgba(180,40,60,0.4),3px_3px_0_rgba(20,5,8,0.8),6px_6px_0_rgba(0,0,0,0.7)]"
+              : "border-forest-500/25 bg-deep-950/50 border-dashed",
+          )}
+          title={`${game.revealedCardsCount} revealed cards`}
+        >
+          {game.revealedCardsCount > 0 ? (
+            <Landmark className="size-6 text-crimson-400" aria-hidden />
+          ) : (
+            <span className="text-xs text-muted/40 font-mono">0</span>
+          )}
         </div>
+        <span className="font-mono text-xs font-bold text-crimson-300 bg-deep-950/95 px-2.5 py-0.5 rounded-full border border-crimson-500/30 shadow-sm">
+          {game.revealedCardsCount}
+        </span>
       </div>
     </div>
   );
 }
 
 function ActiveAction({ game }: { game: GameState }) {
+  const active = game.activeAction;
+  const action = active ? getAction(active.action) : null;
+  const claimedChar = active?.claimedCharacter ? CHARACTER_MAP[active.claimedCharacter] : null;
+  const actor = game.players.find((p) => p.id === game.currentTurnPlayerId);
+  const target = active?.targetPlayerId ? game.players.find((p) => p.id === active.targetPlayerId) : null;
+
   return (
-    <div className="rounded-2xl border border-gold-500/25 bg-surface p-4 panel-emboss">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-        Active Action
-      </p>
-      {game.activeAction ? (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Swords className="size-5 text-gold-400" aria-hidden />
-          <span className="text-lg font-bold text-gold-300">
-            {getAction(game.activeAction.action).nameEn} ({getAction(game.activeAction.action).nameBn})
-          </span>
-          {game.activeAction.claimedCharacter ? (
-            <Badge tone="parchment">
-              {CHARACTER_MAP[game.activeAction.claimedCharacter]?.nameBn} Claimed
-            </Badge>
-          ) : null}
+    <div
+      className={cn(
+        "action-focal-card relative overflow-hidden rounded-2xl border transition-all select-none",
+        active
+          ? "border-gold-500/80 bg-[#061d15]/95 shadow-[0_0_40px_rgba(201,165,60,0.30)] active-action-glow"
+          : "border-forest-500/35 bg-[#041610]/95 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.5)]",
+      )}
+      role="region"
+      aria-label="Active Game Action"
+      style={{ width: 450, minHeight: "clamp(88px, 11vh, 140px)", maxWidth: "90vw" }}
+    >
+      {/* Ambient radial glow */}
+      {active && (
+        <div
+          className="pointer-events-none absolute inset-0 rounded-2xl"
+          style={{
+            background: "radial-gradient(ellipse 80% 65% at 50% 0%, rgba(201,165,60,0.22) 0%, transparent 70%)",
+          }}
+        />
+      )}
+
+      {/* Top decorative gold line */}
+      <div
+        className="absolute top-0 left-8 right-8 h-px pointer-events-none"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(217,183,91,0.6), transparent)" }}
+      />
+
+      {active && action ? (
+        <div className="flex flex-col justify-between h-full p-4 lg:p-5" style={{ minHeight: "clamp(88px, 11vh, 140px)" }}>
+          {/* Header row */}
+          <div className="flex items-center justify-between gap-2 border-b border-gold-500/20 pb-2.5 mb-2">
+            <div className="flex items-center gap-2">
+              <Swords className="size-4 text-gold-400" aria-hidden />
+              <span className="font-cinzel text-xs font-bold uppercase tracking-[0.2em] text-gold-300">
+                ACTIVE ACTION
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge tone="gold" className="text-[10px] py-0.5 px-2">{PHASE_LABEL[game.phase]}</Badge>
+              <span className="font-mono text-[11px] text-muted/70">Round #{game.turnNumber}</span>
+            </div>
+          </div>
+
+          {/* Main content */}
+          <div className="flex items-center gap-4">
+            {/* Portrait */}
+            <div className="relative shrink-0">
+              {claimedChar ? (
+                <div className="relative size-[76px] overflow-hidden rounded-xl border-2 border-gold-400/80 bg-deep-900 shadow-gold">
+                  <Image
+                    src={claimedChar.imagePath}
+                    alt={claimedChar.nameBn}
+                    fill
+                    sizes="76px"
+                    className="object-cover object-top"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-deep-950/70 to-transparent" />
+                </div>
+              ) : (
+                <div className="flex size-[76px] shrink-0 items-center justify-center rounded-xl border-2 border-gold-500/50 bg-gradient-to-b from-gold-500/25 to-gold-500/5 shadow-inner">
+                  <Swords className="size-9 text-gold-400" aria-hidden />
+                </div>
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1 leading-tight">
+              {/* Action name */}
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h3 className="text-2xl font-black text-ivory tracking-tight leading-none font-cinzel">
+                  {action.nameEn}
+                </h3>
+                <span className="font-bengali text-xl font-bold text-gold-300 leading-none">
+                  {action.nameBn}
+                </span>
+              </div>
+
+              {/* Claim statement */}
+              <p className="mt-2 text-sm text-parchment-200/90 leading-relaxed">
+                <strong className="text-ivory font-bold">{actor?.displayName ?? actor?.username ?? "Player"}</strong>
+                {claimedChar ? (
+                  <> claims <span className="text-gold-300 font-bold font-bengali">{claimedChar.nameBn}</span>{" "}
+                    <span className="text-muted/70">({claimedChar.nameEn.toUpperCase()})</span>
+                  </>
+                ) : (
+                  <> executes this action</>
+                )}
+                {target && (
+                  <> targeting <strong className="text-crimson-300 font-bold">{target.displayName ?? target.username}</strong></>
+                )}
+              </p>
+            </div>
+          </div>
         </div>
       ) : (
-        <p className="mt-2 text-sm text-muted">No active action.</p>
+        /* Waiting state */
+        <div className="flex flex-col items-center justify-center gap-2 p-4 lg:p-6 text-center" style={{ minHeight: "clamp(88px, 11vh, 140px)" }}>
+          <div className="flex items-center gap-2">
+            <span className="relative flex size-2.5">
+              <span className="absolute inset-0 animate-ping rounded-full bg-gold-400/60" />
+              <span className="relative size-2.5 rounded-full bg-gold-400" />
+            </span>
+            <span className="font-cinzel text-xs font-bold uppercase tracking-[0.25em] text-gold-400">
+              WAITING FOR ACTION
+            </span>
+          </div>
+
+          <p className="text-base font-semibold text-ivory/95">
+            {actor ? (
+              actor.isBot || actor.username.toLowerCase().includes("bot") ? (
+                <span className="inline-flex items-center gap-1.5 text-gold-200">
+                  <strong className="text-gold-300 font-bold">{actor.displayName ?? actor.username}</strong>
+                  <span>is deciding next move</span>
+                  <span className="flex items-center gap-0.5 ml-0.5">
+                    <span className="size-1 rounded-full bg-gold-400 animate-dot-1" />
+                    <span className="size-1 rounded-full bg-gold-400 animate-dot-2" />
+                    <span className="size-1 rounded-full bg-gold-400 animate-dot-3" />
+                  </span>
+                </span>
+              ) : (
+                <span>
+                  <strong className="text-gold-300 font-bold">{actor.displayName ?? actor.username}</strong>
+                  &apos;s turn — deciding next move
+                </span>
+              )
+            ) : (
+              "Waiting for next player..."
+            )}
+          </p>
+
+          <p className="font-bengali text-xs text-muted/70">
+            খেলোয়াড়ের পদক্ষেপের প্রতীক্ষায়…
+          </p>
+        </div>
       )}
-      <div className="mt-3 flex items-center gap-3">
-        <Badge tone="gold">
-          {PHASE_LABEL[game.phase]}
-        </Badge>
-        <span className="text-xs text-muted">Turn #{game.turnNumber}</span>
-      </div>
     </div>
   );
 }
 
-/**
- * Module 20 — compact summary of the last authoritative verdict produced by
- * the backend Action Resolver. Shown until the next action is declared.
- */
+/** Module 20 — compact summary of the last authoritative verdict. */
 function ActionResultSummary({
   result,
   players,
@@ -147,42 +278,96 @@ function ActionResultSummary({
     : undefined;
 
   return (
-    <div className="rounded-2xl border border-gold-500/25 bg-surface p-4 panel-emboss">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-        Action Result
-      </p>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className="text-lg font-bold text-gold-300">
-          {action.nameBn} ({action.nameEn})
-        </span>
+    <div className="w-full rounded-xl border border-forest-500/25 bg-deep-900/85 backdrop-blur-md px-4 py-2.5 text-xs select-none shadow-md animate-fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-forest-500/15 pb-1.5">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-gold-300 font-bengali">{action.nameBn}</span>
+          <span className="text-muted text-[11px]">({action.nameEn})</span>
+        </div>
         <Badge tone={cancelled ? "crimson" : "emerald"}>
-          {cancelled ? "ব্লক — বাতিল" : "সম্পন্ন"}
+          {cancelled ? "ব্লক — বাতিল (Blocked)" : "সম্পন্ন (Completed)"}
         </Badge>
-        {result.claimChallenged ? (
-          <Badge tone="parchment">চ্যালেঞ্জ উত্তীর্ণ</Badge>
-        ) : null}
       </div>
-      <div className="mt-2 space-y-1 text-sm text-muted">
-        {result.coinsGained !== 0 ? (
-          <p>
-            কয়েন: {result.coinsGained > 0 ? `+${result.coinsGained}` : result.coinsGained}
-            {result.coinsLost > 0 ? ` (লক্ষ্য থেকে −${result.coinsLost})` : ""}
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted text-[11px]">
+        {result.coinsGained !== 0 && (
+          <p className="text-forest-300 font-semibold">
+            {result.coinsGained > 0 ? `+${result.coinsGained}` : result.coinsGained} Coins
           </p>
-        ) : null}
-        {blocker ? (
-          <p>ব্লকার: {blocker.displayName ?? blocker.username}</p>
-        ) : null}
-        {loser ? (
+        )}
+        {blocker && (
           <p>
-            ইনফ্লুয়েন্স হারিয়েছেন: {loser.displayName ?? loser.username}
-            {result.eliminated ? " — খেলা থেকে অপসারিত!" : ""}
+            Blocker: <strong className="text-ivory">{blocker.displayName ?? blocker.username}</strong>
           </p>
-        ) : null}
+        )}
+        {loser && (
+          <p className="text-crimson-300">
+            Influence Lost: <strong className="text-ivory">{loser.displayName ?? loser.username}</strong>
+            {result.eliminated && " (Eliminated!)"}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────
+   SEATING MAP CALCULATION
+   Returns positions (as % of game arena) for opponents
+───────────────────────────────────────────────────────────── */
+interface SeatPosition {
+  player: GamePlayer;
+  top: string;   // CSS top % within game arena
+  left: string;  // CSS left % within game arena
+  transform?: string;
+}
+
+function computeSeats(opponents: GamePlayer[]): SeatPosition[] {
+  const n = opponents.length;
+  if (n === 0) return [];
+
+  // All positions expressed as percent of the game-arena container
+  // Arena spans below the header bar.
+  // Top seats sit near the top edge; left/right hug the screen sides.
+
+  const seats: SeatPosition[] = [];
+
+  if (n === 1) {
+    // Single top center — moved up closer to top edge
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "50%", transform: "translateX(-50%)" });
+  } else if (n === 2) {
+    // Two top: spread horizontally, moved up
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "30%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "0.8%", left: "70%", transform: "translateX(-50%)" });
+  } else if (n === 3) {
+    // 1 top center, 1 left, 1 right — push left/right to edges
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "30%", left: "1%" });
+    seats.push({ player: opponents[2]!, top: "30%", left: "auto" });
+  } else if (n === 4) {
+    // 1 top center, 2 left, 1 right
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "24%", left: "1%" });
+    seats.push({ player: opponents[2]!, top: "44%", left: "1%" });
+    seats.push({ player: opponents[3]!, top: "33%", left: "auto" });
+  } else {
+    // 5+ opponents: 1 top, 2 left, 2+ right
+    seats.push({ player: opponents[0]!, top: "0.8%", left: "50%", transform: "translateX(-50%)" });
+    seats.push({ player: opponents[1]!, top: "20%", left: "1%" });
+    seats.push({ player: opponents[2]!, top: "42%", left: "1%" });
+    seats.push({ player: opponents[3]!, top: "20%", left: "auto" });
+    seats.push({ player: opponents[4]!, top: "42%", left: "auto" });
+    // Any 6th+ opponent: put below top center
+    for (let i = 5; i < n; i++) {
+      seats.push({ player: opponents[i]!, top: "11%", left: `${30 + (i - 5) * 18}%` });
+    }
+  }
+
+  return seats;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MAIN GAME BOARD
+───────────────────────────────────────────────────────────── */
 export function GameBoard({ matchId }: { matchId: string }) {
   const [game, setGame] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -191,125 +376,89 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const { success, error: notifyError } = useToast();
   const selfId = useAuthStore((s) => s.user)?.id ?? "";
 
-  // Block System State (Module F20 / Module 19 backend)
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blockResultData, setBlockResultData] = useState<BlockResultData | null>(null);
   const [blockBusy, setBlockBusy] = useState(false);
-
-  // Card Reveal & Elimination State (Module F21)
   const [influenceLostOpen, setInfluenceLostOpen] = useState(false);
   const [influenceLostReason, setInfluenceLostReason] = useState("");
   const [eliminationPlayer, setEliminationPlayer] = useState<GamePlayer | null>(null);
+  const [chronicleOpen, setChronicleOpen] = useState(false);
+  const [challengePanelActive, setChallengePanelActive] = useState(false);
 
-  // Module 23 — the realtime store is the source of truth for gameplay state
-  // after the initial HTTP seed. Every server sync pushes a full snapshot here.
   const gameSnapshot = useRealtimeStore((s) => s.gameSnapshots[matchId]);
   const resyncRequested = useRealtimeStore((s) => s.resyncRequested[matchId]);
   const realtimeStatus = useRealtimeStore((s) => s.status);
   const consumeResyncRequest = useRealtimeStore((s) => s.consumeResyncRequest);
   const resetMatchState = useRealtimeStore((s) => s.resetMatchState);
 
-  // Tracks the revision this board has already rendered, so that the public
-  // broadcast and the private reply of the SAME sync do not double-rerender.
   const appliedVersionRef = useRef<VersionKey | undefined>(undefined);
   const resyncInFlightRef = useRef(false);
+  const wasConnectedRef = useRef(false);
 
   const load = useCallback(async () => GameService.getGameState(matchId), [matchId]);
 
-  /** Applies a full game state and marks its revision as rendered. */
   const adoptState = useCallback((state: GameState) => {
-    appliedVersionRef.current = {
-      stateVersion: state.stateVersion ?? 0,
-      scope: "private",
-    };
+    appliedVersionRef.current = { stateVersion: state.stateVersion ?? 0, scope: "private" };
     setGame(state);
   }, []);
 
-  /** Sends a resync command for this match (deduped, never spams). */
   const requestResyncNow = useCallback(() => {
     if (resyncInFlightRef.current) return;
     resyncInFlightRef.current = true;
-    realtimeSocket.sendSync(
-      matchId,
-      `resync-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-      appliedVersionRef.current?.stateVersion ?? 0,
-    );
-    window.setTimeout(() => {
-      resyncInFlightRef.current = false;
-    }, 1500);
+    realtimeSocket.sendSync(matchId, `resync-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`, appliedVersionRef.current?.stateVersion ?? 0);
+    window.setTimeout(() => { resyncInFlightRef.current = false; }, 1500);
   }, [matchId]);
 
   useEffect(() => {
     let cancelled = false;
     load().then((result) => {
       if (cancelled) return;
-      if (result.ok) {
-        adoptState(result.data);
-        setLoading(false);
-      } else {
-        setError(result.error.message);
-        setLoading(false);
-      }
+      if (result.ok) { adoptState(result.data); setLoading(false); }
+      else { setError(result.error.message); setLoading(false); }
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [load, adoptState]);
 
-  // Module 23 — supersede the REST seed with authoritative snapshots as they
-  // arrive over WebSocket (public broadcasts + private per-player replies).
   useEffect(() => {
     if (!gameSnapshot) return;
-    const incoming: VersionKey = {
-      stateVersion: gameSnapshot.stateVersion,
-      scope: gameSnapshot.scope,
-    };
+    const incoming: VersionKey = { stateVersion: gameSnapshot.stateVersion, scope: gameSnapshot.scope };
     if (isSuperseded(appliedVersionRef.current, incoming)) return;
     appliedVersionRef.current = incoming;
-    setGame(toGameState(gameSnapshot.state));
-  }, [gameSnapshot]);
+    setGame((prev) => {
+      const next = toGameState(gameSnapshot.state);
+      if (gameSnapshot.scope === "public" && prev) {
+        const prevMe = prev.players.find((p) => p.userId === selfId);
+        const hasRealCards = prevMe && prevMe.influenceCards.length > 0 && !prevMe.influenceCards[0].id.startsWith("hidden-");
+        if (hasRealCards) {
+          return { ...next, players: next.players.map((p) => {
+            if (p.userId === selfId) return { ...p, influenceCards: prevMe.influenceCards.slice(0, p.influenceCards.length) };
+            return p;
+          }) };
+        }
+      }
+      return next;
+    });
+  }, [gameSnapshot, selfId]);
 
-  // Request a private snapshot whenever the socket (re)connects, so the board
-  // re-syncs after reconnects without waiting for the next action.
-  const wasConnectedRef = useRef(false);
   useEffect(() => {
-    if (realtimeStatus === "connected" && !wasConnectedRef.current) {
-      requestResyncNow();
-    }
+    if (realtimeStatus === "connected" && !wasConnectedRef.current) requestResyncNow();
     wasConnectedRef.current = realtimeStatus === "connected";
   }, [realtimeStatus, requestResyncNow]);
 
-  // A version gap was detected (missed broadcast) — consume the store flag and
-  // ask the server for the current revision.
   useEffect(() => {
-    if (resyncRequested && consumeResyncRequest(matchId)) {
-      requestResyncNow();
-    }
+    if (resyncRequested && consumeResyncRequest(matchId)) requestResyncNow();
   }, [resyncRequested, consumeResyncRequest, matchId, requestResyncNow]);
 
-  // Drop this match's snapshots when the board unmounts.
   useEffect(() => {
-    return () => {
-      resetMatchState(matchId);
-    };
+    return () => { resetMatchState(matchId); };
   }, [matchId, resetMatchState]);
 
-  // Module 23 — STATE_UPDATED snapshots are consumed inside the hook itself;
-  // the board renders straight from the store, so no HTTP fallback is needed.
   useMatchRealtime(matchId, !!matchId);
 
-  // Module F22 — legacy draw tick: refetch once after the local player's drawn
-  // card reveal broadcast, which is not followed by a snapshot sync.
   const [matchTick, setMatchTick] = useState(0);
-
   useEffect(() => {
     return useRealtimeStore.subscribe((state, prev) => {
-      if (
-        state.lastDraw &&
-        state.lastDraw !== prev.lastDraw &&
-        state.lastDraw.matchId === matchId &&
-        state.lastDraw.playerId === selfId
-      ) {
+      if (state.lastDraw && state.lastDraw !== prev.lastDraw && state.lastDraw.matchId === matchId && state.lastDraw.playerId === selfId) {
         setMatchTick((t) => t + 1);
       }
     });
@@ -322,20 +471,14 @@ export function GameBoard({ matchId }: { matchId: string }) {
       if (cancelled) return;
       if (result.ok) adoptState(result.data);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [load, matchTick, adoptState]);
 
   async function retry() {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     const result = await load();
-    if (result.ok) {
-      adoptState(result.data);
-    } else {
-      setError(result.error.message);
-    }
+    if (result.ok) adoptState(result.data);
+    else setError(result.error.message);
     setLoading(false);
   }
 
@@ -343,43 +486,26 @@ export function GameBoard({ matchId }: { matchId: string }) {
     setBusy(actionId);
     const result = await GameService.performAction(matchId, {
       action: actionId,
-      claimedCharacter:
-        actionId === "tax"
-          ? ("minister" as const)
-          : actionId === "steal"
-            ? ("dalal" as const)
-            : undefined,
+      claimedCharacter: actionId === "tax" ? ("minister" as const) : actionId === "steal" ? ("dalal" as const) : undefined,
       targetPlayerId,
     });
     setBusy(null);
-
     if (result.ok) {
       adoptState(result.data);
       success(`${getAction(actionId).nameBn} — অ্যাকশন চলছে`);
-
-      // If action is Coup, trigger card loss for the target player (F21 simulation)
       if (actionId === "coup" && targetPlayerId) {
         const target = result.data.players.find((p) => p.id === targetPlayerId);
-        if (target) {
-          setInfluenceLostReason(`ক্ষমতা দখল (Coup) আক্রমণের শিকার হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন`);
-          setInfluenceLostOpen(true);
-        }
+        if (target) { setInfluenceLostReason(`ক্ষমতা দখল (Coup) আক্রমণের শিকার হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন`); setInfluenceLostOpen(true); }
       }
-    } else {
-      notifyError(result.error.message);
-    }
+    } else { notifyError(result.error.message); }
   }
 
   async function handleBlockSubmit(claimed: CharacterId) {
     setBlockBusy(true);
     const result = await GameService.block(matchId, claimed);
     setBlockBusy(false);
-    if (result.ok) {
-      adoptState(result.data);
-      success("ব্লক দাবি জমা হয়েছে — অ্যাকশনটি ব্লক করা হয়েছে");
-    } else {
-      notifyError(result.error.message);
-    }
+    if (result.ok) { adoptState(result.data); success("ব্লক দাবি জমা হয়েছে — অ্যাকশনটি ব্লক করা হয়েছে"); }
+    else { notifyError(result.error.message); }
   }
 
   async function handleBlockChallenge() {
@@ -391,296 +517,346 @@ export function GameBoard({ matchId }: { matchId: string }) {
       adoptState(result.data);
       const res = result.data.pendingChallenge;
       if (res?.blockClaim) {
-        const challenger =
-          result.data.players.find((p) => p.userId === selfId) ??
-          result.data.players[0]!;
+        const challenger = result.data.players.find((p) => p.userId === selfId) ?? result.data.players[0]!;
         const blocker = blockEvent?.blocker ?? challenger;
-        const outcome: BlockOutcome =
-          res.result === "failed"
-            ? "challenger_loses_influence"
-            : "block_claim_is_bluff";
-        setBlockResultData({
-          outcome,
-          blocker,
-          challenger,
-          claimedCharacter: res.claimedCharacter,
-          actionId: blockEvent?.actionId ?? result.data.activeAction?.action ?? "income",
-        });
-        if (outcome === "challenger_loses_influence") {
-          setInfluenceLostReason("ব্লকের বিরুদ্ধে করা চ্যালেঞ্জে ব্যর্থ হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
-        } else {
-          setInfluenceLostReason("ব্লকের মিথ্যা দাবি ফাঁস হওয়ায় ব্লকার ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
-        }
+        const outcome: BlockOutcome = res.result === "failed" ? "challenger_loses_influence" : "block_claim_is_bluff";
+        setBlockResultData({ outcome, blocker, challenger, claimedCharacter: res.claimedCharacter, actionId: blockEvent?.actionId ?? result.data.activeAction?.action ?? "income" });
+        if (outcome === "challenger_loses_influence") setInfluenceLostReason("ব্লকের বিরুদ্ধে করা চ্যালেঞ্জে ব্যর্থ হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
+        else setInfluenceLostReason("ব্লকের মিথ্যা দাবি ফাঁস হওয়ায় ব্লকার ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
         setInfluenceLostOpen(true);
       }
       setBlockDialogOpen(false);
       success("ব্লক চ্যালেঞ্জ সম্পন্ন হয়েছে");
-    } else {
-      notifyError(result.error.message);
-    }
+    } else { notifyError(result.error.message); }
   }
 
   async function resolvePendingAction() {
     if (!game?.activeAction) return;
     setBlockBusy(true);
-    // Module 20 — the verdict is derived entirely server-side by the Action
-    // Resolver from the recorded block/challenge flags. No boolean is sent.
     const result = await GameService.resolve(matchId);
     setBlockBusy(false);
-    if (result.ok) {
-      adoptState(result.data);
-      setBlockDialogOpen(false);
-      const cancelled = result.data.lastActionResult?.result === "CANCELLED";
-      success(cancelled ? "ব্লক গৃহীত হয়েছে — অ্যাকশন বাতিল" : "অ্যাকশন সমাধান সম্পন্ন হয়েছে");
-    } else {
-      notifyError(result.error.message);
-    }
+    if (result.ok) { adoptState(result.data); setBlockDialogOpen(false); const cancelled = result.data.lastActionResult?.result === "CANCELLED"; success(cancelled ? "ব্লক গৃহীত হয়েছে — অ্যাকশন বাতিল" : "অ্যাকশন সমাধান সম্পন্ন হয়েছে"); }
+    else { notifyError(result.error.message); }
   }
 
   function handleConfirmCardReveal(revealedCardId: string) {
     if (!game) return;
     setInfluenceLostOpen(false);
-
-    // Update game state: reveal the selected card
     const updatedPlayers = game.players.map((p) => {
       const hasCard = p.influenceCards.some((c) => c.id === revealedCardId);
       if (!hasCard) return p;
-
-      const updatedCards = p.influenceCards.map((c) =>
-        c.id === revealedCardId ? { ...c, revealed: true } : c,
-      );
+      const updatedCards = p.influenceCards.map((c) => c.id === revealedCardId ? { ...c, revealed: true } : c);
       const remainingHidden = updatedCards.filter((c) => !c.revealed).length;
       const isAlive = remainingHidden > 0;
-
-      // If reached 0 influence, trigger EliminationOverlay
-      if (!isAlive && p.isAlive) {
-        setEliminationPlayer({ ...p, isAlive: false, influenceCards: updatedCards });
-      }
-
-      return {
-        ...p,
-        isAlive,
-        influenceCards: updatedCards,
-      };
+      if (!isAlive && p.isAlive) setEliminationPlayer({ ...p, isAlive: false, influenceCards: updatedCards });
+      return { ...p, isAlive, influenceCards: updatedCards };
     });
-
-    setGame({
-      ...game,
-      players: updatedPlayers,
-      revealedCardsCount: game.revealedCardsCount + 1,
-    });
-
+    setGame({ ...game, players: updatedPlayers, revealedCardsCount: game.revealedCardsCount + 1 });
     success("কার্ড সফলভাবে উন্মোচিত হয়েছে");
   }
 
-  /** Module 19 — the active block claim from the backend pending action. */
   const blockEvent = (() => {
     const act = game?.activeAction;
     if (!game?.currentTurnPlayerId || !act?.blockerUserId) return null;
     const blocker = game.players.find((p) => p.id === act.blockerUserId);
     const actor = game.players.find((p) => p.id === game.currentTurnPlayerId);
     if (!blocker || !actor) return null;
-    const fallback: CharacterId =
-      act.action === "foreign_aid"
-        ? "minister"
-        : act.action === "assassinate"
-          ? "goyenda"
-          : "dalal";
-    return {
-      blocker,
-      targetOrActor: actor,
-      actionId: act.action,
-      claimedCharacter: act.blockedCharacter ?? fallback,
-    };
+    const fallback: CharacterId = act.action === "foreign_aid" ? "minister" : act.action === "assassinate" ? "goyenda" : "dalal";
+    return { blocker, targetOrActor: actor, actionId: act.action, claimedCharacter: act.blockedCharacter ?? fallback };
   })();
 
-  /** Pending Exchange claim by the local player — pick the 2 cards to keep. */
-  const showExchangeSelection =
-    game?.status === MatchStatus.IN_PROGRESS &&
-    game?.activeAction?.action === "exchange" &&
-    (game?.exchangePool?.length ?? 0) > 0 &&
-    game?.currentTurnPlayerId === selfId;
+  const showExchangeSelection = game?.status === MatchStatus.IN_PROGRESS && game?.activeAction?.action === "exchange" && (game?.exchangePool?.length ?? 0) > 0 && game?.currentTurnPlayerId === selfId;
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-app px-4">
-        <LoadingState label="Loading game board…" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-app px-4"><LoadingState label="Loading game board…" /></div>;
+  if (error !== null || !game) return <div className="flex min-h-screen items-center justify-center bg-app px-4"><div className="w-full max-w-lg"><ErrorState title="Could not load game board" message={error ?? "Match state could not be found."} action={<Button variant="premium" onClick={retry}>Try Again</Button>} /></div></div>;
+  if (game.status === MatchStatus.FINISHED) return <GameOverScreen game={game} selfId={selfId} />;
 
-  if (error !== null || !game) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-app px-4">
-        <div className="w-full max-w-lg">
-          <ErrorState
-            title="Could not load game board"
-            message={error ?? "Match state could not be found."}
-            action={
-              <Button variant="premium" onClick={retry}>
-                Try Again
-              </Button>
-            }
-          />
-        </div>
-      </div>
-    );
-  }
+  const currentPlayer = game.players.find((p) => p.id === selfId) ?? game.players.find((p) => p.isTurn) ?? game.players[0];
+  if (!currentPlayer) return <div className="flex min-h-screen items-center justify-center bg-app px-4"><EmptyState icon={<Trophy className="size-6" aria-hidden />} title="No Players" description="No players have joined this match yet." /></div>;
 
-  // Module 21 — once the backend declares the match FINISHED, the winner
-  // manager has already persisted the outcome; take over the screen.
-  if (game.status === MatchStatus.FINISHED) {
-    return <GameOverScreen game={game} selfId={selfId} />;
-  }
-
-  const currentPlayer =
-    game.players.find((p) => p.userId === selfId) ??
-    game.players.find((p) => p.isTurn) ??
-    game.players[0];
-
-  if (!currentPlayer) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-app px-4">
-        <EmptyState
-          icon={<Trophy className="size-6" aria-hidden />}
-          title="No Players"
-          description="No players have joined this match yet."
-        />
-      </div>
-    );
-  }
-
-  const opponents = game.players
-    .filter((p) => p.id !== currentPlayer.id)
-    .sort((a, b) => a.seatIndex - b.seatIndex);
-
-  // Module 19 — block window state driven by the backend pending action.
-  const blockWindowAction: GameActionId | null =
-    game.activeAction && isBlockable(game.activeAction.action)
-      ? game.activeAction.action
-      : null;
+  const opponents = game.players.filter((p) => p.id !== currentPlayer.id).sort((a, b) => a.seatIndex - b.seatIndex);
+  const blockWindowAction: GameActionId | null = game.activeAction && isBlockable(game.activeAction.action) ? game.activeAction.action : null;
   const isActorOfPending = game.currentTurnPlayerId === currentPlayer.id;
-  const showBlockOffer =
-    blockWindowAction !== null &&
-    !game.activeAction!.blockerUserId &&
-    !game.pendingChallenge &&
-    currentPlayer.isAlive &&
-    !isActorOfPending;
-  const showActorResolve =
-    blockWindowAction !== null &&
-    isActorOfPending &&
-    !game.activeAction!.blockerUserId;
+  const showBlockOffer = blockWindowAction !== null && !game.activeAction!.blockerUserId && !game.pendingChallenge && currentPlayer.isAlive && !isActorOfPending;
+  const showActorResolve = blockWindowAction !== null && isActorOfPending && !game.activeAction!.blockerUserId;
+
+  // Compute seating positions for all opponents
+  // Response / Interactive window state detection (Challenge / Block / Resolution)
+  const claimant = game.players.find((p) => p.id === game.currentTurnPlayerId);
+  const isChallengeEligible = Boolean(
+    game.activeAction?.claimedCharacter &&
+    game.phase === "action_resolution" &&
+    claimant && claimant.userId !== selfId &&
+    canChallenge(game.activeAction.action)
+  );
+  const isChallengeActive =
+    (isChallengeEligible && challengePanelActive !== false) ||
+    Boolean(game.pendingChallenge) ||
+    Boolean(challengePanelActive);
+
+  const isBlockActive = Boolean(
+    showBlockOffer ||
+    showActorResolve ||
+    blockEvent ||
+    blockResultData ||
+    game.pendingBlock
+  );
+
+  const isResponseState = isBlockActive || isChallengeActive || Boolean(game.lastActionResult);
+
+  // Compute seating positions for all opponents
+  const seatPositions = computeSeats(opponents);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <GameHeader game={game} selfId={selfId} />
+    <div className="relative flex h-screen max-h-screen flex-col overflow-hidden select-none">
+      {/* ── Layer 0: Table Background — full viewport ── */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: 'url("/assets/game/rajneeti-table-bg.png.png")',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+        aria-hidden="true"
+      />
+      {/* ── Layer 1: Subtle dark vignette — keeps bg objects visible ── */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 75% 65% at 50% 48%, rgba(4,18,12,0.08) 0%, rgba(2,10,7,0.28) 100%), " +
+            "linear-gradient(180deg, rgba(2,10,7,0.22) 0%, rgba(2,10,7,0.32) 100%)",
+          boxShadow: "inset 0 0 120px 60px rgba(0,0,0,0.38)",
+        }}
+        aria-hidden="true"
+      />
 
-      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-4 px-3 py-3 sm:px-4 sm:py-4 lg:grid-cols-[250px_minmax(0,1fr)_300px]">
-        {/* === Opponents column (sidebar on desktop, horizontal scroll strip on mobile) === */}
-        <aside className="order-1 space-y-3 lg:order-1">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-              Opponents ({opponents.length})
-            </h2>
-            <span className="text-[10px] text-muted lg:hidden">
-              Scroll right ➔
-            </span>
-            <Badge tone="neutral" className="hidden lg:inline-flex">{opponents.length}</Badge>
-          </div>
-          {/* Scrollable on mobile/tablet, stacked column on desktop */}
-          <div className="flex gap-3 overflow-x-auto pb-2 pt-1 lg:flex-col lg:overflow-visible lg:pb-0 scrollbar-thin">
-            {opponents.map((player) => (
-              <div key={player.id} className="min-w-[240px] sm:min-w-[260px] lg:min-w-0 flex-shrink-0 lg:flex-shrink">
-                <OpponentSeat player={player} />
+      {/* ── Top Bar ── */}
+      <GameHeader
+        game={game}
+        selfId={selfId}
+        onToggleChronicle={() => setChronicleOpen((prev) => !prev)}
+        isChronicleOpen={chronicleOpen}
+        chronicleCount={game.log.length}
+      />
+
+      {/* ── Game Arena: full area below header ── */}
+      <div className="relative flex-1 min-h-0 overflow-hidden z-10" id="game-arena">
+
+        {/* ══════════════════════════════════════════
+            OPPONENT SEATS — absolutely positioned
+        ══════════════════════════════════════════ */}
+        {seatPositions.map(({ player, top, left, transform }, _idx) => {
+          const isRight = left === "auto";
+          return (
+            <div
+              key={player.id}
+              className="absolute z-20"
+              style={{
+                top,
+                ...(isRight
+                  ? { right: "1.5%" }
+                  : { left, transform }),
+                width: 248,
+                maxWidth: "26vw",
+                minWidth: 180,
+              }}
+              aria-label={`Opponent seat: ${player.displayName ?? player.username}`}
+            >
+              <OpponentSeat player={player} />
+            </div>
+          );
+        })}
+
+                {/* ═══════════════════════════════════════════════════════════════
+            CENTRAL PLAY AREA — STATE-AWARE REFLOW
+            - Normal State: Pristine cinematic layout (Active Action → Cards → Player → Dock)
+            - Response State: Coordinated vertical flow (Block Opportunity → Active Action → Challenge → Cards → Player → Dock)
+        ═══════════════════════════════════════════════════════════════ */}
+        {isResponseState ? (
+          <div
+            className="central-response-stage absolute inset-x-0 top-0 bottom-0 z-20 flex flex-col items-center justify-between pt-[clamp(68px,8.5vh,86px)] pb-2 pointer-events-none overflow-y-auto"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {/* Upper Event Flow: Block Opportunity → Active Action → Challenge Window */}
+            <div className="flex flex-col items-center w-full max-w-[540px] shrink-0">
+              {/* 1. Block Opportunity / Block Results */}
+              {(blockResultData || game.lastActionResult || blockEvent || showBlockOffer || showActorResolve) && (
+                <div className="w-full pointer-events-auto mb-5 sm:mb-6 animate-fade-in">
+                  {blockResultData && (
+                    <BlockResult result={blockResultData} onDismiss={() => setBlockResultData(null)} />
+                  )}
+                  {game.lastActionResult && !blockResultData ? (
+                    <ActionResultSummary result={game.lastActionResult} players={game.players} />
+                  ) : null}
+                  {blockEvent ? (
+                    <BlockPanel
+                      activeBlock={blockEvent}
+                      currentPlayer={currentPlayer}
+                      onOpenDialog={() => setBlockDialogOpen(true)}
+                    />
+                  ) : null}
+                  {showBlockOffer && blockWindowAction && !blockEvent ? (
+                    <BlockOffer action={blockWindowAction} busy={blockBusy} onBlock={handleBlockSubmit} />
+                  ) : null}
+                  {showActorResolve && blockWindowAction && !blockEvent ? (
+                    <BlockWindowPanel
+                      action={blockWindowAction}
+                      busy={blockBusy}
+                      onResolve={() => void resolvePendingAction()}
+                    />
+                  ) : null}
+                </div>
+              )}
+
+              {/* 2. Active Action + Deck/Discard beside it */}
+              <div className="flex items-start gap-4 pointer-events-auto mb-6 sm:mb-7">
+                <ActiveAction game={game} />
+                <div className="shrink-0 pt-6 sm:pt-8">
+                  <DeckDiscard game={game} />
+                </div>
               </div>
-            ))}
+
+              {/* 3. Challenge Window / Response Panel (below Active Action) */}
+              {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
+                <div className="w-full pointer-events-auto">
+                  <ChallengeFlow
+                    game={game}
+                    selfId={selfId}
+                    onResolved={adoptState}
+                    onPanelVisibilityChange={setChallengePanelActive}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Lower Player Station: Own Cards → Your Player → Action Dock */}
+            <div className="flex flex-col items-center w-full max-w-[540px] shrink-0 pointer-events-auto">
+              {/* 4. Own Influence Cards (scaled down to 165–195px in response mode) */}
+              <div className="mb-2 sm:mb-2.5">
+                <OwnCards cards={currentPlayer.influenceCards} responseMode={true} />
+              </div>
+
+              {/* 5. Own Player Status */}
+              <div className="w-full max-w-[460px] mb-2 sm:mb-2.5">
+                <PlayerSeat player={currentPlayer} />
+              </div>
+
+              {/* 6. Floating Action Dock */}
+              <div>
+                <ActionPanel
+                  player={currentPlayer}
+                  opponents={opponents}
+                  busy={busy !== null}
+                  onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
+                />
+              </div>
+            </div>
           </div>
-        </aside>
+        ) : (
+          <>
+            {/* ── NORMAL STATE: Exact unchanged layout ── */}
+            {/* CENTER STAGE */}
+            <div
+              className="absolute left-1/2 z-20 flex flex-col items-center gap-0"
+              style={{ top: "17%", transform: "translateX(-50%)" }}
+            >
+              <div className="flex items-start gap-4">
+                <ActiveAction game={game} />
+                <div className="shrink-0 pt-8">
+                  <DeckDiscard game={game} />
+                </div>
+              </div>
 
-        {/* === Main center column === */}
-        <section className="order-2 flex flex-col gap-4 lg:order-2">
-          {/* Block result card if recently resolved */}
-          {blockResultData && (
-            <BlockResult
-              result={blockResultData}
-              onDismiss={() => setBlockResultData(null)}
-            />
-          )}
+              {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
+                <ChallengeFlow
+                  game={game}
+                  selfId={selfId}
+                  onResolved={adoptState}
+                  onPanelVisibilityChange={setChallengePanelActive}
+                />
+              )}
+            </div>
 
-          {/* Module 20 — authoritative verdict of the last resolved action */}
-          {game.lastActionResult ? (
-            <ActionResultSummary
-              result={game.lastActionResult}
-              players={game.players}
-            />
-          ) : null}
+            {/* BOTTOM STATION */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end select-none pointer-events-auto"
+              style={{
+                top: "clamp(calc(17% + 135px), 44%, 68%)",
+                bottom: "8px",
+              }}
+            >
+              <OwnCards cards={currentPlayer.influenceCards} responseMode={false} />
 
-          {/* Active Block Indicator */}
-          {blockEvent && (
-            <BlockPanel
-              activeBlock={blockEvent}
-              currentPlayer={currentPlayer}
-              onOpenDialog={() => setBlockDialogOpen(true)}
-            />
-          )}
+              <div className="mt-[18px] min-w-[320px] max-w-[480px]">
+                <PlayerSeat player={currentPlayer} />
+              </div>
 
-          {/* Block opportunity for non-actor players (Module 19) */}
-          {showBlockOffer && blockWindowAction ? (
-            <BlockOffer
-              action={blockWindowAction}
-              busy={blockBusy}
-              onBlock={handleBlockSubmit}
-            />
-          ) : null}
+              <div className="mt-[14px]">
+                <ActionPanel
+                  player={currentPlayer}
+                  opponents={opponents}
+                  busy={busy !== null}
+                  onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
-          {/* Actor resolve control when their blockable action is unblocked */}
-          {showActorResolve && blockWindowAction ? (
-            <BlockWindowPanel
-              action={blockWindowAction}
-              busy={blockBusy}
-              onResolve={() => void resolvePendingAction()}
-            />
-          ) : null}
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <ActiveAction game={game} />
-            <DeckDiscard game={game} />
-          </div>
-
-          {game.status === MatchStatus.IN_PROGRESS ? (
-            <ChallengeFlow game={game} selfId={selfId} onResolved={adoptState} />
-          ) : null}
-
-          <div className="mt-auto flex flex-col items-center justify-end gap-4 lg:flex-row lg:items-end">
-            <PlayerSeat player={currentPlayer} />
-            <OwnCards cards={currentPlayer.influenceCards} />
-          </div>
-
-          <ActionPanel
-            player={currentPlayer}
-            opponents={opponents}
-            busy={busy !== null}
-            onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
+        {/* ══════════════════════════════════════════
+            CHRONICLE DRAWER — fixed right overlay
+            Does NOT shrink the game board
+        ══════════════════════════════════════════ */}
+        {/* Backdrop (mobile only) */}
+        {chronicleOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs lg:hidden"
+            onClick={() => setChronicleOpen(false)}
+            aria-hidden
           />
-        </section>
+        )}
+        {chronicleOpen && (
+          <aside
+            className="chronicle-drawer fixed right-0 z-50 flex flex-col border-l border-forest-500/20"
+            style={{ top: 56, height: "calc(100vh - 56px)", width: 340 }}
+            aria-label="Match Chronicle"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-forest-500/20 px-4 py-3 bg-[#020d09]/70 shrink-0">
+              <div className="flex items-center gap-2">
+                <ScrollText className="size-4 text-gold-400" aria-hidden />
+                <h2 className="font-cinzel text-xs font-bold uppercase tracking-widest text-ivory">
+                  Game Log
+                </h2>
+                <span className="rounded px-1.5 py-0.5 font-mono text-[10px] font-bold bg-gold-500/15 text-gold-300 border border-gold-500/25">
+                  {game.log.length}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChronicleOpen(false)}
+                className="rounded-lg p-1.5 text-muted hover:text-ivory hover:bg-forest-900/40 transition-colors cursor-pointer"
+                aria-label="Close Chronicle"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <GameLog entries={game.log} />
+            </div>
+          </aside>
+        )}
+      </div>
 
-        {/* === Game Log (hidden on small screens, visible on desktop) === */}
-        <aside className="order-3 hidden lg:block">
-          <GameLog entries={game.log} />
-        </aside>
-      </main>
-
-      {/* Module 24: Exchange card selection for the pending Exchange actor */}
+      {/* ══════════════════════════════════════════
+          MODALS & OVERLAYS (above everything)
+      ══════════════════════════════════════════ */}
       {showExchangeSelection ? (
-        <ExchangeSelection
-          matchId={game.matchId}
-          cards={game.exchangePool!}
-          onResolved={adoptState}
-        />
+        <ExchangeSelection matchId={game.matchId} cards={game.exchangePool!} onResolved={adoptState} />
       ) : null}
-
-      {/* Module F20: Block Dialog Modal */}
-      {blockEvent && (
+      {blockEvent ? (
         <BlockDialog
           event={blockEvent}
           currentPlayer={currentPlayer}
@@ -690,24 +866,20 @@ export function GameBoard({ matchId }: { matchId: string }) {
           onAllowBlock={() => void resolvePendingAction()}
           onChallenge={() => void handleBlockChallenge()}
         />
-      )}
-
-      {/* Module F21: Influence Lost Modal (Card Reveal Choice) */}
+      ) : null}
       <InfluenceLostModal
         open={influenceLostOpen}
         player={currentPlayer}
         reason={influenceLostReason}
         onConfirmReveal={handleConfirmCardReveal}
       />
-
-      {/* Module F21: Elimination Dramatic Overlay */}
-      {eliminationPlayer && (
+      {eliminationPlayer ? (
         <EliminationOverlay
           open={eliminationPlayer !== null}
           eliminatedPlayer={eliminationPlayer}
           onFinish={() => setEliminationPlayer(null)}
         />
-      )}
+      ) : null}
     </div>
   );
-}
+}

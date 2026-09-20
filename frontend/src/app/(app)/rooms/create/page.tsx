@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
+import { PageBackground } from "@/components/layout/page-background";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RoomRulesSummary } from "@/components/rooms/room-rules-summary";
@@ -8,7 +9,9 @@ import { ArrowLeft } from "@/components/ui/icons";
 
 export default function CreateRoomPage() {
   return (
-    <div className="animate-fade-up">
+    <>
+      <PageBackground variant="lobby" />
+      <div className="animate-fade-up">
       <Link
         href="/lobby"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-gold-300"
@@ -40,5 +43,6 @@ export default function CreateRoomPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
