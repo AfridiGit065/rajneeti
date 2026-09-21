@@ -9,6 +9,8 @@ import com.rajneeti.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -69,5 +71,32 @@ public class ProfileController {
         log.info("Fetching statistics for authenticated user ID: {}", userPrincipal.getId());
         StatisticsResponse response = profileService.getStatistics(userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * GET /api/profile/statistics/pdf
+     *
+     * <p>Generates and streams a PDF document containing <em>only</em> the
+     * authenticated user's own Statistics. The user is identified exclusively
+     * from the Spring Security context — no {@code userId} parameter is ever
+     * accepted from the client.
+     *
+     * @param userPrincipal the authenticated player (injected by Spring Security)
+     * @return 200 OK with {@code Content-Type: application/pdf} and
+     *         {@code Content-Disposition: attachment; filename="rajneeti-statistics.pdf"}
+     */
+    @GetMapping("/statistics/pdf")
+    public ResponseEntity<byte[]> getStatisticsPdf(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        log.info("Generating statistics PDF for authenticated user ID: {}", userPrincipal.getId());
+        byte[] pdfBytes = profileService.generateStatisticsPdf(userPrincipal.getId());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "rajneeti-statistics.pdf");
+        headers.setContentLength(pdfBytes.length);
+
+        return ResponseEntity.ok().headers(headers).body(pdfBytes);
     }
 }

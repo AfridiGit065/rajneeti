@@ -26,4 +26,14 @@ public interface ProfileService {
      * Retrieves game statistics for the player identified by {@code userId}.
      */
     StatisticsResponse getStatistics(UUID userId);
+
+    /**
+     * Generates an in-memory PDF document containing the statistics for the
+     * player identified by {@code userId}. The returned byte array contains a
+     * fully formed PDF and may be streamed directly to the HTTP response.
+     *
+     * @param userId the authenticated player's user ID
+     * @return raw PDF bytes
+     */
+    byte[] generateStatisticsPdf(UUID userId);
 }

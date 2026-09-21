@@ -2,16 +2,20 @@ package com.rajneeti.game;
 
 import com.rajneeti.dto.websocket.GameOverPayload;
 import com.rajneeti.dto.websocket.WebSocketEventType;
+import com.rajneeti.entity.Leaderboard;
 import com.rajneeti.entity.Match;
 import com.rajneeti.entity.MatchHistory;
 import com.rajneeti.entity.MatchPlayer;
+import com.rajneeti.entity.Statistics;
 import com.rajneeti.entity.User;
 import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
+import com.rajneeti.repository.LeaderboardRepository;
 import com.rajneeti.repository.MatchHistoryRepository;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
+import com.rajneeti.repository.StatisticsRepository;
 import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,26 +68,42 @@ public class WinnerManager {
     private final MatchPlayerRepository matchPlayerRepository;
     private final WebSocketEventPublisher webSocketEventPublisher;
     private final MatchHistoryRepository matchHistoryRepository;
+    private final StatisticsRepository statisticsRepository;
+    private final LeaderboardRepository leaderboardRepository;
 
     /**
      * Spring-managed constructor (explicitly {@link Autowired} because the
-     * back-compatible constructor below would otherwise leave the container
+     * back-compatible constructors below would otherwise leave the container
      * without a single injectable constructor).
      */
     @Autowired
     public WinnerManager(MatchRepository matchRepository, MatchPlayerRepository matchPlayerRepository,
                          WebSocketEventPublisher webSocketEventPublisher,
-                         MatchHistoryRepository matchHistoryRepository) {
+                         MatchHistoryRepository matchHistoryRepository,
+                         StatisticsRepository statisticsRepository,
+                         LeaderboardRepository leaderboardRepository) {
         this.matchRepository = matchRepository;
         this.matchPlayerRepository = matchPlayerRepository;
         this.webSocketEventPublisher = webSocketEventPublisher;
         this.matchHistoryRepository = matchHistoryRepository;
+        this.statisticsRepository = statisticsRepository;
+        this.leaderboardRepository = leaderboardRepository;
     }
 
     /**
-     * Back-compatible constructor for unit-test contexts that do not exercise
-     * history persistence; the repository is null there and history capture is
-     * skipped (see {@link #finishGame}).
+     * Back-compatible 4-arg constructor for unit-test contexts that do not
+     * exercise history/statistics/leaderboard persistence; those repositories
+     * are null there and their updates are skipped (see {@link #finishGame}).
+     */
+    WinnerManager(MatchRepository matchRepository, MatchPlayerRepository matchPlayerRepository,
+                  WebSocketEventPublisher webSocketEventPublisher,
+                  MatchHistoryRepository matchHistoryRepository) {
+        this(matchRepository, matchPlayerRepository, webSocketEventPublisher, matchHistoryRepository, null, null);
+    }
+
+    /**
+     * Back-compatible 3-arg constructor (kept for the earliest unit-test
+     * contexts; delegates to the 4-arg form with a null history repository).
      */
     WinnerManager(MatchRepository matchRepository, MatchPlayerRepository matchPlayerRepository,
                   WebSocketEventPublisher webSocketEventPublisher) {
@@ -262,6 +282,51 @@ public class WinnerManager {
             }
             if (matchHistoryRepository != null && !history.isEmpty()) {
                 matchHistoryRepository.saveAll(history);
+            }
+
+            // Post-match Statistics + Leaderboard update. Runs only on the real
+            // completion path (winner already determined, match row present and
+            // about to flip to FINISHED), so a repeated finishGame() call after
+            // the match is already finished never double-counts: WinnerManager
+            // is only re-invoked through completion seams that short-circuit.
+            // Leaderboard rating stays untouched (no verified ELO/rating formula
+            // exists yet); only totals/wins/losses move.
+            if (statisticsRepository != null || leaderboardRepository != null) {
+                for (MatchPlayer row : rows) {
+                    if (row.getUser() == null) {
+                        continue;
+                    }
+                    var player = row.getUser();
+                    boolean isWinner = row.getFinalRank() != null && row.getFinalRank() == 1;
+
+                    if (statisticsRepository != null) {
+                        statisticsRepository.findByUserId(player.getId()).ifPresent(stats -> {
+                            stats.setTotalMatches(stats.getTotalMatches() + 1);
+                            if (isWinner) {
+                                stats.setWins(stats.getWins() + 1);
+                            } else {
+                                stats.setLosses(stats.getLosses() + 1);
+                            }
+                            // winRate recalculates via Statistics.calculateWinRate()
+                            // (@PreUpdate); updatedAt via @UpdateTimestamp.
+                            statisticsRepository.save(stats);
+                        });
+                    }
+
+                    if (leaderboardRepository != null) {
+                        leaderboardRepository.findByUserId(player.getId()).ifPresent(entry -> {
+                            entry.setTotalMatches(entry.getTotalMatches() + 1);
+                            if (isWinner) {
+                                entry.setWins(entry.getWins() + 1);
+                            } else {
+                                entry.setLosses(entry.getLosses() + 1);
+                            }
+                            // rating intentionally untouched; updatedAt via
+                            // @UpdateTimestamp.
+                            leaderboardRepository.save(entry);
+                        });
+                    }
+                }
             }
         } else {
             log.warn("Match row '{}' not found while finishing; live state finished without persistence.",

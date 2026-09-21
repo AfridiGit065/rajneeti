@@ -433,8 +433,11 @@ class WebSocketIntegrationTest {
         String bluff = chooseBluff(host.userId());
         if (GameEngine.CHARACTER_MINISTER.equals(bluff)) {
             gameEngine.performTax(matchId, host.userId());
-        } else {
+        } else if (GameEngine.CHARACTER_DALAL.equals(bluff)) {
             gameEngine.performSteal(matchId, host.userId(), guest.userId());
+        } else {
+            // AMLA fallback: host holds both MINISTER and DALAL.
+            gameEngine.performExchange(matchId, host.userId());
         }
 
         // Turn 2: the guest challenges the bluff.
@@ -480,8 +483,11 @@ class WebSocketIntegrationTest {
         String bluff = chooseBluff(host.userId());
         if (GameEngine.CHARACTER_MINISTER.equals(bluff)) {
             gameEngine.performTax(matchId, host.userId());
-        } else {
+        } else if (GameEngine.CHARACTER_DALAL.equals(bluff)) {
             gameEngine.performSteal(matchId, host.userId(), guest.userId());
+        } else {
+            // AMLA fallback: host holds both MINISTER and DALAL.
+            gameEngine.performExchange(matchId, host.userId());
         }
         challengeManager.challenge(matchId, guest.userId(), null);
 
@@ -703,20 +709,39 @@ class WebSocketIntegrationTest {
 
     /**
      * Returns a character the host provably does NOT hold, so claiming it is a
-     * guaranteed bluff: a lobby starts with 2 influence cards, so at least one
-     * of minister/dalal is absent. Reads through the lazy-initializing
-     * {@code getOrInitialize} because the in-memory state only exists once the
-     * match has been read or touched for the first time.
+     * guaranteed bluff. A player starts with 2 cards, so at most 2 character types
+     * are owned; at least 3 of the 5 types are always absent.
+     *
+     * <p>Preference order (to keep the TAX / STEAL test paths alive):
+     * <ol>
+     *   <li>MINISTER absent → return MINISTER (TAX path)</li>
+     *   <li>DALAL absent → return DALAL (STEAL path)</li>
+     *   <li>Host holds both MINISTER and DALAL → return AMLA (Exchange path).
+     *       AMLA is guaranteed absent because both hand slots are already taken
+     *       by MINISTER and DALAL, so the Exchange bluff will also yield
+     *       {@code claimTrue = false}.</li>
+     * </ol>
      */
     private String chooseBluff(UUID userId) {
         List<GameCard> cards = gameEngine.getOrInitialize(matchId).getPlayers().stream()
                 .filter(p -> p.getUserId().equals(userId))
                 .findFirst().orElseThrow()
                 .getCards();
-        boolean hasDalal = cards.stream()
-                .anyMatch(card -> card.getCharacter().name()
-                        .equalsIgnoreCase(GameEngine.CHARACTER_DALAL));
-        return hasDalal ? GameEngine.CHARACTER_MINISTER : GameEngine.CHARACTER_DALAL;
+        java.util.Set<String> owned = cards.stream()
+                .map(card -> card.getCharacter().name().toLowerCase())
+                .collect(java.util.stream.Collectors.toSet());
+        // Prefer TAX path: claim MINISTER when host does not hold one.
+        if (!owned.contains(GameEngine.CHARACTER_MINISTER)) {
+            return GameEngine.CHARACTER_MINISTER;
+        }
+        // Prefer STEAL path: claim DALAL when host does not hold one.
+        if (!owned.contains(GameEngine.CHARACTER_DALAL)) {
+            return GameEngine.CHARACTER_DALAL;
+        }
+        // Host holds both MINISTER and DALAL (possible with a 2-card hand).
+        // AMLA is absent because both hand slots are occupied — Exchange bluff
+        // also goes through challenge resolution and yields claimTrue = false.
+        return GameEngine.CHARACTER_AMLA;
     }
 
     /* ------------------------------------------------------------------ */

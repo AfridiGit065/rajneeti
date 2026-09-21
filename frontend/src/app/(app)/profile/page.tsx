@@ -24,6 +24,7 @@ import {
   CheckCircle,
   XCircle,
   MinusCircle,
+  Download,
 } from "@/components/ui/icons";
 import { useAuthStore } from "@/store/auth-store";
 import { ProfileService } from "@/services/profile-service";
@@ -65,6 +66,27 @@ const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [recentMatches, setRecentMatches] = useState<MatchHistoryEntry[]>([]);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  const handleDownloadStatisticsPdf = async () => {
+    setPdfLoading(true);
+    setPdfError(null);
+    const result = await ProfileService.downloadStatisticsPdf();
+    setPdfLoading(false);
+    if (!result.ok) {
+      setPdfError(result.error.message);
+      return;
+    }
+    const url = URL.createObjectURL(result.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rajneeti-statistics.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
 useEffect(() => {
     ProfileService.getProfile().then((result) => {
@@ -638,6 +660,28 @@ useEffect(() => {
                 প্রতি ম্যাচের গড় স্থায়িত্ব
               </p>
             </div>
+          </div>
+
+          {/* Download Statistics PDF */}
+          <div className="rounded-2xl border border-forest-500/25 bg-deep-900/60 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-ivory">Export Statistics</p>
+              <p className="text-xs text-muted mt-0.5">Download your statistics as a PDF document.</p>
+              {pdfError && (
+                <p role="alert" className="text-xs text-crimson-300 mt-1">{pdfError}</p>
+              )}
+            </div>
+            <Button
+              id="download-statistics-pdf-btn"
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadStatisticsPdf}
+              disabled={pdfLoading}
+              className="gap-2 shrink-0"
+            >
+              <Download className="size-4 text-gold-400" />
+              {pdfLoading ? "Generating…" : "Download Statistics PDF"}
+            </Button>
           </div>
         </section>
       )}
