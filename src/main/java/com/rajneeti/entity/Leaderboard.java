@@ -36,7 +36,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "leaderboard", indexes = {
         @Index(name = "idx_leaderboard_rating", columnList = "rating"),
-        @Index(name = "idx_leaderboard_rank", columnList = "rank"),
+        @Index(name = "idx_leaderboard_rank", columnList = "player_rank"),
         @Index(name = "idx_leaderboard_user_id", columnList = "user_id")
 })
 public class Leaderboard {
@@ -68,7 +68,7 @@ public class Leaderboard {
     @Column(name = "total_matches", nullable = false)
     private Integer totalMatches = 0;
 
-    @Column(name = "rank")
+    @Column(name = "player_rank")
     private Integer rank;
 
     @UpdateTimestamp

@@ -11,11 +11,6 @@ import org.springframework.test.context.TestPropertySource;
  * <p>Uses {@code @TestPropertySource} to override the datasource with an
  * in-memory H2 database so the context test does not require a running MySQL
  * instance in CI/CD.
- *
- * <p>TODO: Add H2 test dependency and enable these properties once the project
- * has entity classes.  For Module 01, the context test passes because
- * {@code spring.jpa.hibernate.ddl-auto=create-drop} is overridden to {@code none}
- * and no entity scanning occurs at startup.
  */
 @SpringBootTest
 @ActiveProfiles("test")
