@@ -16,6 +16,7 @@ import com.rajneeti.repository.MatchHistoryRepository;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
 import com.rajneeti.repository.StatisticsRepository;
+import com.rajneeti.repository.UserRepository;
 import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,24 +71,37 @@ public class WinnerManager {
     private final MatchHistoryRepository matchHistoryRepository;
     private final StatisticsRepository statisticsRepository;
     private final LeaderboardRepository leaderboardRepository;
+    private final UserRepository userRepository;
 
     /**
-     * Spring-managed constructor (explicitly {@link Autowired} because the
-     * back-compatible constructors below would otherwise leave the container
-     * without a single injectable constructor).
+     * Spring-managed constructor.
      */
     @Autowired
     public WinnerManager(MatchRepository matchRepository, MatchPlayerRepository matchPlayerRepository,
                          WebSocketEventPublisher webSocketEventPublisher,
                          MatchHistoryRepository matchHistoryRepository,
                          StatisticsRepository statisticsRepository,
-                         LeaderboardRepository leaderboardRepository) {
+                         LeaderboardRepository leaderboardRepository,
+                         UserRepository userRepository) {
         this.matchRepository = matchRepository;
         this.matchPlayerRepository = matchPlayerRepository;
         this.webSocketEventPublisher = webSocketEventPublisher;
         this.matchHistoryRepository = matchHistoryRepository;
         this.statisticsRepository = statisticsRepository;
         this.leaderboardRepository = leaderboardRepository;
+        this.userRepository = userRepository;
+    }
+
+    /**
+     * 6-arg constructor for contexts without UserRepository.
+     */
+    public WinnerManager(MatchRepository matchRepository, MatchPlayerRepository matchPlayerRepository,
+                         WebSocketEventPublisher webSocketEventPublisher,
+                         MatchHistoryRepository matchHistoryRepository,
+                         StatisticsRepository statisticsRepository,
+                         LeaderboardRepository leaderboardRepository) {
+        this(matchRepository, matchPlayerRepository, webSocketEventPublisher, matchHistoryRepository,
+                statisticsRepository, leaderboardRepository, null);
     }
 
     /**
@@ -130,33 +144,64 @@ public class WinnerManager {
         }
 
         List<MatchPlayer> persisted = matchPlayerRepository.findByMatchId(state.getMatchId());
-        if (persisted == null || persisted.isEmpty()) {
-            return false;
-        }
 
         long activeAfter = state.getPlayers().stream()
                 .filter(player -> player.getStatus() == PlayerStatus.ACTIVE)
                 .count();
 
+        // If no persisted rows (e.g. lightweight unit test), still ensure in-memory finalRank is assigned
+        if (persisted == null || persisted.isEmpty()) {
+            boolean updatedInMemory = false;
+            for (GamePlayerState player : state.getPlayers()) {
+                if (player.getStatus() == PlayerStatus.ELIMINATED && player.getFinalRank() == null) {
+                    player.setFinalRank((int) activeAfter + 1);
+                    updatedInMemory = true;
+                }
+            }
+            return updatedInMemory;
+        }
+
         List<MatchPlayer> toSave = new ArrayList<>();
+        List<GamePlayerState> unrankedNewlyEliminated = new ArrayList<>();
+
         for (GamePlayerState player : state.getPlayers()) {
             if (player.getStatus() != PlayerStatus.ELIMINATED) {
                 continue;
             }
             MatchPlayer row = findRow(persisted, player.getUserId());
-            if (row == null || row.getPlayerStatus() == PlayerStatus.ELIMINATED) {
+            if (row == null) {
+                if (player.getFinalRank() == null) {
+                    unrankedNewlyEliminated.add(player);
+                }
                 continue;
             }
+            if (row.getPlayerStatus() == PlayerStatus.ELIMINATED) {
+                if (player.getFinalRank() == null && row.getFinalRank() != null) {
+                    player.setFinalRank(row.getFinalRank());
+                }
+                continue;
+            }
+            unrankedNewlyEliminated.add(player);
+        }
 
-            row.setPlayerStatus(PlayerStatus.ELIMINATED);
-            row.setEliminated(true);
-            row.setEliminatedAt(LocalDateTime.now());
-            row.setCoinsAtEnd(player.getCoins());
-            row.setFinalRank((int) activeAfter + 1);
-            toSave.add(row);
+        int unrankedCount = unrankedNewlyEliminated.size();
+        for (int i = 0; i < unrankedCount; i++) {
+            GamePlayerState player = unrankedNewlyEliminated.get(i);
+            int rank = (int) activeAfter + unrankedCount - i;
+            player.setFinalRank(rank);
 
-            log.info("Player '{}' recorded as ELIMINATED (rank {}) in match {}",
-                    player.getUsername(), row.getFinalRank(), state.getMatchId());
+            MatchPlayer row = findRow(persisted, player.getUserId());
+            if (row != null && row.getPlayerStatus() != PlayerStatus.ELIMINATED) {
+                row.setPlayerStatus(PlayerStatus.ELIMINATED);
+                row.setEliminated(true);
+                row.setEliminatedAt(LocalDateTime.now());
+                row.setCoinsAtEnd(player.getCoins());
+                row.setFinalRank(rank);
+                toSave.add(row);
+
+                log.info("Player '{}' recorded as ELIMINATED (rank {}) in match {}",
+                        player.getUsername(), row.getFinalRank(), state.getMatchId());
+            }
         }
 
         if (toSave.isEmpty()) {
@@ -217,6 +262,25 @@ public class WinnerManager {
         LocalDateTime endedAt = LocalDateTime.now();
 
         Match match = matchRepository.findById(matchId).orElse(null);
+
+        // Assign rank 1 to the winner in memory
+        winner.setFinalRank(1);
+        for (GamePlayerState p : state.getPlayers()) {
+            if (winner.getUserId().equals(p.getUserId())) {
+                p.setFinalRank(1);
+            }
+        }
+
+        // Prevent duplicate persistence when finishGame is called twice or concurrent race
+        if (match != null && match.getStatus() == MatchStatus.FINISHED) {
+            log.info("Match '{}' is already finished; skipping outcome persistence to avoid duplicate updates.", matchId);
+            state.setStatus(MatchStatus.FINISHED);
+            state.setPhase(GameEngine.PHASE_GAME_OVER);
+            state.setWinnerUserId(winner.getUserId());
+            state.setEndedAt(match.getEndedAt() != null ? match.getEndedAt() : endedAt);
+            return;
+        }
+
         List<MatchPlayer> rows = matchPlayerRepository.findByMatchId(matchId);
         if (rows == null) {
             rows = List.of();
@@ -252,9 +316,23 @@ public class WinnerManager {
                 }
                 if (winner.getUserId().equals(runtime.getUserId())) {
                     row.setFinalRank(1);
+                    runtime.setFinalRank(1);
+                } else if (row.getFinalRank() != null) {
+                    runtime.setFinalRank(row.getFinalRank());
                 }
             }
             matchPlayerRepository.saveAll(rows);
+        }
+
+        for (GamePlayerState p : state.getPlayers()) {
+            if (winner.getUserId().equals(p.getUserId())) {
+                p.setFinalRank(1);
+            } else if (p.getFinalRank() == null) {
+                MatchPlayer row = findRow(rows, p.getUserId());
+                if (row != null && row.getFinalRank() != null) {
+                    p.setFinalRank(row.getFinalRank());
+                }
+            }
         }
 
         if (match != null) {
@@ -284,14 +362,14 @@ public class WinnerManager {
                 matchHistoryRepository.saveAll(history);
             }
 
-            // Post-match Statistics + Leaderboard update. Runs only on the real
+            // Post-match Statistics + Leaderboard + User update. Runs only on the real
             // completion path (winner already determined, match row present and
             // about to flip to FINISHED), so a repeated finishGame() call after
             // the match is already finished never double-counts: WinnerManager
             // is only re-invoked through completion seams that short-circuit.
             // Leaderboard rating stays untouched (no verified ELO/rating formula
             // exists yet); only totals/wins/losses move.
-            if (statisticsRepository != null || leaderboardRepository != null) {
+            if (statisticsRepository != null || leaderboardRepository != null || userRepository != null) {
                 for (MatchPlayer row : rows) {
                     if (row.getUser() == null) {
                         continue;
@@ -299,8 +377,18 @@ public class WinnerManager {
                     var player = row.getUser();
                     boolean isWinner = row.getFinalRank() != null && row.getFinalRank() == 1;
 
+                    player.setTotalMatches((player.getTotalMatches() != null ? player.getTotalMatches() : 0) + 1);
+                    if (isWinner) {
+                        player.setWins((player.getWins() != null ? player.getWins() : 0) + 1);
+                    } else {
+                        player.setLosses((player.getLosses() != null ? player.getLosses() : 0) + 1);
+                    }
+                    if (userRepository != null) {
+                        userRepository.save(player);
+                    }
+
                     if (statisticsRepository != null) {
-                        statisticsRepository.findByUserId(player.getId()).ifPresent(stats -> {
+                        statisticsRepository.findByUserId(player.getId()).ifPresentOrElse(stats -> {
                             stats.setTotalMatches(stats.getTotalMatches() + 1);
                             if (isWinner) {
                                 stats.setWins(stats.getWins() + 1);
@@ -309,6 +397,14 @@ public class WinnerManager {
                             }
                             // winRate recalculates via Statistics.calculateWinRate()
                             // (@PreUpdate); updatedAt via @UpdateTimestamp.
+                            statisticsRepository.save(stats);
+                        }, () -> {
+                            Statistics stats = Statistics.builder()
+                                    .user(player)
+                                    .totalMatches(1)
+                                    .wins(isWinner ? 1 : 0)
+                                    .losses(isWinner ? 0 : 1)
+                                    .build();
                             statisticsRepository.save(stats);
                         });
                     }

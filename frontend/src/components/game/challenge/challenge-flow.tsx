@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { canChallenge } from "@/lib/game/actions";
 import { challengeToSimulation, simulateChallenge, type ChallengeSimulation } from "@/lib/game/challenge";
 import { GameService } from "@/services/game-service";
@@ -25,7 +25,12 @@ interface ChallengeFlowProps {
   game: GameState;
   selfId: string;
   onResolved?: (next: GameState) => void;
-  onPanelVisibilityChange?: (visible: boolean) => void;
+  /** The window was dismissed (allow, or expiry) and the board may leave the response layout. */
+  onPanelHandled?: (claimKey: string) => void;
+  /** The window became a challenge; the board must hold the response layout until `onFlowSettled`. */
+  onFlowStarted?: (claimKey: string) => void;
+  /** The reveal sequence finished. */
+  onFlowSettled?: () => void;
 }
 
 const STAGE_DURATION_MS: Partial<Record<FlowStage, number>> = {
@@ -52,7 +57,9 @@ export function ChallengeFlow({
   game,
   selfId,
   onResolved,
-  onPanelVisibilityChange,
+  onPanelHandled,
+  onFlowStarted,
+  onFlowSettled,
 }: ChallengeFlowProps) {
   const [stage, setStage] = useState<FlowStage>("idle");
   const [simulation, setSimulation] = useState<ChallengeSimulation | null>(null);
@@ -82,24 +89,31 @@ export function ChallengeFlow({
   const view: FlowStage =
     stage === "idle" ? (panelVisible ? "panel" : "idle") : stage;
 
+  // The board derives the response layout from the live claim itself, so this
+  // flow never reports visibility back through an effect — that round trip used
+  // to reflow the whole board one frame after the panel was already on screen.
+  // The settled callback is held in a ref so the stage timer below is never
+  // restarted by a fresh callback identity coming from the parent board.
+  const settledRef = useRef(onFlowSettled);
   useEffect(() => {
-    onPanelVisibilityChange?.(view !== "idle");
-  }, [view, onPanelVisibilityChange]);
+    settledRef.current = onFlowSettled;
+  }, [onFlowSettled]);
 
   useEffect(() => {
     if (stage === "idle" || stage === "panel" || stage === "confirm") return;
     const next = STAGE_NEXT[stage];
     const delay = STAGE_DURATION_MS[stage] ?? 1800;
-    const timer = window.setTimeout(
-      () => setStage(next ?? "idle"),
-      delay,
-    );
+    const timer = window.setTimeout(() => {
+      if (next === "idle" || next === undefined) settledRef.current?.();
+      setStage(next ?? "idle");
+    }, delay);
     return () => window.clearTimeout(timer);
   }, [stage]);
 
   function handleChallenge() {
     if (!activeClaim?.claimedCharacter || !claimant || !claimKey) return;
     setHandledKey(claimKey);
+    onFlowStarted?.(claimKey);
     setSimulation(
       simulateChallenge(claimant.influenceCards, activeClaim.claimedCharacter),
     );
@@ -109,6 +123,7 @@ export function ChallengeFlow({
   function handleAllow() {
     if (!claimKey) return;
     setHandledKey(claimKey);
+    onPanelHandled?.(claimKey);
     setStage("idle");
   }
 
@@ -142,7 +157,6 @@ export function ChallengeFlow({
     <>
       {view === "panel" ? (
         <ChallengePanel
-          key={claimKey ?? "claim"}
           claimant={claimant!}
           claimedCharacter={activeClaim!.claimedCharacter!}
           deadlineAt={activeClaim?.deadlineAt}

@@ -79,7 +79,7 @@ export function ChallengePanel({
 
         <span
           className={cn(
-            "inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 font-mono text-sm font-semibold tabular-nums",
+            "inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border px-3 py-1.5 font-mono text-sm font-semibold tabular-nums",
             expired
               ? "border-crimson-500/60 bg-crimson-600/15 text-crimson-300 animate-glow-pulse"
               : "border-gold-500/40 bg-gold-500/8 text-gold-300",
@@ -87,8 +87,10 @@ export function ChallengePanel({
           role="timer"
           aria-label={`Time to respond: ${display}`}
         >
-          <TimerReset className="size-4" aria-hidden />
-          {display}
+          <TimerReset className="size-4 shrink-0" aria-hidden />
+          {/* Fixed 5-glyph box (tabular monospace) so ticking digits and the
+              wrapping header can never change the chip's width. */}
+          <span className="min-w-[5ch] text-center">{display}</span>
           <span className="text-xs font-medium text-muted">s</span>
         </span>
       </div>

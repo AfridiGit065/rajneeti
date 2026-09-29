@@ -36,6 +36,9 @@ public class GamePlayerState {
     /** Live coin balance. Starts at 2 for every player. */
     private int coins;
 
+    /** Authoritative end-of-match rank (1 for winner, reverse elimination order). */
+    private Integer finalRank;
+
     /** Private influence cards. Only the owning player sees their characters. */
     @Builder.Default
     private List<GameCard> cards = new ArrayList<>();

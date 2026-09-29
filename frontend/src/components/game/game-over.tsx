@@ -18,25 +18,9 @@ import { CoinDisplay } from "./coin-display";
 import { InfluenceCard } from "./influence-card";
 import { PageBackground } from "@/components/layout";
 import type { GamePlayer, GameState } from "@/types/game";
+import { buildStandings, type RankingEntry } from "@/lib/game/standings";
 
-interface RankingEntry {
-  player: GamePlayer;
-  rank: number;
-}
-
-/**
- * Deterministic final standings: survivors first, then by coins, then seat.
- * Mirrors elimination order for the finished mock without revealing cards.
- */
-function buildStandings(game: GameState): RankingEntry[] {
-  return [...game.players]
-    .sort((a, b) => {
-      if (a.isAlive !== b.isAlive) return a.isAlive ? -1 : 1;
-      if (b.coins !== a.coins) return b.coins - a.coins;
-      return a.seatIndex - b.seatIndex;
-    })
-    .map((player, index) => ({ player, rank: index + 1 }));
-}
+export { buildStandings, type RankingEntry };
 
 const PARTICLES = Array.from({ length: 14 }, (_, index) => ({
   left: ((index * 61 + 17) % 100) / 100,
@@ -74,8 +58,13 @@ function PlayerChip({
         {player.displayName?.[0] ?? player.username[0]}
       </span>
       <span className="flex min-w-0 flex-col leading-tight">
-        <span className="truncate font-bold text-ivory">
+        <span className="truncate font-bold text-ivory flex items-center gap-1.5">
           {player.displayName ?? player.username}
+          {highlighted ? (
+            <Badge tone="gold" className="text-[10px] py-0 px-1.5">
+              Winner
+            </Badge>
+          ) : null}
         </span>
         {showYou ? <Badge tone="gold" className="mt-0.5 w-fit">YOU</Badge> : null}
       </span>
@@ -93,6 +82,7 @@ export function GameOverScreen({
   const router = useRouter();
 
   const winner =
+    game.players.find((player) => player.finalRank === 1) ??
     game.players.find((player) => player.id === game.winnerPlayerId) ??
     game.players.find((player) => player.isAlive) ??
     game.players[0];
@@ -193,7 +183,7 @@ export function GameOverScreen({
                   <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted">
                     Influence
                   </p>
-                  <div className="mt-1.5 flex items-center justify-center gap-1.5">
+                  <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
                     {winner.influenceCards.length > 0 ? (
                       winner.influenceCards.map((card) => (
                         <InfluenceCard

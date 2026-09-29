@@ -252,6 +252,12 @@ export function toGameState(backend: BackendGameState): GameState {
     coins: player.coins,
     influenceCards: toInfluenceCards(player),
     seatIndex: player.seatIndex,
+    finalRank:
+      player.finalRank ??
+      (backend.status === "FINISHED" &&
+      (player.userId === backend.winnerUserId || (backend.winnerUserId == null && player.alive))
+        ? 1
+        : undefined),
   }));
 
   const exchangePool: InfluenceCard[] | undefined =

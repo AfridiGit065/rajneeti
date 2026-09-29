@@ -224,7 +224,9 @@ export default function RoomDetailPage() {
             />
             <div className="flex flex-col items-center gap-2 sm:items-end">
               {room.name ? (
-                <p className="text-xl font-semibold text-ivory">{room.name}</p>
+                <p className="max-w-[min(24rem,80vw)] truncate text-xl font-semibold text-ivory">
+                  {room.name}
+                </p>
               ) : null}
               <Badge
                 tone={room.status === "WAITING" ? "emerald" : "crimson"}

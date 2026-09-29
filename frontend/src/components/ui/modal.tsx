@@ -50,15 +50,27 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const body = document.body;
+    const prevOverflow = body.style.overflow;
+    const prevPaddingRight = body.style.paddingRight;
+    // Hiding body overflow propagates to the viewport and removes the page
+    // scrollbar, which narrows the layout viewport and shifts every centred
+    // element sideways. Reserve the same width as padding so the page behind
+    // the modal does not jump on open.
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
+    body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
+    }
     panelRef.current?.focus();
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKey);
     return () => {
-      document.body.style.overflow = prevOverflow;
+      body.style.overflow = prevOverflow;
+      body.style.paddingRight = prevPaddingRight;
       window.removeEventListener("keydown", handleKey);
     };
   }, [open, onClose]);
@@ -85,7 +97,7 @@ export function Modal({
         className={cn(
           "relative w-full outline-none",
           "animate-zoom-in rounded-2xl border bg-deep-900/95 panel-emboss panel-texture",
-          "max-h-[90vh] overflow-y-auto",
+          "max-h-[90dvh] overflow-y-auto",
           SIZES[size],
           VARIANT_PANEL[variant],
           className,

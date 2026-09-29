@@ -382,7 +382,8 @@ export function GameBoard({ matchId }: { matchId: string }) {
   const [influenceLostReason, setInfluenceLostReason] = useState("");
   const [eliminationPlayer, setEliminationPlayer] = useState<GamePlayer | null>(null);
   const [chronicleOpen, setChronicleOpen] = useState(false);
-  const [challengePanelActive, setChallengePanelActive] = useState(false);
+  const [handledChallengeKey, setHandledChallengeKey] = useState<string | null>(null);
+  const [challengeFlowKey, setChallengeFlowKey] = useState<string | null>(null);
 
   const gameSnapshot = useRealtimeStore((s) => s.gameSnapshots[matchId]);
   const resyncRequested = useRealtimeStore((s) => s.resyncRequested[matchId]);
@@ -582,16 +583,23 @@ export function GameBoard({ matchId }: { matchId: string }) {
   // Compute seating positions for all opponents
   // Response / Interactive window state detection (Challenge / Block / Resolution)
   const claimant = game.players.find((p) => p.id === game.currentTurnPlayerId);
-  const isChallengeEligible = Boolean(
+  // The challenge window is derived here, synchronously, from the same claim
+  // conditions ChallengeFlow uses — including the identical claim key. It used
+  // to be reported back through an effect after the panel had already mounted,
+  // so the board rendered the normal layout first and then reflowed to the
+  // response layout a frame later, which is what read as a screen shake.
+  const challengeClaimKey =
     game.activeAction?.claimedCharacter &&
     game.phase === "action_resolution" &&
-    claimant && claimant.userId !== selfId &&
+    claimant &&
+    claimant.userId !== selfId &&
     canChallenge(game.activeAction.action)
-  );
+      ? `${game.activeAction.action}:${claimant.id}:${game.turnNumber}`
+      : null;
   const isChallengeActive =
-    (isChallengeEligible && challengePanelActive !== false) ||
+    challengeFlowKey !== null ||
     Boolean(game.pendingChallenge) ||
-    Boolean(challengePanelActive);
+    (challengeClaimKey !== null && handledChallengeKey !== challengeClaimKey);
 
   const isBlockActive = Boolean(
     showBlockOffer ||
@@ -602,6 +610,22 @@ export function GameBoard({ matchId }: { matchId: string }) {
   );
 
   const isResponseState = isBlockActive || isChallengeActive || Boolean(game.lastActionResult);
+
+  // Plain functions: ChallengeFlow reads `onFlowSettled` through a ref, so a
+  // fresh identity per render is fine and must not become a hook-order hazard.
+  function handleChallengePanelHandled(key: string) {
+    setHandledChallengeKey(key);
+    setChallengeFlowKey(null);
+  }
+
+  function handleChallengeFlowStarted(key: string) {
+    setHandledChallengeKey(key);
+    setChallengeFlowKey(key);
+  }
+
+  function handleChallengeFlowSettled() {
+    setChallengeFlowKey(null);
+  }
 
   // Compute seating positions for all opponents
   const seatPositions = computeSeats(opponents);
@@ -719,12 +743,24 @@ export function GameBoard({ matchId }: { matchId: string }) {
 
               {/* 3. Challenge Window / Response Panel (below Active Action) */}
               {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
-                <div className="w-full pointer-events-auto">
+                <div
+                  className={cn(
+                    "w-full pointer-events-auto",
+                    // Holds the panel's resting height while a challenge is live, so
+                    // the countdown ticking and the hand-off to the reveal sequence
+                    // never re-centre the lower player station. Only reserved from
+                    // `sm` up: below that the response stage already scrolls, so
+                    // reserving more height would only add dead space.
+                    isChallengeActive && "sm:min-h-[16rem]",
+                  )}
+                >
                   <ChallengeFlow
                     game={game}
                     selfId={selfId}
                     onResolved={adoptState}
-                    onPanelVisibilityChange={setChallengePanelActive}
+                    onPanelHandled={handleChallengePanelHandled}
+                    onFlowStarted={handleChallengeFlowStarted}
+                    onFlowSettled={handleChallengeFlowSettled}
                   />
                 </div>
               )}
@@ -767,15 +803,6 @@ export function GameBoard({ matchId }: { matchId: string }) {
                   <DeckDiscard game={game} />
                 </div>
               </div>
-
-              {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
-                <ChallengeFlow
-                  game={game}
-                  selfId={selfId}
-                  onResolved={adoptState}
-                  onPanelVisibilityChange={setChallengePanelActive}
-                />
-              )}
             </div>
 
             {/* BOTTOM STATION */}
@@ -819,7 +846,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
         {chronicleOpen && (
           <aside
             className="chronicle-drawer fixed right-0 z-50 flex flex-col border-l border-forest-500/20"
-            style={{ top: 56, height: "calc(100vh - 56px)", width: 340 }}
+            style={{ top: 56, height: "calc(100dvh - 56px)", width: "min(340px, 100vw)" }}
             aria-label="Match Chronicle"
           >
             {/* Header */}

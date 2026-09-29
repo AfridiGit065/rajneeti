@@ -43,6 +43,9 @@ public class GamePlayerDto {
 
     private int influenceCount;
 
+    /** Authoritative end-of-match rank (1 for winner, reverse elimination order). */
+    private Integer finalRank;
+
     /** Module 25 — true when this seat is controlled by an AI bot. */
     private boolean isBot;
 

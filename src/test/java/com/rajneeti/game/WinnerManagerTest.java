@@ -8,9 +8,13 @@ import com.rajneeti.entity.User;
 import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.entity.enums.PlayerStatus;
 import com.rajneeti.exception.BusinessException;
+import com.rajneeti.entity.Statistics;
+import com.rajneeti.repository.LeaderboardRepository;
 import com.rajneeti.repository.MatchHistoryRepository;
 import com.rajneeti.repository.MatchPlayerRepository;
 import com.rajneeti.repository.MatchRepository;
+import com.rajneeti.repository.StatisticsRepository;
+import com.rajneeti.repository.UserRepository;
 import com.rajneeti.service.TurnManager;
 import com.rajneeti.websocket.WebSocketEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,8 +31,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Module 21 — Winner Manager tests.
@@ -510,5 +513,123 @@ class WinnerManagerTest {
         assertThat(loserDto.isAlive()).isFalse();
         assertThat(loserDto.getCards()).isNull();
         assertThat(loserDto.getInfluenceCount()).isZero();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Reverse-elimination ranking & statistics idempotency               */
+    /* ------------------------------------------------------------------ */
+
+    @Test
+    @DisplayName("4 players elimination: B -> D -> A, surviving C => C: 1, A: 2, D: 3, B: 4")
+    void fourPlayersReverseEliminationOrder() {
+        UUID aId = UUID.randomUUID();
+        UUID bId = UUID.randomUUID();
+        UUID cId = UUID.randomUUID();
+        UUID dId = UUID.randomUUID();
+
+        List<GameCard> deck = cardManager.createDeck();
+        GameState state = seed(deck, List.of(
+                player(aId, "A", 2, PlayerStatus.ACTIVE, cardManager.drawMany(deck, 2), 1),
+                player(bId, "B", 2, PlayerStatus.ACTIVE, cardManager.drawMany(deck, 2), 2),
+                player(cId, "C", 2, PlayerStatus.ACTIVE, cardManager.drawMany(deck, 2), 3),
+                player(dId, "D", 2, PlayerStatus.ACTIVE, cardManager.drawMany(deck, 2), 4)),
+                aId);
+
+        // 1. B eliminated
+        byId(state, bId).setStatus(PlayerStatus.ELIMINATED);
+        winnerManager.syncPlayerStates(state);
+        assertThat(rowOf(bId).getFinalRank()).isEqualTo(4);
+        assertThat(byId(state, bId).getFinalRank()).isEqualTo(4);
+
+        // 2. D eliminated
+        byId(state, dId).setStatus(PlayerStatus.ELIMINATED);
+        winnerManager.syncPlayerStates(state);
+        assertThat(rowOf(dId).getFinalRank()).isEqualTo(3);
+        assertThat(byId(state, dId).getFinalRank()).isEqualTo(3);
+
+        // 3. A eliminated
+        byId(state, aId).setStatus(PlayerStatus.ELIMINATED);
+        winnerManager.syncPlayerStates(state);
+        assertThat(rowOf(aId).getFinalRank()).isEqualTo(2);
+        assertThat(byId(state, aId).getFinalRank()).isEqualTo(2);
+
+        // 4. C survives -> finishGame
+        boolean finished = winnerManager.checkAndFinish(state);
+        assertThat(finished).isTrue();
+        assertThat(rowOf(cId).getFinalRank()).isEqualTo(1);
+        assertThat(byId(state, cId).getFinalRank()).isEqualTo(1);
+        assertThat(state.getWinnerUserId()).isEqualTo(cId);
+
+        // Assert all 4 final ranks in reverse elimination order
+        assertThat(rowOf(cId).getFinalRank()).isEqualTo(1);
+        assertThat(rowOf(aId).getFinalRank()).isEqualTo(2);
+        assertThat(rowOf(dId).getFinalRank()).isEqualTo(3);
+        assertThat(rowOf(bId).getFinalRank()).isEqualTo(4);
+
+        assertThat(byId(state, cId).getFinalRank()).isEqualTo(1);
+        assertThat(byId(state, aId).getFinalRank()).isEqualTo(2);
+        assertThat(byId(state, dId).getFinalRank()).isEqualTo(3);
+        assertThat(byId(state, bId).getFinalRank()).isEqualTo(4);
+
+        // Check projected DTOs carry authoritative finalRank
+        GameStateResponse response = gameStateMapper.toResponse(state, cId);
+        GamePlayerDto dtoC = response.getPlayers().stream().filter(p -> p.getUserId().equals(cId)).findFirst().orElseThrow();
+        GamePlayerDto dtoA = response.getPlayers().stream().filter(p -> p.getUserId().equals(aId)).findFirst().orElseThrow();
+        GamePlayerDto dtoD = response.getPlayers().stream().filter(p -> p.getUserId().equals(dId)).findFirst().orElseThrow();
+        GamePlayerDto dtoB = response.getPlayers().stream().filter(p -> p.getUserId().equals(bId)).findFirst().orElseThrow();
+
+        assertThat(dtoC.getFinalRank()).isEqualTo(1);
+        assertThat(dtoA.getFinalRank()).isEqualTo(2);
+        assertThat(dtoD.getFinalRank()).isEqualTo(3);
+        assertThat(dtoB.getFinalRank()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("finish - updates statistics exactly once and duplicate finish is idempotent")
+    void finish_updatesStatisticsExactlyOnce() {
+        StatisticsRepository mockStatsRepo = mock(StatisticsRepository.class);
+        LeaderboardRepository mockLeaderboardRepo = mock(LeaderboardRepository.class);
+        UserRepository mockUserRepo = mock(UserRepository.class);
+
+        WinnerManager wm = new WinnerManager(matchRepository, matchPlayerRepository,
+                webSocketEventPublisher, matchHistoryRepository,
+                mockStatsRepo, mockLeaderboardRepo, mockUserRepo);
+
+        GameState state = seedTwo(5, 3, 1);
+        byId(state, otherId).setStatus(PlayerStatus.ELIMINATED);
+
+        User actorUser = rowOf(actorId).getUser();
+        User otherUser = rowOf(otherId).getUser();
+
+        Statistics actorStats = Statistics.builder().id(UUID.randomUUID()).user(actorUser).totalMatches(5).wins(3).losses(2).build();
+        Statistics otherStats = Statistics.builder().id(UUID.randomUUID()).user(otherUser).totalMatches(5).wins(2).losses(3).build();
+
+        when(mockStatsRepo.findByUserId(actorId)).thenReturn(Optional.of(actorStats));
+        when(mockStatsRepo.findByUserId(otherId)).thenReturn(Optional.of(otherStats));
+
+        boolean finished = wm.checkAndFinish(state);
+        assertThat(finished).isTrue();
+
+        assertThat(actorStats.getTotalMatches()).isEqualTo(6);
+        assertThat(actorStats.getWins()).isEqualTo(4);
+        assertThat(actorStats.getLosses()).isEqualTo(2);
+
+        assertThat(otherStats.getTotalMatches()).isEqualTo(6);
+        assertThat(otherStats.getWins()).isEqualTo(2);
+        assertThat(otherStats.getLosses()).isEqualTo(4);
+
+        assertThat(actorUser.getTotalMatches()).isEqualTo(1);
+        assertThat(actorUser.getWins()).isEqualTo(1);
+        assertThat(otherUser.getTotalMatches()).isEqualTo(1);
+        assertThat(otherUser.getLosses()).isEqualTo(1);
+
+        verify(mockStatsRepo, times(1)).save(actorStats);
+        verify(mockStatsRepo, times(1)).save(otherStats);
+
+        // Repeated checkAndFinish should not update again
+        boolean secondCall = wm.checkAndFinish(state);
+        assertThat(secondCall).isFalse();
+        verify(mockStatsRepo, times(1)).save(actorStats);
+        verify(mockStatsRepo, times(1)).save(otherStats);
     }
 }

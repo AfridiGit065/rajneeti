@@ -127,6 +127,7 @@ export interface GamePlayer {
   /** Only the local player sees their own cards fully */
   influenceCards: InfluenceCard[];
   seatIndex: number;
+  finalRank?: number;
 }
 
 export interface GameLogEntry {

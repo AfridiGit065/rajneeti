@@ -103,6 +103,7 @@ export interface BackendGamePlayer {
   influenceCount: number;
   isBot?: boolean;
   botDifficulty?: string;
+  finalRank?: number;
   /** Present only for the requesting player's own hand; null for opponents. */
   cards?: BackendGameCard[];
 }

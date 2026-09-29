@@ -48,7 +48,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional(readOnly = true)
     public ProfileResponse getProfile(UUID userId) {
         User user = findUserById(userId);
-        return mapToProfileResponse(user);
+        Statistics stats = statisticsRepository.findByUserId(userId).orElse(null);
+        return mapToProfileResponse(user, stats);
     }
 
     @Override
@@ -80,7 +81,8 @@ public class ProfileServiceImpl implements ProfileService {
         User updatedUser = userRepository.save(user);
         log.info("Profile updated successfully for user ID: {}", userId);
 
-        return mapToProfileResponse(updatedUser);
+        Statistics stats = statisticsRepository.findByUserId(userId).orElse(null);
+        return mapToProfileResponse(updatedUser, stats);
     }
 
     @Override
@@ -243,8 +245,11 @@ public class ProfileServiceImpl implements ProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
     }
 
-    private ProfileResponse mapToProfileResponse(User user) {
-        Double winRate = calculateWinRate(user.getWins(), user.getTotalMatches());
+    private ProfileResponse mapToProfileResponse(User user, Statistics stats) {
+        Integer totalMatches = (stats != null) ? stats.getTotalMatches() : user.getTotalMatches();
+        Integer wins = (stats != null) ? stats.getWins() : user.getWins();
+        Integer losses = (stats != null) ? stats.getLosses() : user.getLosses();
+        Double winRate = (stats != null) ? stats.getWinRate() : calculateWinRate(wins, totalMatches);
 
         return ProfileResponse.builder()
                 .id(user.getId())
@@ -252,9 +257,9 @@ public class ProfileServiceImpl implements ProfileService {
                 .email(user.getEmail())
                 .avatarUrl(user.getAvatarUrl())
                 .rating(user.getRating())
-                .totalMatches(user.getTotalMatches())
-                .wins(user.getWins())
-                .losses(user.getLosses())
+                .totalMatches(totalMatches)
+                .wins(wins)
+                .losses(losses)
                 .winRate(winRate)
                 .build();
     }

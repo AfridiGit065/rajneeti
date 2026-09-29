@@ -130,6 +130,7 @@ public class GameStateMapper {
                         && state.getCurrentTurnPlayerId().equals(player.getUserId()))
                 .coins(player.getCoins())
                 .influenceCount(player.getCards() != null ? player.getCards().size() : 0)
+                .finalRank(player.getFinalRank())
                 .isBot(player.isBot())
                 .botDifficulty(player.getBotDifficulty())
                 .botPersonality(player.getBotPersonality())

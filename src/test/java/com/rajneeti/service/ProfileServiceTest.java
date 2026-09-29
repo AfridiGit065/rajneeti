@@ -152,4 +152,28 @@ class ProfileServiceTest {
         assertThat(response.getTotalCoinsEarned()).isEqualTo(500L);
         assertThat(response.getTotalCoinsSpent()).isEqualTo(200L);
     }
+
+    @Test
+    @DisplayName("Get Profile - Uses StatisticsRepository when available")
+    void getProfile_UsesStatisticsRepository() {
+        Statistics stats = Statistics.builder()
+                .user(testUser)
+                .totalMatches(25)
+                .wins(18)
+                .losses(7)
+                .winRate(72.0)
+                .build();
+
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+        when(statisticsRepository.findByUserId(testUserId)).thenReturn(Optional.of(stats));
+
+        ProfileResponse response = profileService.getProfile(testUserId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(testUserId);
+        assertThat(response.getTotalMatches()).isEqualTo(25);
+        assertThat(response.getWins()).isEqualTo(18);
+        assertThat(response.getLosses()).isEqualTo(7);
+        assertThat(response.getWinRate()).isEqualTo(72.0);
+    }
 }

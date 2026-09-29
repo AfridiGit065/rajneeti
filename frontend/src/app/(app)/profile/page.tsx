@@ -35,6 +35,11 @@ import { useToast } from "@/hooks/use-toast";
 
 type TabKey = "overview" | "statistics" | "matches";
 
+function pct(value: number, total: number): number {
+  if (!total) return 0;
+  return (value / total) * 100;
+}
+
 export default function ProfilePage() {
   const authUser = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
@@ -103,6 +108,17 @@ useEffect(() => {
     if (!userId) return;
     MetaService.getMatchHistory(userId).then((result) => {
       if (result.ok) setRecentMatches(result.data);
+    });
+    MetaService.getProfileStats(userId).then((result) => {
+      if (result.ok) {
+        setProfile((current) => ({
+          ...current,
+          totalCoinsEarned: result.data.totalCoinsEarned ?? current.totalCoinsEarned,
+          bluffsSucceeded: result.data.bluffsSucceeded ?? current.bluffsSucceeded,
+          challengesWon: result.data.challengesWon ?? current.challengesWon,
+          eliminations: result.data.eliminations ?? current.eliminations,
+        }));
+      }
     });
   }, [authUser?.id]);
 
@@ -370,8 +386,8 @@ useEffect(() => {
 
               <div className="space-y-3">
                 <div className="flex justify-between text-xs text-muted">
-                  <span>জয় ({profile.wins})</span>
-                  <span>পরাজয় ({profile.losses})</span>
+                  <span>জয় ({profile.wins})</span>
+                  <span>পরাজয় ({profile.losses})</span>
                   <span>ড্র ({profile.draws})</span>
                 </div>
 
@@ -379,21 +395,21 @@ useEffect(() => {
                   <div
                     className="bg-forest-400 transition-all"
                     style={{
-                      width: `${(profile.wins / profile.totalMatches) * 100}%`,
+                      width: `${pct(profile.wins, profile.totalMatches)}%`,
                     }}
                     title={`Wins: ${profile.wins}`}
                   />
                   <div
                     className="bg-crimson-400 transition-all"
                     style={{
-                      width: `${(profile.losses / profile.totalMatches) * 100}%`,
+                      width: `${pct(profile.losses, profile.totalMatches)}%`,
                     }}
                     title={`Losses: ${profile.losses}`}
                   />
                   <div
                     className="bg-gold-400 transition-all"
                     style={{
-                      width: `${(profile.draws / profile.totalMatches) * 100}%`,
+                      width: `${pct(profile.draws, profile.totalMatches)}%`,
                     }}
                     title={`Draws: ${profile.draws}`}
                   />
@@ -402,13 +418,13 @@ useEffect(() => {
                 <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
                   <div className="rounded-lg bg-deep-800/60 p-2 border border-forest-500/20">
                     <span className="text-forest-300 font-bold block text-sm">
-                      {((profile.wins / profile.totalMatches) * 100).toFixed(0)}%
+                      {pct(profile.wins, profile.totalMatches).toFixed(0)}%
                     </span>
                     <span className="text-[10px] text-muted">Win Rate</span>
                   </div>
                   <div className="rounded-lg bg-deep-800/60 p-2 border border-crimson-500/20">
                     <span className="text-crimson-300 font-bold block text-sm">
-                      {((profile.losses / profile.totalMatches) * 100).toFixed(0)}%
+                      {pct(profile.losses, profile.totalMatches).toFixed(0)}%
                     </span>
                     <span className="text-[10px] text-muted">Loss Rate</span>
                   </div>
@@ -529,8 +545,8 @@ useEffect(() => {
                     >
                       {match.result === "win" ? "W" : match.result === "loss" ? "L" : "D"}
                     </span>
-                    <div>
-                      <div className="font-bengali font-semibold text-ivory">
+                    <div className="min-w-0">
+                      <div className="truncate font-bengali font-semibold text-ivory">
                         প্রতিদ্বন্দ্বী: {match.opponentName}
                       </div>
                       <div className="text-xs text-muted flex items-center gap-2">
@@ -736,12 +752,12 @@ useEffect(() => {
                     </div>
 
                     {/* Match Info */}
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-bengali font-bold text-base text-ivory">
+                        <span className="truncate font-bengali font-bold text-base text-ivory">
                           বনাম {match.opponentName}
                         </span>
-                        <span className="font-mono text-[10px] text-muted bg-deep-950 px-2 py-0.5 rounded border border-white/5">
+                        <span className="shrink-0 font-mono text-[10px] text-muted bg-deep-950 px-2 py-0.5 rounded border border-white/5">
                           {match.matchId}
                         </span>
                       </div>

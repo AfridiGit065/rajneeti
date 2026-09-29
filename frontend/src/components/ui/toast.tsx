@@ -32,7 +32,7 @@ export function Toaster() {
   const toasts = useUiStore((s) => s.toasts);
   return (
     <div
-      className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2"
+      className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex flex-col gap-2 sm:inset-x-auto sm:right-4 sm:w-[calc(100%-2rem)] sm:max-w-sm"
       aria-live="polite"
       aria-label="বিজ্ঞপ্তি"
     >

@@ -75,13 +75,15 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
           ) : user ? (
             <Link
               href="/profile"
-              className="flex items-center gap-2 rounded-full border border-gold-500/35 bg-deep-800/80 py-1 pl-1 pr-3 transition-colors hover:border-gold-400"
+              className="flex min-w-0 items-center gap-2 rounded-full border border-gold-500/35 bg-deep-800/80 py-1 pl-1 pr-3 transition-colors hover:border-gold-400"
             >
-              <span className="flex size-7 items-center justify-center rounded-full bg-gradient-to-b from-forest-500 to-forest-600 text-xs font-bold text-deep-950">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-forest-500 to-forest-600 text-xs font-bold text-deep-950">
                 {user.avatarInitial}
               </span>
-              <span className="text-sm font-medium text-ivory">{user.displayName}</span>
-              <Badge tone="gold">Level {user.level}</Badge>
+              <span className="max-w-[9rem] truncate text-sm font-medium text-ivory sm:max-w-[12rem]">
+                {user.displayName}
+              </span>
+              <Badge tone="gold" className="shrink-0">Level {user.level}</Badge>
             </Link>
           ) : null}
         </div>
@@ -99,7 +101,7 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
 
       {mobileOpen ? (
         <nav
-          className="border-t border-forest-500/20 px-4 pb-4 pt-2 lg:hidden animate-fade-in"
+          className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-forest-500/20 px-4 pb-4 pt-2 lg:hidden animate-fade-in"
           aria-label="মোবাইল নেভিগেশন"
         >
           <ul className="flex flex-col gap-1">
@@ -113,11 +115,11 @@ export function TopNav({ mode = "public" }: { mode?: "public" | "app" }) {
                   <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-b from-forest-500 to-forest-600 text-xs font-bold text-deep-950">
                     {user.avatarInitial}
                   </span>
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-sm font-semibold text-ivory">{user.displayName}</span>
-                    <span className="text-xs text-muted">@{user.username}</span>
+                  <div className="flex min-w-0 flex-col leading-tight">
+                    <span className="truncate text-sm font-semibold text-ivory">{user.displayName}</span>
+                    <span className="truncate text-xs text-muted">@{user.username}</span>
                   </div>
-                  <Badge tone="gold" className="ml-auto text-[10px]">Level {user.level}</Badge>
+                  <Badge tone="gold" className="ml-auto shrink-0 text-[10px]">Level {user.level}</Badge>
                 </Link>
               </li>
             ) : null}
