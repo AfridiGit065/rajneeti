@@ -150,8 +150,8 @@ useEffect(() => {
     }
 
     toastSuccess(
-      "প্রোফাইল আপডেট হয়েছে",
-      "আপনার ইউজারনেম এবং অবতার সফলভাবে সংরক্ষণ করা হয়েছে।"
+      "Profile updated",
+      "Your username and avatar have been saved successfully."
     );
   };
 
@@ -188,7 +188,7 @@ useEffect(() => {
                     onError={() => setAvatarError(true)}
                   />
                 ) : (
-                  <span className="font-bengali text-4xl sm:text-5xl font-bold">
+                  <span className="text-4xl sm:text-5xl font-bold">
                     {profile.avatarInitial}
                   </span>
                 )}
@@ -203,12 +203,12 @@ useEffect(() => {
             {/* Player details */}
             <div className="space-y-1.5 pt-1">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h1 className="font-bengali text-2xl sm:text-3xl font-bold text-ivory">
+                <h1 className="text-2xl sm:text-3xl font-bold text-ivory">
                   {profile.displayName}
                 </h1>
                 <Badge tone="gold" className="gap-1">
                   <Crown className="size-3" />
-                  গ্র্যান্ডমাস্টার · Grandmaster
+                  Grandmaster
                 </Badge>
               </div>
 
@@ -219,15 +219,15 @@ useEffect(() => {
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-parchment-300">
                 <span className="flex items-center gap-1.5 text-gold-400 font-semibold">
                   <Trophy className="size-3.5" />
-                  রেটিং: {profile.rating}
+                  Rating: {profile.rating}
                 </span>
                 <span className="text-forest-500">•</span>
                 <span className="text-forest-300">
-                  জাতীয় মেধা তালিকা: #২
+                  National Leaderboard: #2
                 </span>
                 <span className="text-forest-500">•</span>
                 <span className="text-muted">
-                  সদস্য: সেপ্টেম্বর ২০২৪
+                  Member since: September 2024
                 </span>
               </div>
             </div>
@@ -379,16 +379,16 @@ useEffect(() => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Win/Loss Distribution Card */}
             <div className="rounded-2xl border border-forest-500/25 bg-deep-900/70 p-6 space-y-4">
-              <h3 className="font-bengali font-bold text-lg text-ivory flex items-center gap-2">
+              <h3 className="font-bold text-lg text-ivory flex items-center gap-2">
                 <Trophy className="size-4 text-gold-400" />
-                ম্যাচ অনুপাত বিশ্লেষণ
+                Match Ratio Analysis
               </h3>
 
               <div className="space-y-3">
                 <div className="flex justify-between text-xs text-muted">
-                  <span>জয় ({profile.wins})</span>
-                  <span>পরাজয় ({profile.losses})</span>
-                  <span>ড্র ({profile.draws})</span>
+                  <span>Wins ({profile.wins})</span>
+                  <span>Losses ({profile.losses})</span>
+                  <span>Draws ({profile.draws})</span>
                 </div>
 
                 <div className="flex h-3 w-full overflow-hidden rounded-full bg-deep-950">
@@ -440,52 +440,52 @@ useEffect(() => {
 
             {/* Favorite Character Archetype */}
             <div className="rounded-2xl border border-forest-500/25 bg-deep-900/70 p-6 space-y-4">
-              <h3 className="font-bengali font-bold text-lg text-ivory flex items-center gap-2">
+              <h3 className="font-bold text-lg text-ivory flex items-center gap-2">
                 <Crown className="size-4 text-gold-400" />
-                সর্বাধিক ব্যবহৃত চরিত্র
+                Most Played Character
               </h3>
 
               <div className="flex items-center gap-4 rounded-xl border border-gold-500/30 bg-deep-950/60 p-4">
-                <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-deep-700 to-deep-900 border border-gold-500/40 text-gold-300 font-bengali text-2xl font-bold">
-                  ম
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-deep-700 to-deep-900 border border-gold-500/40 text-gold-300  text-2xl font-bold">
+                  M
                 </div>
                 <div className="space-y-0.5">
-                  <div className="font-bengali font-bold text-base text-ivory">
-                    মন্ত্রী (THE MINISTER)
+                  <div className="font-bold text-base text-ivory">
+                    THE MINISTER
                   </div>
                   <div className="text-xs text-gold-400 font-medium">
-                    সফলতা হার: ৮৪%
+                    Success Rate: 84%
                   </div>
                   <div className="text-[11px] text-muted">
-                    ট্যাক্স আদায়ে পারদর্শী
+                    Skilled in Tax Collection
                   </div>
                 </div>
               </div>
 
               <p className="text-xs text-muted leading-relaxed">
-                অর্থনীতি নিয়ন্ত্রণ ও কর আদায় আপনার অন্যতম সফল কৌশল হিসেবে চিহ্নিত হয়েছে।
+                Economic control and tax collection has been identified as your most successful strategy.
               </p>
             </div>
 
             {/* Quick Actions & Account Status */}
             <div className="rounded-2xl border border-forest-500/25 bg-deep-900/70 p-6 space-y-4 flex flex-col justify-between">
               <div>
-                <h3 className="font-bengali font-bold text-lg text-ivory flex items-center gap-2">
+                <h3 className="font-bold text-lg text-ivory flex items-center gap-2">
                   <Shield className="size-4 text-forest-400" />
-                  অ্যাকাউন্ট স্ট্যাটাস
+                  Account Status
                 </h3>
                 <div className="mt-3 space-y-2 text-xs">
                   <div className="flex justify-between py-1.5 border-b border-forest-500/15">
-                    <span className="text-muted">প্লেয়ার আইডি</span>
+                    <span className="text-muted">Player ID</span>
                     <span className="font-mono text-ivory">{profile.id}</span>
                   </div>
                   <div className="flex justify-between py-1.5 border-b border-forest-500/15">
-                    <span className="text-muted">নিরাপত্তা স্তর</span>
-                    <span className="text-forest-300 font-medium">ভেরিফায়েড প্লেয়ার</span>
+                    <span className="text-muted">Security Level</span>
+                    <span className="text-forest-300 font-medium">Verified Player</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="text-muted">গেম সিজন</span>
-                    <span className="text-gold-300 font-semibold">সিজন ১ (সক্রিয়)</span>
+                    <span className="text-muted">Game Season</span>
+                    <span className="text-gold-300 font-semibold">Season 1 (Active)</span>
                   </div>
                 </div>
               </div>
@@ -496,13 +496,13 @@ useEffect(() => {
                   size="sm"
                   fullWidth
                   onClick={() => setIsEditModalOpen(true)}
-                  className="gap-1.5 font-bengali"
+                  className="gap-1.5"
                 >
                   <Pencil className="size-3.5" />
                   Edit Profile
                 </Button>
                 <Link href="/history" className="flex-1">
-                  <Button variant="outline" size="sm" fullWidth className="gap-1.5 font-bengali">
+                  <Button variant="outline" size="sm" fullWidth className="gap-1.5">
                     <History className="size-3.5" />
                     Match History
                   </Button>
@@ -514,15 +514,15 @@ useEffect(() => {
           {/* Quick preview of recent matches */}
           <div className="rounded-2xl border border-forest-500/25 bg-deep-900/50 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-bengali font-bold text-lg text-ivory flex items-center gap-2">
+              <h3 className="font-bold text-lg text-ivory flex items-center gap-2">
                 <Clock3 className="size-4 text-gold-400" />
-                সর্বশেষ ম্যাচের সারসংক্ষেপ
+                Recent Matches Summary
               </h3>
               <Link
                 href="/history"
                 className="text-xs text-gold-400 hover:text-gold-300 font-semibold flex items-center gap-1 transition-colors"
               >
-                সবগুলো দেখুন
+                View All
                 <ArrowRight className="size-3.5" />
               </Link>
             </div>
@@ -546,13 +546,13 @@ useEffect(() => {
                       {match.result === "win" ? "W" : match.result === "loss" ? "L" : "D"}
                     </span>
                     <div className="min-w-0">
-                      <div className="truncate font-bengali font-semibold text-ivory">
-                        প্রতিদ্বন্দ্বী: {match.opponentName}
+                      <div className="truncate font-semibold text-ivory">
+                        Opponent: {match.opponentName}
                       </div>
                       <div className="text-xs text-muted flex items-center gap-2">
-                        <span>{match.playerCount} জন খেলোয়াড়</span>
+                        <span>{match.playerCount} Players</span>
                         <span>•</span>
-                        <span>{match.durationMinutes} মিনিট</span>
+                        <span>{match.durationMinutes} min</span>
                       </div>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ useEffect(() => {
                           : "text-gold-300"
                       }`}
                     >
-                      {match.result === "win" ? "বিজয়ী (১ম)" : match.result === "loss" ? "পরাজয়" : "ড্র"}
+                      {match.result === "win" ? "Victory (1st)" : match.result === "loss" ? "Defeat" : "Draw"}
                     </span>
                   </div>
                 </div>
@@ -592,8 +592,8 @@ useEffect(() => {
               <p className="text-3xl font-bold text-ivory">
                 {profile.totalCoinsEarned.toLocaleString()}
               </p>
-              <p className="text-xs text-muted font-bengali">
-                খেলায় অর্জিত মোট স্বর্ণমুদ্রা
+              <p className="text-xs text-muted ">
+                Total gold coins earned in-game
               </p>
             </div>
 
@@ -608,8 +608,8 @@ useEffect(() => {
               <p className="text-3xl font-bold text-forest-300">
                 {profile.bluffsSucceeded}
               </p>
-              <p className="text-xs text-muted font-bengali">
-                সফল মনস্তাত্ত্বিক ব্ল্যাফ চাল
+              <p className="text-xs text-muted">
+                Successful psychological bluff moves
               </p>
             </div>
 
@@ -624,8 +624,8 @@ useEffect(() => {
               <p className="text-3xl font-bold text-gold-gradient">
                 {profile.challengesWon}
               </p>
-              <p className="text-xs text-muted font-bengali">
-                প্রতিপক্ষের বিরুদ্ধে জয়ী চ্যালেঞ্জ
+              <p className="text-xs text-muted ">
+                Challenges won against opponents
               </p>
             </div>
 
@@ -640,8 +640,8 @@ useEffect(() => {
               <p className="text-3xl font-bold text-crimson-300">
                 {profile.eliminations}
               </p>
-              <p className="text-xs text-muted font-bengali">
-                প্রতিপক্ষের ইনফ্লুয়েন্স অপসারণ
+              <p className="text-xs text-muted">
+                Opponent influence cards removed
               </p>
             </div>
 
@@ -654,10 +654,10 @@ useEffect(() => {
                 <Flame className="size-5 text-forest-400" />
               </div>
               <p className="text-3xl font-bold text-forest-300">
-                {profile.winStreak} ম্যাচ
+                {profile.winStreak} matches
               </p>
-              <p className="text-xs text-muted font-bengali">
-                চলমান টানা অপরাজিত থাকার রেকর্ড
+              <p className="text-xs text-muted">
+                Current unbeaten streak record
               </p>
             </div>
 
@@ -670,10 +670,10 @@ useEffect(() => {
                 <Clock3 className="size-5 text-muted" />
               </div>
               <p className="text-3xl font-bold text-ivory">
-                ১৪.২ মিনিট
+                14.2 min
               </p>
-              <p className="text-xs text-muted font-bengali">
-                প্রতি ম্যাচের গড় স্থায়িত্ব
+              <p className="text-xs text-muted ">
+                Average duration per match
               </p>
             </div>
           </div>
@@ -708,19 +708,19 @@ useEffect(() => {
           <div className="rounded-2xl border border-forest-500/25 bg-surface panel-emboss panel-texture p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h3 className="font-bengali font-bold text-xl text-ivory">
-                  সাম্প্রতিক ম্যাচ তালিকা · Recent Matches
+                <h3 className=" font-bold text-xl text-ivory">
+                  Recent Matches
                 </h3>
                 <p className="text-xs text-muted">
-                  আপনার শেষ খেলা ম্যাচগুলোর বিস্তারিত রেকর্ড
+                  Detailed record of your recent matches
                 </p>
               </div>
 
               {/* View Match History Button */}
               <Link href="/history">
-                <Button variant="outline" size="sm" className="gap-2 font-bengali">
+                <Button variant="outline" size="sm" className="gap-2 ">
                   <History className="size-4" />
-                  সম্পূর্ণ ইতিহাস · View Match History
+                  View Match History
                 </Button>
               </Link>
             </div>
@@ -754,8 +754,8 @@ useEffect(() => {
                     {/* Match Info */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="truncate font-bengali font-bold text-base text-ivory">
-                          বনাম {match.opponentName}
+                        <span className="truncate  font-bold text-base text-ivory">
+                          vs. {match.opponentName}
                         </span>
                         <span className="shrink-0 font-mono text-[10px] text-muted bg-deep-950 px-2 py-0.5 rounded border border-white/5">
                           {match.matchId}
@@ -765,15 +765,15 @@ useEffect(() => {
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted mt-0.5">
                         <span className="flex items-center gap-1">
                           <Users className="size-3" />
-                          {match.playerCount} খেলোয়াড়
+                          {match.playerCount} Players
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <Clock3 className="size-3" />
-                          {match.durationMinutes} মিনিট
+                          {match.durationMinutes} min
                         </span>
                         <span>•</span>
-                        <span>অবস্থান: {match.position}ম স্থান</span>
+                        <span>Position: #{match.position}</span>
                       </div>
                     </div>
                   </div>
@@ -797,9 +797,9 @@ useEffect(() => {
 
             <div className="mt-6 text-center">
               <Link href="/history">
-                <Button variant="premium" size="md" className="gap-2 font-bengali">
+                <Button variant="premium" size="md" className="gap-2 ">
                   <History className="size-4" />
-                  View Match History (সকল ম্যাচের ইতিহাস)
+                  View Match History
                 </Button>
               </Link>
             </div>

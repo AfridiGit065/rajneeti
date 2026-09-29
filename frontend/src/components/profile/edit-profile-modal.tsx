@@ -48,11 +48,11 @@ export function EditProfileModal({
     e.preventDefault();
     const trimmed = username.trim();
     if (!trimmed) {
-      setError("ইউজারনেম খালি হতে পারে না");
+      setError("Username cannot be empty");
       return;
     }
     if (trimmed.length < 3 || trimmed.length > 50) {
-      setError("ইউজারনেম ৩ থেকে ৫০ অক্ষরের মধ্যে হতে হবে");
+      setError("Username must be between 3 and 50 characters");
       return;
     }
     await onSave({
@@ -83,7 +83,7 @@ export function EditProfileModal({
                 onError={() => setPreviewError(true)}
               />
             ) : (
-              <span className="font-bengali text-2xl font-bold">
+              <span className="text-2xl font-bold">
                 {username ? username.slice(0, 2).toUpperCase() : profile.avatarInitial}
               </span>
             )}
