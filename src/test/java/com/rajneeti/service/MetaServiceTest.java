@@ -67,7 +67,7 @@ class MetaServiceTest {
                 .totalMatches(40)
                 .rank(null)
                 .build();
-        when(leaderboardRepository.findTop100ByOrderByRatingDesc()).thenReturn(List.of(row));
+        when(leaderboardRepository.findAll()).thenReturn(List.of(row));
 
         List<LeaderboardEntryDto> entries = metaService.getLeaderboard();
 
@@ -76,7 +76,6 @@ class MetaServiceTest {
         assertThat(entry.getRank()).isEqualTo(1);
         assertThat(entry.getUserId()).isEqualTo(userId);
         assertThat(entry.getUsername()).isEqualTo("testplayer");
-        assertThat(entry.getRating()).isEqualTo(1450);
         assertThat(entry.getWins()).isEqualTo(30);
         assertThat(entry.getTotalMatches()).isEqualTo(40);
         assertThat(entry.getWinRate()).isEqualTo(75.0);
@@ -93,12 +92,66 @@ class MetaServiceTest {
                 .totalMatches(0)
                 .rank(3)
                 .build();
-        when(leaderboardRepository.findTop100ByOrderByRatingDesc()).thenReturn(List.of(row));
+        when(leaderboardRepository.findAll()).thenReturn(List.of(row));
 
         List<LeaderboardEntryDto> entries = metaService.getLeaderboard();
 
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getWinRate()).isEqualTo(0.0);
+        assertThat(entries.get(0).getRating()).isEqualTo(1000);
+    }
+
+    @Test
+    @DisplayName("Get Leaderboard - winners rank above losers regardless of stored rating")
+    void getLeaderboard_RanksByResultsNotStoredRating() {
+        Leaderboard loser = Leaderboard.builder()
+                .id(UUID.randomUUID())
+                .user(User.builder()
+                        .id(UUID.randomUUID())
+                        .username("loser")
+                        .email("loser@test.local")
+                        .build())
+                // A stale higher stored rating must NOT win the ordering.
+                .rating(1900)
+                .wins(1)
+                .losses(6)
+                .totalMatches(7)
+                .build();
+        Leaderboard winner = Leaderboard.builder()
+                .id(UUID.randomUUID())
+                .user(User.builder()
+                        .id(UUID.randomUUID())
+                        .username("winner")
+                        .email("winner@test.local")
+                        .build())
+                .rating(1000)
+                .wins(4)
+                .losses(1)
+                .totalMatches(5)
+                .build();
+
+        when(leaderboardRepository.findAll()).thenReturn(List.of(loser, winner));
+
+        List<LeaderboardEntryDto> entries = metaService.getLeaderboard();
+
+        assertThat(entries).extracting(LeaderboardEntryDto::getUsername)
+                .containsExactly("winner", "loser");
+        assertThat(entries.get(0).getRank()).isEqualTo(1);
+        assertThat(entries.get(1).getRank()).isEqualTo(2);
+        assertThat(entries.get(0).getRating()).isEqualTo(1085);
+        assertThat(entries.get(1).getRating()).isEqualTo(935);
+    }
+
+    @Test
+    @DisplayName("Get Leaderboard - derived rating is monotonic in wins and losses")
+    void getLeaderboard_DerivedRatingScales() {
+        assertThat(MetaServiceImpl.derivedRating(0, 0)).isEqualTo(1000);
+        assertThat(MetaServiceImpl.derivedRating(1, 0)).isEqualTo(1025);
+        assertThat(MetaServiceImpl.derivedRating(0, 1)).isEqualTo(985);
+        assertThat(MetaServiceImpl.derivedRating(3, 3)).isEqualTo(1030);
+        assertThat(MetaServiceImpl.derivedRating(null, null)).isEqualTo(1000);
+        assertThat(MetaServiceImpl.derivedRating(10, 2)).isGreaterThan(
+                MetaServiceImpl.derivedRating(3, 5));
     }
 
     @Test

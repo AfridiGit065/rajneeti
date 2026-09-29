@@ -40,33 +40,63 @@ public class MetaServiceImpl implements MetaService {
 
     @Override
     public List<LeaderboardEntryDto> getLeaderboard() {
-        List<Leaderboard> rows = leaderboardRepository.findTop100ByOrderByRatingDesc();
-        List<LeaderboardEntryDto> entries = new ArrayList<>(rows.size());
-        int sequentialRank = 1;
+        List<Leaderboard> rows = leaderboardRepository.findAll();
+        List<Leaderboard> ranked = new ArrayList<>(rows.size());
         for (Leaderboard row : rows) {
-            User user = row.getUser();
-            if (user == null) {
-                continue;
+            if (row.getUser() != null) {
+                ranked.add(row);
             }
+        }
+
+        // The persisted rating column is static (never advanced when a match
+        // finishes), so it cannot order the board. Rank by a rating derived
+        // from real results: leaders rise, those behind sink.
+        ranked.sort(Comparator
+                .comparingInt((Leaderboard row) -> derivedRating(row.getWins(), row.getLosses()))
+                .reversed()
+                .thenComparing(Comparator.comparingInt(
+                        (Leaderboard row) -> row.getWins() != null ? row.getWins() : 0).reversed())
+                .thenComparing(row -> row.getId().toString()));
+
+        List<LeaderboardEntryDto> entries = new ArrayList<>(ranked.size());
+        int sequentialRank = 1;
+        for (Leaderboard row : ranked) {
+            User user = row.getUser();
             Integer totalMatches = row.getTotalMatches() != null ? row.getTotalMatches() : 0;
             Integer wins = row.getWins() != null ? row.getWins() : 0;
+            Integer losses = row.getLosses() != null ? row.getLosses() : 0;
             double winRate = totalMatches > 0
                     ? Math.round(((double) wins / totalMatches) * 100.0 * 100.0) / 100.0
                     : 0.0;
             entries.add(LeaderboardEntryDto.builder()
-                    .rank(row.getRank() != null ? row.getRank() : sequentialRank)
+                    .rank(sequentialRank)
                     .userId(user.getId())
                     .username(user.getUsername())
                     .avatarUrl(user.getAvatarUrl())
-                    .rating(row.getRating())
+                    .rating(derivedRating(wins, losses))
                     .wins(wins)
-                    .losses(row.getLosses())
+                    .losses(losses)
                     .totalMatches(totalMatches)
                     .winRate(winRate)
                     .build());
             sequentialRank++;
+            if (sequentialRank > 100) {
+                break;
+            }
         }
         return entries;
+    }
+
+    /**
+     * Elo-style standing derived from results: a win is worth more than a loss
+     * costs, so the last player standing always outranks those eliminated
+     * earlier. Pure function of wins/losses so the board is always consistent
+     * with the matches that actually finished.
+     */
+    public static int derivedRating(Integer wins, Integer losses) {
+        int winCount = wins != null ? wins : 0;
+        int lossCount = losses != null ? losses : 0;
+        return 1000 + (winCount * 25) - (lossCount * 15);
     }
 
     @Override
