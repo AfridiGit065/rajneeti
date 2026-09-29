@@ -3,6 +3,7 @@ export { CharacterCard } from "./character-card";
 export { CharacterBadge } from "./character-badge";
 export type { CharacterTone } from "./character-badge";
 export { CoinDisplay } from "./coin-display";
+export { CardBackImage } from "./card-back-image";
 export { GameBoard } from "./game-board";
 export { GameHeader } from "./game-header";
 export { GameLog } from "./game-log";

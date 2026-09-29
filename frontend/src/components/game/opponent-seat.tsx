@@ -3,6 +3,7 @@
 import { cn } from "@/lib/cn";
 import { Coins, Bot, Skull, Shield } from "@/components/ui/icons";
 import { botDifficultyLabel } from "@/lib/game/bot";
+import { CardBackImage } from "./card-back-image";
 import type { GamePlayer } from "@/types/game";
 
 export function OpponentSeat({
@@ -149,12 +150,10 @@ export function OpponentSeat({
           {Array.from({ length: activeInfluence }).map((_, i) => (
             <div
               key={i}
-              className="relative flex h-7 w-5 items-center justify-center rounded-xs sm:rounded-[3px] border border-gold-500/50 bg-gradient-to-b from-[#0e3b2e] to-[#061e16] shadow-sm"
+              className="relative h-7 w-5 overflow-hidden rounded-xs border border-gold-500/50 bg-gradient-to-b from-[#0e3b2e] to-[#061e16] shadow-sm sm:rounded-[3px]"
               title="Hidden Influence Card"
             >
-              <div className="size-2.5 rounded-full border border-gold-400/60 bg-gold-500/20 flex items-center justify-center">
-                <span className="font-bengali text-[7px] font-bold text-gold-400 leading-none">র</span>
-              </div>
+              <CardBackImage sizes="20px" />
             </div>
           ))}
           {Array.from({ length: revealedCount }).map((_, i) => (

@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 import { cn } from "@/lib/cn";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { Coins } from "@/components/ui/icons";
+import { CardBackImage } from "./card-back-image";
 import type { Character, CharacterId } from "@/types/character";
 
 export type InfluenceCardState = "hidden" | "revealed" | "discarded";
@@ -69,24 +70,13 @@ interface InfluenceCardProps {
   style?: CSSProperties;
 }
 
-function CardBack() {
+function CardBack({ size }: { size: InfluenceCardSize }) {
   return (
-    <div className="influence-card-back flex h-full w-full rounded-2xl p-1.5 sm:p-2">
-      <div className="influence-card-back-inner relative flex h-full w-full flex-col items-center justify-center rounded-xl">
-        <span className="absolute left-1 top-1 size-1 rounded-full bg-gold-400/80 sm:size-1.5" aria-hidden />
-        <span className="absolute right-1 top-1 size-1 rounded-full bg-gold-400/80 sm:size-1.5" aria-hidden />
-        <span className="absolute bottom-1 left-1 size-1 rounded-full bg-gold-400/80 sm:size-1.5" aria-hidden />
-        <span className="absolute bottom-1 right-1 size-1 rounded-full bg-gold-400/80 sm:size-1.5" aria-hidden />
-        <span className="absolute left-0 top-1/2 h-8 w-px -translate-y-1/2 bg-gradient-to-b from-transparent via-gold-500/40 to-transparent" aria-hidden />
-        <span className="absolute right-0 top-1/2 h-8 w-px -translate-y-1/2 bg-gradient-to-b from-transparent via-gold-500/40 to-transparent" aria-hidden />
-
-        <span className="flex size-6 items-center justify-center rounded-full border border-gold-500/50 bg-deep-950/70 font-bengali text-xs font-bold text-gold-gradient shadow-gold sm:size-8 sm:text-sm">
-          র
-        </span>
-        <span className="mt-0.5 max-w-full truncate px-1 font-cinzel text-[0.4rem] font-bold uppercase tracking-[0.3em] text-gold-300/90 sm:text-[0.5rem]">
-          রাজনীতি
-        </span>
-      </div>
+    <div className="influence-card-back flex h-full w-full overflow-hidden rounded-2xl">
+      <CardBackImage
+        sizes={INFLUENCE_CARD_WIDTHS[size]}
+        className="rounded-2xl"
+      />
     </div>
   );
 }
@@ -152,7 +142,7 @@ export function InfluenceCard({
       >
         {/* Back face — shown while the card is hidden */}
         <div className="influence-card-face influence-card-face-back absolute inset-0">
-          <CardBack />
+          <CardBack size={size} />
         </div>
 
         {/* Front face — artwork, name, ability and role styling */}

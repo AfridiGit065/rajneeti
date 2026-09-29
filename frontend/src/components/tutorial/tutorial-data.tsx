@@ -4,6 +4,7 @@ import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { getAction } from "@/lib/game/actions";
 import { CHARACTERS, RULES } from "@/lib/game/rules";
+import { CardBackImage } from "@/components/game/card-back-image";
 import {
   Coins,
   Globe,
@@ -82,14 +83,11 @@ function CardBack({ label }: { label?: string }) {
     <div className="flex flex-col items-center gap-1">
       <div
         className={cn(
-          "relative flex h-20 w-14 items-center justify-center rounded-xl border-2 border-gold-500/40",
+          "relative h-20 w-14 overflow-hidden rounded-xl border-2 border-gold-500/40",
           "bg-gradient-to-b from-deep-750 via-deep-850 to-deep-950 shadow-gold transition-all duration-300",
         )}
       >
-        <div className="absolute inset-1 rounded-lg border border-gold-500/20 bg-deep-900/80 flex flex-col items-center justify-center">
-          <EyeOff className="size-4 text-gold-400/80 mb-1" />
-          <span className="font-cinzel text-xs font-bold text-gold-400">?</span>
-        </div>
+        <CardBackImage sizes="56px" className="rounded-[10px]" />
       </div>
       {label && <span className="text-[10px] text-muted">{label}</span>}
     </div>

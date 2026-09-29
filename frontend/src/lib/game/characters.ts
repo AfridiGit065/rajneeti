@@ -125,6 +125,13 @@ export const CHARACTERS: readonly Character[] = [
   },
 ];
 
+/**
+ * Shared face-down artwork. Every card whose identity must stay secret renders
+ * this instead of its own, so the browser only ever requests the character PNG
+ * for a card the local player is actually allowed to see.
+ */
+export const CARD_BACK_PATH = "/assets/cards/back.png";
+
 export const CHARACTER_MAP: Readonly<Record<string, Character>> =
   Object.fromEntries(CHARACTERS.map((c) => [c.id, c]));
 

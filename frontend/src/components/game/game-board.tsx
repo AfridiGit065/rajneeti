@@ -38,6 +38,7 @@ import {
 import { ExchangeSelection } from "./exchange-selection";
 import { getAction, canChallenge } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
+import { CardBackImage } from "./card-back-image";
 import { GameService } from "@/services/game-service";
 import { useAuthStore } from "@/store/auth-store";
 import { useToast } from "@/hooks/use-toast";
@@ -74,12 +75,10 @@ function DeckDiscard({ game }: { game: GameState }) {
           DECK
         </span>
         <div
-          className="relative flex h-[90px] w-[64px] items-center justify-center rounded-xl border border-gold-500/70 bg-gradient-to-b from-[#0e3b2e] to-[#041610] shadow-[1px_1px_0_rgba(201,165,60,0.4),3px_3px_0_rgba(10,40,25,0.8),6px_6px_0_rgba(0,0,0,0.7)] cursor-default transition-transform hover:-translate-y-1"
+          className="relative h-[90px] w-[64px] overflow-hidden rounded-xl border border-gold-500/70 bg-gradient-to-b from-[#0e3b2e] to-[#041610] shadow-[1px_1px_0_rgba(201,165,60,0.4),3px_3px_0_rgba(10,40,25,0.8),6px_6px_0_rgba(0,0,0,0.7)] cursor-default transition-transform hover:-translate-y-1"
           title={`${game.deckCount} cards remaining`}
         >
-          <div className="flex size-8 items-center justify-center rounded-full border border-gold-400/80 bg-deep-950/90 shadow-inner">
-            <span className="font-bengali text-base font-bold text-gold-300">র</span>
-          </div>
+          <CardBackImage sizes="64px" className="rounded-[11px]" />
         </div>
         <span className="font-mono text-xs font-bold text-gold-300 bg-deep-950/95 px-2.5 py-0.5 rounded-full border border-gold-500/30 shadow-sm">
           {game.deckCount}
