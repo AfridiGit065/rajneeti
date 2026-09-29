@@ -34,6 +34,12 @@ export type ActionIntent = {
   blockerUserId?: string;
   /** Module 19 — character the blocker claimed (e.g. "minister"). */
   blockedCharacter?: CharacterId;
+  /**
+   * Module 20 — the backend's authoritative window expiry, as an ISO instant.
+   * The server resolves the action when it passes; this only drives the
+   * countdown display, so the two clocks can never disagree about the outcome.
+   */
+  deadlineAt?: string;
 };
 
 export type ChallengeResult = "success" | "failed";

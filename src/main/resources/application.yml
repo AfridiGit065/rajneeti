@@ -120,6 +120,16 @@ bot:
   # Scheduler poll interval. Set large in tests so bots only drive on demand.
   scheduler-interval-ms: ${BOT_SCHEDULER_INTERVAL_MS:500}
 
+# ── Authoritative game windows ───────────────────────────────
+# The server owns every block/challenge deadline; clients only display these
+# durations, so a browser can never be responsible for a phase transition.
+game:
+  timers:
+    # How long opponents may block a blockable action (Foreign Aid, Steal, Assassinate).
+    block-window-seconds: ${GAME_BLOCK_WINDOW_SECONDS:15}
+    # How long opponents may challenge a claim (Tax, Steal, Exchange, Assassinate).
+    challenge-window-seconds: ${GAME_CHALLENGE_WINDOW_SECONDS:15}
+
 # ── WebSocket ─────────────────────────────────────────────────
 websocket:
   allowed-origins: ${WS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}

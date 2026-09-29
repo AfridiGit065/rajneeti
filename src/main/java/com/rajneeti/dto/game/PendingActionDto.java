@@ -31,6 +31,13 @@ public class PendingActionDto {
     /** When the block window opened. */
     private LocalDateTime startedAt;
 
+    /**
+     * Module 20 — the server-authoritative instant this window expires. Clients
+     * render the remaining time from this value; the backend is what actually
+     * resolves the action.
+     */
+    private LocalDateTime deadlineAt;
+
     /** The claimed character, e.g. {@code "amla"} for an Exchange. */
     private String claimedCharacter;
 

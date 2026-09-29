@@ -187,6 +187,9 @@ function mapPendingAction(pending: BackendPendingAction | undefined): ActionInte
   if (pending.targetPlayerId) {
     intent.targetPlayerId = pending.targetPlayerId;
   }
+  if (pending.deadlineAt) {
+    intent.deadlineAt = pending.deadlineAt;
+  }
   if (pending.blockerUserId) {
     intent.blockerUserId = pending.blockerUserId;
     intent.blockedCharacter = pending.blockedCharacter

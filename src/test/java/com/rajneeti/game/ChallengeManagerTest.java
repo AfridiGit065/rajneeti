@@ -53,6 +53,9 @@ class ChallengeManagerTest {
     @Mock
     private WebSocketEventPublisher webSocketEventPublisher;
 
+    @Mock
+    private PendingActionTimeoutScheduler pendingActionTimeoutScheduler;
+
     private final GameStore gameStore = new GameStore();
     private final CardManager cardManager = new CardManager();
     private final GameStateMapper gameStateMapper = new GameStateMapper();
@@ -74,9 +77,10 @@ class ChallengeManagerTest {
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
                 cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher), null);
         challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher),
+                pendingActionTimeoutScheduler);
         gameStore.remove(matchId);
     }
 

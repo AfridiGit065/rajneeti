@@ -145,6 +145,7 @@ export function ChallengeFlow({
           key={claimKey ?? "claim"}
           claimant={claimant!}
           claimedCharacter={activeClaim!.claimedCharacter!}
+          deadlineAt={activeClaim?.deadlineAt}
           onChallenge={handleChallenge}
           onAllow={handleAllow}
         />

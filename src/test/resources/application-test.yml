@@ -46,6 +46,16 @@ ai:
   max-key-retries: 1
   request-timeout-ms: 2000
 
+# ── Authoritative game windows ─────────────────────────────────
+# Tests drive actions and resolve them explicitly, so a background timeout
+# firing mid-test would be non-deterministic. The window is parked far in the
+# future; the timeout test class overrides these values via @TestPropertySource
+# and asserts the transition deterministically.
+game:
+  timers:
+    block-window-seconds: 3600
+    challenge-window-seconds: 3600
+
 logging:
   level:
     root: WARN

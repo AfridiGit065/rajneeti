@@ -57,6 +57,7 @@ public class GameStateMapper {
                     .type(pending.getType())
                     .actorUserId(pending.getActorUserId())
                     .startedAt(pending.getStartedAt())
+                    .deadlineAt(pending.getDeadlineAt())
                     .claimedCharacter(pending.getClaimedCharacter())
                     .targetPlayerId(pending.getTargetPlayerId());
 

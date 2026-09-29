@@ -34,6 +34,14 @@ public class PendingAction {
     private final LocalDateTime startedAt;
 
     /**
+     * Module 20 — the authoritative instant this window expires. The server arms
+     * its own timer for it and resolves the action when it passes, so a client
+     * can only display the remaining time, never decide it. {@code null} for an
+     * action whose window is not time-bound (an Exchange awaiting a card choice).
+     */
+    private final LocalDateTime deadlineAt;
+
+    /**
      * The character claimed by the action, e.g. {@code "amla"} for an Exchange.
      * Null for actions that do not require a claim.
      */
@@ -93,4 +101,29 @@ public class PendingAction {
      * block is rejected.
      */
     private final UUID blockChallengerUserId;
+
+    /**
+     * Returns a copy of this pending action carrying the authoritative window
+     * deadline. The scheduler is the only writer of {@code deadlineAt}, so every
+     * window (the original action window, a block window, a re-armed window) gets
+     * a single freshly assigned deadline.
+     */
+    public PendingAction withDeadline(LocalDateTime deadlineAt) {
+        return PendingAction.builder()
+                .id(id)
+                .type(type)
+                .actorUserId(actorUserId)
+                .startedAt(startedAt)
+                .deadlineAt(deadlineAt)
+                .claimedCharacter(claimedCharacter)
+                .exchangePool(exchangePool)
+                .originalHandCardIds(originalHandCardIds)
+                .targetPlayerId(targetPlayerId)
+                .reservedCoins(reservedCoins)
+                .challengerUserId(challengerUserId)
+                .blockerUserId(blockerUserId)
+                .blockedCharacter(blockedCharacter)
+                .blockChallengerUserId(blockChallengerUserId)
+                .build();
+    }
 }

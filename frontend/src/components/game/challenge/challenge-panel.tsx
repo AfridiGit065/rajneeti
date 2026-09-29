@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { CHALLENGE_RESPONSE_SECONDS } from "@/lib/game/challenge";
-import { useCountdown } from "@/hooks/use-countdown";
+import { useDeadlineCountdown } from "@/hooks/use-countdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Swords, TimerReset, EyeOff } from "@/components/ui/icons";
@@ -15,6 +15,8 @@ interface ChallengePanelProps {
   claimant: GamePlayer;
   claimedCharacter: CharacterId;
   seconds?: number;
+  /** Module 20 — the backend's authoritative window expiry. */
+  deadlineAt?: string;
   onChallenge: () => void;
   onAllow: () => void;
   className?: string;
@@ -31,12 +33,13 @@ export function ChallengePanel({
   claimant,
   claimedCharacter,
   seconds = CHALLENGE_RESPONSE_SECONDS,
+  deadlineAt,
   onChallenge,
   onAllow,
   className,
 }: ChallengePanelProps) {
   const character = CHARACTER_MAP[claimedCharacter];
-  const { display, expired } = useCountdown(seconds);
+  const { display, expired } = useDeadlineCountdown(deadlineAt, seconds);
 
   const allowFired = useRef(false);
   useEffect(() => {

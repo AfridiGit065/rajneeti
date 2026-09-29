@@ -56,6 +56,7 @@ public class BlockManager {
     private final GameEngine gameEngine;
     private final WebSocketEventPublisher webSocketEventPublisher;
     private final GameStateSyncService gameStateSyncService;
+    private final PendingActionTimeoutScheduler pendingActionTimeoutScheduler;
 
     /**
      * Records a block claim by {@code blockerId} against the currently pending
@@ -150,6 +151,11 @@ public class BlockManager {
                         .actionType(pending.getType())
                         .blockedCharacter(normalized)
                         .build());
+
+        // A block claim opens its own challenge window, so the authoritative
+        // deadline is re-armed for the block (not the original action) window
+        // before the snapshot goes out.
+        pendingActionTimeoutScheduler.armChallengeWindow(matchId);
 
         // Module 23 — the block claim mutates the pending action, so every
         // client's board must move in lockstep with the authoritative snapshot.

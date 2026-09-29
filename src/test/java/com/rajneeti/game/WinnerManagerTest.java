@@ -62,6 +62,9 @@ class WinnerManagerTest {
     @Mock
     private WebSocketEventPublisher webSocketEventPublisher;
 
+    @Mock
+    private PendingActionTimeoutScheduler pendingActionTimeoutScheduler;
+
     private final GameStore gameStore = new GameStore();
     private final CardManager cardManager = new CardManager();
     private final GameStateMapper gameStateMapper = new GameStateMapper();
@@ -90,9 +93,10 @@ class WinnerManagerTest {
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
                 cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher), null);
         challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher),
+                pendingActionTimeoutScheduler);
         actionResolver = new ActionResolver(gameEngine, gameStateMapper, winnerManager,
                 new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
         gameStore.remove(matchId);
@@ -467,7 +471,8 @@ class WinnerManagerTest {
         winnerManager.checkAndFinish(state);
 
         BlockManager blockManager = new BlockManager(gameEngine, webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher),
+                pendingActionTimeoutScheduler);
         assertThatThrownBy(() -> blockManager.block(matchId, otherId, GameEngine.CHARACTER_MINISTER))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())

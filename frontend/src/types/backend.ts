@@ -122,6 +122,12 @@ export interface BackendPendingAction {
   type: string;
   actorUserId: string;
   startedAt: string;
+  /**
+   * Module 20 — the server-authoritative instant the block/challenge window
+   * expires. The backend resolves the action at this moment; the client only
+   * renders the remaining time from it.
+   */
+  deadlineAt?: string;
   /** The claimed character (e.g. "amla" for Exchange, "ghatok" for Assassination). */
   claimedCharacter?: string;
   /** The exchange card pool (only present for the action's own actor). */

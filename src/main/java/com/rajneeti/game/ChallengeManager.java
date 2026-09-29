@@ -78,6 +78,7 @@ public class ChallengeManager {
     private final WinnerManager winnerManager;
     private final WebSocketEventPublisher webSocketEventPublisher;
     private final GameStateSyncService gameStateSyncService;
+    private final PendingActionTimeoutScheduler pendingActionTimeoutScheduler;
 
     /**
      * Resolves a challenge raised by {@code challengerId} against the currently
@@ -187,6 +188,11 @@ public class ChallengeManager {
         // Module 21 — a challenge may have eliminated the last opponent.
         winnerManager.checkAndFinish(state);
 
+        // The challenged action is still pending for the actor, so its
+        // authoritative window is re-armed; a bluff that cleared the pending
+        // action has nothing left to expire.
+        rearmWindowForPendingAction(state);
+
         // Module 23 — broadcast the authoritative snapshot (version 1 for init,
         // bumped per challenge resolution afterwards).
         gameStateSyncService.sync(state);
@@ -268,6 +274,8 @@ public class ChallengeManager {
 
         // Module 21 — a block challenge may have eliminated the last opponent.
         winnerManager.checkAndFinish(state);
+
+        rearmWindowForPendingAction(state);
 
         // Module 23 — broadcast the authoritative snapshot after the block
         // challenge so pendingAction / move status stays in lockstep.
@@ -657,6 +665,24 @@ public class ChallengeManager {
             throw new BusinessException("INVALID_CLAIM",
                     "Unknown claimed character '" + claimedCharacter + "'.");
         }
+    }
+
+    /**
+     * Re-arms the authoritative window for a pending action that survived a
+     * challenge, or disarms it when the challenge cancelled the action. An
+     * Exchange is skipped: it needs the actor's card choice, so only
+     * {@code confirmExchange} may close it.
+     */
+    private void rearmWindowForPendingAction(GameState state) {
+        PendingAction pending = state.getPendingAction();
+        if (pending == null) {
+            pendingActionTimeoutScheduler.cancel(state.getMatchId());
+            return;
+        }
+        if (GameEngine.ACTION_EXCHANGE.equals(pending.getType())) {
+            return;
+        }
+        pendingActionTimeoutScheduler.armChallengeWindow(state.getMatchId());
     }
 
     /**

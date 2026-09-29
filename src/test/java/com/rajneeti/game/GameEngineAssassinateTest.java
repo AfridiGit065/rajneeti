@@ -74,7 +74,7 @@ class GameEngineAssassinateTest {
                 cardManager, turnManager, gameStateMapper,
                 new WinnerManager(matchRepository, matchPlayerRepository, webSocketEventPublisher),
                 webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher), null);
         gameStore.remove(matchId);
     }
 

@@ -49,6 +49,9 @@ class BlockManagerTest {
     @Mock
     private WebSocketEventPublisher webSocketEventPublisher;
 
+    @Mock
+    private PendingActionTimeoutScheduler pendingActionTimeoutScheduler;
+
     private final GameStore gameStore = new GameStore();
     private final CardManager cardManager = new CardManager();
     private final GameStateMapper gameStateMapper = new GameStateMapper();
@@ -73,11 +76,13 @@ class BlockManagerTest {
         gameEngine = new GameEngine(
                 matchRepository, matchPlayerRepository, gameStore,
                 cardManager, turnManager, gameStateMapper, winnerManager, webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher), null);
         blockManager = new BlockManager(gameEngine, webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher),
+                pendingActionTimeoutScheduler);
         challengeManager = new ChallengeManager(gameEngine, cardManager, turnManager, winnerManager, webSocketEventPublisher,
-                new GameStateSyncService(gameStateMapper, webSocketEventPublisher));
+                new GameStateSyncService(gameStateMapper, webSocketEventPublisher),
+                pendingActionTimeoutScheduler);
         gameStore.remove(matchId);
     }
 

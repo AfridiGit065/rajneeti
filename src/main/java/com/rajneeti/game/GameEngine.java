@@ -17,6 +17,7 @@ import com.rajneeti.service.TurnManager;
 import com.rajneeti.websocket.WebSocketEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -129,6 +130,13 @@ public class GameEngine {
     private final GameStateSyncService gameStateSyncService;
 
     /**
+     * Resolved lazily: the scheduler depends on {@link ActionResolver}, which
+     * depends on this engine, so a direct constructor dependency would form a
+     * bean cycle. The provider defers that lookup to first use.
+     */
+    private final ObjectProvider<PendingActionTimeoutScheduler> timeoutScheduler;
+
+    /**
      * Initializes a live game instance for an existing match.
      *
      * <p>Creates the 15-card deck, deals two influence cards to every player,
@@ -239,6 +247,40 @@ public class GameEngine {
     public GameState getOrInitialize(UUID matchId) {
         GameState existing = gameStore.get(matchId);
         return existing != null ? existing : initializeMatch(matchId);
+    }
+
+    /**
+     * Closes the pending-action window and disarms its authoritative timer, so a
+     * manual resolution and a later timeout can never both act on the same
+     * action. Every resolve/confirm seam funnels through here.
+     */
+    private void closePendingAction(GameState state) {
+        PendingActionTimeoutScheduler scheduler = resolveTimeoutScheduler();
+        if (scheduler != null) {
+            scheduler.cancel(state.getMatchId());
+        }
+        state.setPendingAction(null);
+    }
+
+    /** Arms the authoritative block-window deadline for the match's pending action. */
+    private void armBlockWindow(UUID matchId) {
+        PendingActionTimeoutScheduler scheduler = resolveTimeoutScheduler();
+        if (scheduler != null) {
+            scheduler.armBlockWindow(matchId);
+        }
+    }
+
+    /** Arms the authoritative challenge-window deadline for the match's pending action. */
+    private void armChallengeWindow(UUID matchId) {
+        PendingActionTimeoutScheduler scheduler = resolveTimeoutScheduler();
+        if (scheduler != null) {
+            scheduler.armChallengeWindow(matchId);
+        }
+    }
+
+    /** Null-safe provider lookup: unit tests may construct the engine without one. */
+    private PendingActionTimeoutScheduler resolveTimeoutScheduler() {
+        return timeoutScheduler == null ? null : timeoutScheduler.getIfAvailable();
     }
 
     /**
@@ -412,6 +454,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_FOREIGN_AID, null, ACTION_OUTCOME_PENDING);
 
+        armBlockWindow(matchId);
+
         gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
@@ -459,7 +503,7 @@ public class GameEngine {
                 .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
                         "Player is not part of this match."));
 
-        state.setPendingAction(null);
+        closePendingAction(state);
 
         if (!blocked) {
             player.setCoins(player.getCoins() + FOREIGN_AID_GAIN);
@@ -677,7 +721,7 @@ public class GameEngine {
         cardManager.assertDeckIntegrity(state.getDeck(), state.getPlayers(),
                 state.getRevealedCardsCount());
 
-        state.setPendingAction(null);
+        closePendingAction(state);
         state.setActionExecuted(true);
         state.getLog().add(GameLogEntry.of("action",
                 player.getUsername() + " completed an Exchange (kept 2 cards, returned 2 to the deck)."));
@@ -809,6 +853,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_ASSASSINATE, targetPlayerId, ACTION_OUTCOME_PENDING);
 
+        armChallengeWindow(matchId);
+
         gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
@@ -861,7 +907,7 @@ public class GameEngine {
                 .orElseThrow(() -> new BusinessException("TARGET_NOT_IN_MATCH",
                         "The target is no longer part of this match."));
 
-        state.setPendingAction(null);
+        closePendingAction(state);
 
         if (succeeded) {
             if (player.getCoins() < ASSASSINATE_COST) {
@@ -993,6 +1039,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_TAX, null, ACTION_OUTCOME_PENDING);
 
+        armChallengeWindow(matchId);
+
         gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
@@ -1098,6 +1146,8 @@ public class GameEngine {
 
         publishPlayAction(state, userId, ACTION_STEAL, targetPlayerId, ACTION_OUTCOME_PENDING);
 
+        armChallengeWindow(matchId);
+
         gameStateSyncService.sync(state);
 
         return gameStateMapper.toResponse(state, userId);
@@ -1142,7 +1192,7 @@ public class GameEngine {
                 .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
                         "Player is not part of this match."));
 
-        state.setPendingAction(null);
+        closePendingAction(state);
 
         if (granted) {
             player.setCoins(player.getCoins() + TAX_GAIN);
@@ -1217,7 +1267,7 @@ public class GameEngine {
                 .orElseThrow(() -> new BusinessException("TARGET_NOT_IN_MATCH",
                         "The target is no longer part of this match."));
 
-        state.setPendingAction(null);
+        closePendingAction(state);
 
         if (granted) {
             int stolen = Math.min(STEAL_GAIN, target.getCoins());
