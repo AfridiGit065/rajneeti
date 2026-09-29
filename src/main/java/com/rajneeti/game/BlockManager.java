@@ -70,97 +70,99 @@ public class BlockManager {
      */
     @Transactional
     public GameStateResponse block(UUID matchId, UUID blockerId, String claimedCharacter) {
-        GameState state = gameEngine.getOrInitialize(matchId);
+            GameState state = gameEngine.getOrInitialize(matchId);
+        synchronized (state) {
 
-        if (state.getStatus() != MatchStatus.IN_PROGRESS
-                && state.getStatus() != MatchStatus.CREATED) {
-            throw new BusinessException("MATCH_NOT_ACTIVE",
-                    "Cannot block: match is not active.");
+            if (state.getStatus() != MatchStatus.IN_PROGRESS
+                    && state.getStatus() != MatchStatus.CREATED) {
+                throw new BusinessException("MATCH_NOT_ACTIVE",
+                        "Cannot block: match is not active.");
+            }
+
+            PendingAction pending = state.getPendingAction();
+            if (pending == null) {
+                throw new BusinessException("NO_PENDING_ACTION",
+                        "No pending action to block.");
+            }
+
+            if (!BLOCKABLE_BY.containsKey(pending.getType())) {
+                throw new BusinessException("ACTION_NOT_BLOCKABLE",
+                        "The action '" + pending.getType() + "' cannot be blocked.");
+            }
+
+            if (claimedCharacter == null || claimedCharacter.isBlank()) {
+                throw new BusinessException("INVALID_BLOCKING_CHARACTER",
+                        "A blocking character must be claimed.");
+            }
+            String normalized = claimedCharacter.toLowerCase();
+            if (!BLOCKABLE_BY.get(pending.getType()).contains(normalized)) {
+                throw new BusinessException("INVALID_BLOCKING_CHARACTER",
+                        "The character '" + claimedCharacter + "' cannot block the action '"
+                                + pending.getType() + "'.");
+            }
+
+            GamePlayerState blocker = state.getPlayers().stream()
+                    .filter(p -> p.getUserId().equals(blockerId))
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
+                            "Cannot block: the player is not part of this match."));
+
+            if (blocker.getStatus() != PlayerStatus.ACTIVE) {
+                throw new BusinessException("PLAYER_ELIMINATED",
+                        "Eliminated players cannot block.");
+            }
+
+            if (blockerId.equals(pending.getActorUserId())) {
+                throw new BusinessException("CANNOT_BLOCK_SELF",
+                        "A player cannot block their own action.");
+            }
+
+            if (pending.getBlockerUserId() != null) {
+                throw new BusinessException("DUPLICATE_BLOCK",
+                        "This action has already been blocked. Only one block is allowed per action.");
+            }
+
+            PendingAction updated = PendingAction.builder()
+                    .id(pending.getId())
+                    .type(pending.getType())
+                    .actorUserId(pending.getActorUserId())
+                    .startedAt(pending.getStartedAt())
+                    .claimedCharacter(pending.getClaimedCharacter())
+                    .exchangePool(pending.getExchangePool())
+                    .originalHandCardIds(pending.getOriginalHandCardIds())
+                    .targetPlayerId(pending.getTargetPlayerId())
+                    .reservedCoins(pending.getReservedCoins())
+                    .challengerUserId(pending.getChallengerUserId())
+                    .blockerUserId(blockerId)
+                    .blockedCharacter(normalized)
+                    .build();
+            state.setPendingAction(updated);
+            state.getLog().add(GameLogEntry.of("block",
+                    blocker.getUsername() + " claimed " + normalized
+                            + " to block the " + pending.getType().toLowerCase() + " (block claim open to challenge)."));
+
+            log.info("Player '{}' claimed {} to block '{}' in match {}",
+                    blocker.getUsername(), normalized, pending.getType(), matchId);
+
+            webSocketEventPublisher.publishToMatch(matchId, WebSocketEventType.BLOCK, blockerId,
+                    BlockPayload.builder()
+                            .blockerUserId(blockerId)
+                            .blockerUsername(blocker.getUsername())
+                            .actorUserId(pending.getActorUserId())
+                            .actionType(pending.getType())
+                            .blockedCharacter(normalized)
+                            .build());
+
+            // A block claim opens its own challenge window, so the authoritative
+            // deadline is re-armed for the block (not the original action) window
+            // before the snapshot goes out.
+            pendingActionTimeoutScheduler.armChallengeWindow(matchId);
+
+            // Module 23 — the block claim mutates the pending action, so every
+            // client's board must move in lockstep with the authoritative snapshot.
+            gameStateSyncService.sync(state);
+
+            return gameEngine.getSafeGameState(matchId, blockerId);
         }
-
-        PendingAction pending = state.getPendingAction();
-        if (pending == null) {
-            throw new BusinessException("NO_PENDING_ACTION",
-                    "No pending action to block.");
-        }
-
-        if (!BLOCKABLE_BY.containsKey(pending.getType())) {
-            throw new BusinessException("ACTION_NOT_BLOCKABLE",
-                    "The action '" + pending.getType() + "' cannot be blocked.");
-        }
-
-        if (claimedCharacter == null || claimedCharacter.isBlank()) {
-            throw new BusinessException("INVALID_BLOCKING_CHARACTER",
-                    "A blocking character must be claimed.");
-        }
-        String normalized = claimedCharacter.toLowerCase();
-        if (!BLOCKABLE_BY.get(pending.getType()).contains(normalized)) {
-            throw new BusinessException("INVALID_BLOCKING_CHARACTER",
-                    "The character '" + claimedCharacter + "' cannot block the action '"
-                            + pending.getType() + "'.");
-        }
-
-        GamePlayerState blocker = state.getPlayers().stream()
-                .filter(p -> p.getUserId().equals(blockerId))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException("PLAYER_NOT_IN_MATCH",
-                        "Cannot block: the player is not part of this match."));
-
-        if (blocker.getStatus() != PlayerStatus.ACTIVE) {
-            throw new BusinessException("PLAYER_ELIMINATED",
-                    "Eliminated players cannot block.");
-        }
-
-        if (blockerId.equals(pending.getActorUserId())) {
-            throw new BusinessException("CANNOT_BLOCK_SELF",
-                    "A player cannot block their own action.");
-        }
-
-        if (pending.getBlockerUserId() != null) {
-            throw new BusinessException("DUPLICATE_BLOCK",
-                    "This action has already been blocked. Only one block is allowed per action.");
-        }
-
-        PendingAction updated = PendingAction.builder()
-                .id(pending.getId())
-                .type(pending.getType())
-                .actorUserId(pending.getActorUserId())
-                .startedAt(pending.getStartedAt())
-                .claimedCharacter(pending.getClaimedCharacter())
-                .exchangePool(pending.getExchangePool())
-                .originalHandCardIds(pending.getOriginalHandCardIds())
-                .targetPlayerId(pending.getTargetPlayerId())
-                .reservedCoins(pending.getReservedCoins())
-                .challengerUserId(pending.getChallengerUserId())
-                .blockerUserId(blockerId)
-                .blockedCharacter(normalized)
-                .build();
-        state.setPendingAction(updated);
-        state.getLog().add(GameLogEntry.of("block",
-                blocker.getUsername() + " claimed " + normalized
-                        + " to block the " + pending.getType().toLowerCase() + " (block claim open to challenge)."));
-
-        log.info("Player '{}' claimed {} to block '{}' in match {}",
-                blocker.getUsername(), normalized, pending.getType(), matchId);
-
-        webSocketEventPublisher.publishToMatch(matchId, WebSocketEventType.BLOCK, blockerId,
-                BlockPayload.builder()
-                        .blockerUserId(blockerId)
-                        .blockerUsername(blocker.getUsername())
-                        .actorUserId(pending.getActorUserId())
-                        .actionType(pending.getType())
-                        .blockedCharacter(normalized)
-                        .build());
-
-        // A block claim opens its own challenge window, so the authoritative
-        // deadline is re-armed for the block (not the original action) window
-        // before the snapshot goes out.
-        pendingActionTimeoutScheduler.armChallengeWindow(matchId);
-
-        // Module 23 — the block claim mutates the pending action, so every
-        // client's board must move in lockstep with the authoritative snapshot.
-        gameStateSyncService.sync(state);
-
-        return gameEngine.getSafeGameState(matchId, blockerId);
     }
 }

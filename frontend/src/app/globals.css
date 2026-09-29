@@ -7,8 +7,14 @@
 
 @theme {
   /* ── Fonts ──────────────────────────────────────────── */
+  /* Fonts. The `-font` suffix holds the value injected by next/font; the
+     plain token is the Tailwind-facing family, so the two never collide and
+     `--font-bengali` cannot reference itself. */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-bengali: var(--font-bengali), "Noto Sans Bengali", sans-serif;
+  --font-bengali: var(--font-bengali-font), "Noto Sans Bengali", sans-serif;
+  /* Display voice used by `font-cinzel` and `font-display` across the UI. */
+  --font-cinzel: var(--font-cinzel-font), var(--font-inter), Georgia, serif;
+  --font-display: var(--font-cinzel-font), var(--font-inter), Georgia, serif;
 
   /* ── Deep Emerald base ───────────────────────────────── */
   --color-deep-950: #06120e;

@@ -27,12 +27,18 @@ import java.util.concurrent.TimeUnit;
  * broadcasts the authoritative state. Clients therefore never have to resolve
  * anything themselves and can never leave a match stuck at 00:00.
  *
+ * <p>An Exchange is the one action whose outcome only the actor can supply
+ * (which 2 of the 4 pooled cards to keep), so it is not resolved generically: its
+ * deadline is the actor's decision window and its expiry
+ * <em>cancels</em> the Exchange, returning the drawn cards to the deck and
+ * advancing the turn. No card is ever chosen on the actor's behalf.
+ *
  * <p>Every path is idempotent. The callback re-reads the live
- * {@link GameState#getPendingAction()}, and when the window has already been
- * closed by a manual resolve, a block, a challenge or a previous timeout it
- * simply returns without touching the board. Re-arming a window cancels the
- * previous future for that match, so a timer can never fire twice for one
- * action.
+ * {@link GameState#getPendingAction()} under the per-match monitor, and when the
+ * window has already been closed by a manual resolve, a block, a challenge or a
+ * previous timeout it simply returns without touching the board. Re-arming a
+ * window cancels the previous future for that match, so a timer can never fire
+ * twice for one action.
  */
 @Slf4j
 @Component
@@ -85,12 +91,14 @@ public class PendingActionTimeoutScheduler {
             if (state == null) {
                 return;
             }
-            PendingAction pending = state.getPendingAction();
-            if (pending == null) {
-                return;
+            synchronized (state) {
+                PendingAction pending = state.getPendingAction();
+                if (pending == null) {
+                    return;
+                }
+                state.setPendingAction(pending.withDeadline(
+                        LocalDateTime.now().plusSeconds(seconds)));
             }
-            state.setPendingAction(pending.withDeadline(
-                    LocalDateTime.now().plusSeconds(seconds)));
         } catch (Exception ex) {
             log.warn("Could not stamp the window deadline for match {}: {}", matchId, ex.getMessage());
         }
@@ -104,6 +112,15 @@ public class PendingActionTimeoutScheduler {
     /** Arms the default challenge-window duration. */
     public void armChallengeWindow(UUID matchId) {
         armForPendingAction(matchId, timerProperties.getChallengeWindowSeconds());
+    }
+
+    /**
+     * Arms the actor's Exchange card-choice window. Expiry cancels the Exchange
+     * (see {@link ActionResolver#resolveExpiredExchange}) rather than picking
+     * cards for the actor.
+     */
+    public void armExchangeDecisionWindow(UUID matchId) {
+        armForPendingAction(matchId, timerProperties.getExchangeDecisionWindowSeconds());
     }
 
     /** Cancels any armed timer for the match (window closed by a decision). */
@@ -129,22 +146,29 @@ public class PendingActionTimeoutScheduler {
             if (state == null) {
                 return;
             }
-            if (state.getStatus() != MatchStatus.IN_PROGRESS
-                    && state.getStatus() != MatchStatus.CREATED) {
-                return;
+            // The guards and the dispatch run under the per-match monitor so a
+            // manual resolve / confirm that wins the race cannot interleave with
+            // this callback and both act on the same pending action.
+            synchronized (state) {
+                if (state.getStatus() != MatchStatus.IN_PROGRESS
+                        && state.getStatus() != MatchStatus.CREATED) {
+                    return;
+                }
+                PendingAction pending = state.getPendingAction();
+                if (pending == null || pending.getActorUserId() == null) {
+                    return;
+                }
+                log.info("Pending-action window '{}' expired in match {} (action={}, stateVersion={})",
+                        reason, matchId, pending.getType(), state.getStateVersion());
+                if (isExchange(pending.getType())) {
+                    // An Exchange cannot resolve generically — the actor owns the
+                    // card choice. Expiry CANCELS it instead: the drawn cards go
+                    // back to the deck and the turn advances.
+                    actionResolver.resolveExpiredExchange(matchId, pending.getActorUserId());
+                } else {
+                    actionResolver.resolve(matchId, pending.getActorUserId());
+                }
             }
-            PendingAction pending = state.getPendingAction();
-            if (pending == null || pending.getActorUserId() == null) {
-                return;
-            }
-            if (isExchange(pending.getType())) {
-                // An Exchange needs the actor's card choice; the confirm seam
-                // owns it, so this window never resolves generically.
-                return;
-            }
-            log.info("Pending-action window '{}' expired in match {} (action={}, stateVersion={})",
-                    reason, matchId, pending.getType(), state.getStateVersion());
-            actionResolver.resolve(matchId, pending.getActorUserId());
         } catch (Exception ex) {
             // A timeout must never take the scheduler thread down, and must not
             // surface as a 500: the window is simply reported as unresolved.

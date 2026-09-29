@@ -32,6 +32,16 @@ function toCharacterId(value: string): CharacterId {
   return CHARACTER_IDS.includes(value as CharacterId) ? (value as CharacterId) : "minister";
 }
 
+/**
+ * Maps a backend action type onto the frontend action id.
+ *
+ * The backend only ever opens a pending action for the five claimable actions
+ * (Income and Coup resolve instantly, so they never appear here), so an
+ * unrecognised value is genuinely unknown rather than an alias for Income.
+ * Silently rendering a foreign action as "collect 1 coin" would misinform the
+ * player, so an unknown pending action is dropped instead: the client shows no
+ * active action and requests a resync rather than acting on a guess.
+ */
 function toActionId(type: string): GameActionId {
   switch (type) {
     case "EXCHANGE":
@@ -49,6 +59,14 @@ function toActionId(type: string): GameActionId {
   }
 }
 
+/**
+ * Maps the backend match status onto the frontend status.
+ *
+ * `CREATED` means the match exists but the game has not started, which is the
+ * frontend's `WAITING` state — mapping it to `IN_PROGRESS` would show players a
+ * running board for a game that has not begun. An unknown status is treated as
+ * `WAITING` so the client asks for a resync rather than acting on a guess.
+ */
 function mapStatus(status: BackendGameState["status"]): MatchStatus {
   switch (status) {
     case "FINISHED":
@@ -56,9 +74,11 @@ function mapStatus(status: BackendGameState["status"]): MatchStatus {
     case "CANCELLED":
       return MatchStatus.ABANDONED;
     case "CREATED":
+      return MatchStatus.WAITING;
     case "IN_PROGRESS":
-    default:
       return MatchStatus.IN_PROGRESS;
+    default:
+      return MatchStatus.WAITING;
   }
 }
 
@@ -113,6 +133,9 @@ const LOG_KINDS: GameLogEntry["kind"][] = ["info", "action", "challenge", "block
  */
 function mapActionResult(backend: BackendGameState["lastActionResult"]): ActionResult | null {
   if (!backend) return null;
+  // Same rule as the pending action: an unknown verdict type is not coerced
+  // into a different action, which would misreport what the server did.
+  if (isUnknownAction(backend.actionType)) return null;
 
   return {
     actionType: toActionId(backend.actionType),
@@ -171,8 +194,18 @@ function toPhase(backend: BackendGameState): GamePhase {
   return mapPhase(backend.phase);
 }
 
+const KNOWN_ACTIONS = new Set(["EXCHANGE", "FOREIGN_AID", "ASSASSINATE", "TAX", "STEAL"]);
+
+/** True when the backend sent a pending action type this client cannot render. */
+function isUnknownAction(type: string): boolean {
+  return !KNOWN_ACTIONS.has(type);
+}
+
 function mapPendingAction(pending: BackendPendingAction | undefined): ActionIntent | null {
   if (!pending) return null;
+  // An unrenderable action is dropped rather than coerced into a wrong one, so
+  // the player never sees a real action mislabelled as something else.
+  if (isUnknownAction(pending.type)) return null;
   const action = toActionId(pending.type);
   const intent: ActionIntent = {
     action,

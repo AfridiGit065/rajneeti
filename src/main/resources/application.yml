@@ -129,6 +129,15 @@ game:
     block-window-seconds: ${GAME_BLOCK_WINDOW_SECONDS:15}
     # How long opponents may challenge a claim (Tax, Steal, Exchange, Assassinate).
     challenge-window-seconds: ${GAME_CHALLENGE_WINDOW_SECONDS:15}
+    # How long the actor has to confirm an Exchange card choice. On expiry the
+    # Exchange is cancelled (drawn cards return to the deck, turn advances).
+    exchange-decision-window-seconds: ${GAME_EXCHANGE_DECISION_WINDOW_SECONDS:60}
+  store:
+    # Soft cap on finished match states retained in memory. Finished matches stay
+    # available for the game-over screen and late resyncs; beyond this cap the
+    # oldest finished ones are evicted when a new match is created. Live matches
+    # are never evicted.
+    max-retained-matches: ${GAME_STORE_MAX_RETAINED_MATCHES:500}
 
 # ── WebSocket ─────────────────────────────────────────────────
 websocket:

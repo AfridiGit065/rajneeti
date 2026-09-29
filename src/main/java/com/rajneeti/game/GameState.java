@@ -54,6 +54,19 @@ public class GameState {
     @Builder.Default
     private List<GamePlayerState> players = new ArrayList<>();
 
+    /**
+     * Module 08/23 — the seat-ordered rotation, snapshotted once at match
+     * initialization and projected to clients through
+     * {@code GameStateResponse.turnOrder}.
+     *
+     * <p>This is a <b>read-only projection, not a second turn system</b>. The
+     * authoritative rotation is owned by {@code TurnManager}, which reads the
+     * persisted {@code match_players} seat order and advances it; this snapshot
+     * exists only so a client can render the order without a second round trip.
+     * Seats are fixed for the lifetime of a match, so the snapshot cannot drift
+     * from the persisted order. Nothing in the engine reads it to decide whose
+     * turn it is — {@link #currentTurnPlayerId} is what drives play.
+     */
     private List<UUID> turnOrder;
 
     private UUID currentTurnPlayerId;

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test"
+    "test": "node --experimental-transform-types --import ./test/register.mjs --test src/**/*.test.ts"
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",

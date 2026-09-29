@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { fontInter, fontBengali } from "@/lib/fonts";
+import { fontInter, fontBengali, fontCinzel } from "@/lib/fonts";
 import { AppProviders } from "@/components/providers/app-providers";
 import "./globals.css";
 
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${fontInter.variable} ${fontBengali.variable} h-full antialiased`}
+      className={`${fontInter.variable} ${fontBengali.variable} ${fontCinzel.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         <AppProviders>{children}</AppProviders>

@@ -100,104 +100,106 @@ public class ChallengeManager {
      */
     @Transactional
     public GameStateResponse challenge(UUID matchId, UUID challengerId, UUID loserCardId) {
-        GameState state = gameEngine.getOrInitialize(matchId);
+            GameState state = gameEngine.getOrInitialize(matchId);
+        synchronized (state) {
 
-        if (state.getStatus() != MatchStatus.IN_PROGRESS
-                && state.getStatus() != MatchStatus.CREATED) {
-            throw new BusinessException("MATCH_NOT_ACTIVE",
-                    "Cannot challenge: match is not active.");
+            if (state.getStatus() != MatchStatus.IN_PROGRESS
+                    && state.getStatus() != MatchStatus.CREATED) {
+                throw new BusinessException("MATCH_NOT_ACTIVE",
+                        "Cannot challenge: match is not active.");
+            }
+
+            PendingAction pending = state.getPendingAction();
+            if (pending == null) {
+                throw new BusinessException("NO_PENDING_ACTION",
+                        "No pending action to challenge.");
+            }
+
+            GamePlayerState challenger = findPlayer(state, challengerId, "PLAYER_NOT_IN_MATCH");
+
+            requireActive(challenger, "PLAYER_ELIMINATED",
+                    "Eliminated players cannot challenge.");
+
+            if (challenger.getCards() == null || challenger.getCards().isEmpty()) {
+                throw new BusinessException("NO_INFLUENCE",
+                        "You need at least one influence card to challenge.");
+            }
+
+            // Module 19 — a block claim opens its own challenge window before the
+            // action window is considered: the challenge then targets the blocker's
+            // claim rather than the action's character claim.
+            boolean isBlockChallenge = pending.getBlockerUserId() != null
+                    && pending.getBlockChallengerUserId() == null;
+
+            if (isBlockChallenge) {
+                return resolveBlockChallenge(state, pending, challenger, loserCardId);
+            }
+
+            if (!CHALLENGEABLE_ACTIONS.contains(pending.getType())) {
+                throw new BusinessException("ACTION_NOT_CHALLENGEABLE",
+                        "The action '" + pending.getType() + "' does not claim a character and cannot be challenged.");
+            }
+
+            GamePlayerState claimant = findPlayer(state, pending.getActorUserId(), "CLAIMANT_NOT_IN_MATCH");
+
+            requireActive(claimant, "CLAIMANT_ELIMINATED",
+                    "The claimant is no longer active and their action cannot be challenged.");
+
+            if (challengerId.equals(pending.getActorUserId())) {
+                throw new BusinessException("CANNOT_CHALLENGE_SELF",
+                        "A player cannot challenge their own action.");
+            }
+
+            if (pending.getChallengerUserId() != null) {
+                throw new BusinessException("DUPLICATE_CHALLENGE",
+                        "This action has already been challenged. Only one challenge is allowed per action.");
+            }
+
+            CharacterType claimed = parseClaimedCharacter(pending.getClaimedCharacter());
+            boolean claimTrue = claimant.getCards().stream()
+                    .anyMatch(card -> card.getCharacter() == claimed);
+
+            GameChallenge.GameChallengeBuilder result = GameChallenge.builder()
+                    .challengerUserId(challengerId)
+                    .claimantUserId(pending.getActorUserId())
+                    .actionType(pending.getType())
+                    .claimedCharacter(pending.getClaimedCharacter());
+
+            if (claimTrue) {
+                result = resolveTruthfulClaim(state, pending, challenger, claimant,
+                        claimed, loserCardId, result);
+            } else {
+                result = resolveBluff(state, pending, challenger, claimant,
+                        claimed, result);
+            }
+
+            GameChallenge challenge = result.build();
+            state.setLastChallenge(challenge);
+            state.getLog().add(GameLogEntry.of("challenge",
+                    describe(challenge, challenger.getUsername(),
+                            claimant.getUsername())));
+
+            publishChallengeEvent(state, challenger, claimant, challenge);
+            publishPublicReveal(state, challenge);
+
+            log.info("Challenge on '{}' resolved in match {}: claim={} loser={} continues={}",
+                    pending.getType(), matchId, challenge.isClaimTrue() ? "TRUE" : "FALSE",
+                    challenge.getInfluenceLostById(), challenge.isActionContinues());
+
+            // Module 21 — a challenge may have eliminated the last opponent.
+            winnerManager.checkAndFinish(state);
+
+            // The challenged action is still pending for the actor, so its
+            // authoritative window is re-armed; a bluff that cleared the pending
+            // action has nothing left to expire.
+            rearmWindowForPendingAction(state);
+
+            // Module 23 — broadcast the authoritative snapshot (version 1 for init,
+            // bumped per challenge resolution afterwards).
+            gameStateSyncService.sync(state);
+
+            return gameEngine.getSafeGameState(matchId, challengerId);
         }
-
-        PendingAction pending = state.getPendingAction();
-        if (pending == null) {
-            throw new BusinessException("NO_PENDING_ACTION",
-                    "No pending action to challenge.");
-        }
-
-        GamePlayerState challenger = findPlayer(state, challengerId, "PLAYER_NOT_IN_MATCH");
-
-        requireActive(challenger, "PLAYER_ELIMINATED",
-                "Eliminated players cannot challenge.");
-
-        if (challenger.getCards() == null || challenger.getCards().isEmpty()) {
-            throw new BusinessException("NO_INFLUENCE",
-                    "You need at least one influence card to challenge.");
-        }
-
-        // Module 19 — a block claim opens its own challenge window before the
-        // action window is considered: the challenge then targets the blocker's
-        // claim rather than the action's character claim.
-        boolean isBlockChallenge = pending.getBlockerUserId() != null
-                && pending.getBlockChallengerUserId() == null;
-
-        if (isBlockChallenge) {
-            return resolveBlockChallenge(state, pending, challenger, loserCardId);
-        }
-
-        if (!CHALLENGEABLE_ACTIONS.contains(pending.getType())) {
-            throw new BusinessException("ACTION_NOT_CHALLENGEABLE",
-                    "The action '" + pending.getType() + "' does not claim a character and cannot be challenged.");
-        }
-
-        GamePlayerState claimant = findPlayer(state, pending.getActorUserId(), "CLAIMANT_NOT_IN_MATCH");
-
-        requireActive(claimant, "CLAIMANT_ELIMINATED",
-                "The claimant is no longer active and their action cannot be challenged.");
-
-        if (challengerId.equals(pending.getActorUserId())) {
-            throw new BusinessException("CANNOT_CHALLENGE_SELF",
-                    "A player cannot challenge their own action.");
-        }
-
-        if (pending.getChallengerUserId() != null) {
-            throw new BusinessException("DUPLICATE_CHALLENGE",
-                    "This action has already been challenged. Only one challenge is allowed per action.");
-        }
-
-        CharacterType claimed = parseClaimedCharacter(pending.getClaimedCharacter());
-        boolean claimTrue = claimant.getCards().stream()
-                .anyMatch(card -> card.getCharacter() == claimed);
-
-        GameChallenge.GameChallengeBuilder result = GameChallenge.builder()
-                .challengerUserId(challengerId)
-                .claimantUserId(pending.getActorUserId())
-                .actionType(pending.getType())
-                .claimedCharacter(pending.getClaimedCharacter());
-
-        if (claimTrue) {
-            result = resolveTruthfulClaim(state, pending, challenger, claimant,
-                    claimed, loserCardId, result);
-        } else {
-            result = resolveBluff(state, pending, challenger, claimant,
-                    claimed, result);
-        }
-
-        GameChallenge challenge = result.build();
-        state.setLastChallenge(challenge);
-        state.getLog().add(GameLogEntry.of("challenge",
-                describe(challenge, challenger.getUsername(),
-                        claimant.getUsername())));
-
-        publishChallengeEvent(state, challenger, claimant, challenge);
-        publishPublicReveal(state, challenge);
-
-        log.info("Challenge on '{}' resolved in match {}: claim={} loser={} continues={}",
-                pending.getType(), matchId, challenge.isClaimTrue() ? "TRUE" : "FALSE",
-                challenge.getInfluenceLostById(), challenge.isActionContinues());
-
-        // Module 21 — a challenge may have eliminated the last opponent.
-        winnerManager.checkAndFinish(state);
-
-        // The challenged action is still pending for the actor, so its
-        // authoritative window is re-armed; a bluff that cleared the pending
-        // action has nothing left to expire.
-        rearmWindowForPendingAction(state);
-
-        // Module 23 — broadcast the authoritative snapshot (version 1 for init,
-        // bumped per challenge resolution afterwards).
-        gameStateSyncService.sync(state);
-
-        return gameEngine.getSafeGameState(matchId, challengerId);
     }
 
     /* ------------------------------------------------------------------ */
@@ -227,61 +229,62 @@ public class ChallengeManager {
     private GameStateResponse resolveBlockChallenge(
             GameState state, PendingAction pending,
             GamePlayerState challenger, UUID loserCardId) {
+        synchronized (state) {
+            UUID blockerId = pending.getBlockerUserId();
+            GamePlayerState blocker = findPlayer(state, blockerId, "BLOCKER_NOT_IN_MATCH");
+            requireActive(blocker, "BLOCKER_ELIMINATED",
+                    "An eliminated player cannot hold a block claim.");
 
-        UUID blockerId = pending.getBlockerUserId();
-        GamePlayerState blocker = findPlayer(state, blockerId, "BLOCKER_NOT_IN_MATCH");
-        requireActive(blocker, "BLOCKER_ELIMINATED",
-                "An eliminated player cannot hold a block claim.");
+            if (challenger.getUserId().equals(blockerId)) {
+                throw new BusinessException("CANNOT_CHALLENGE_SELF",
+                        "A player cannot challenge their own block claim.");
+            }
 
-        if (challenger.getUserId().equals(blockerId)) {
-            throw new BusinessException("CANNOT_CHALLENGE_SELF",
-                    "A player cannot challenge their own block claim.");
+            CharacterType blocked = parseBlockedCharacter(pending.getBlockedCharacter());
+            boolean blockTrue = blocker.getCards().stream()
+                    .anyMatch(card -> card.getCharacter() == blocked);
+
+            GameChallenge.GameChallengeBuilder result = GameChallenge.builder()
+                    .challengerUserId(challenger.getUserId())
+                    .claimantUserId(blockerId)
+                    .actionType(pending.getType())
+                    .claimedCharacter(pending.getBlockedCharacter())
+                    .blockClaim(true);
+
+            if (blockTrue) {
+                result = resolveTruthfulBlockChallenge(state, pending, challenger,
+                        blocker, blocked, loserCardId, result);
+            } else {
+                result = resolveBluffBlockChallenge(state, pending, challenger,
+                        blocker, blocked, result);
+            }
+
+            GameChallenge challenge = result.build();
+            state.setLastChallenge(challenge);
+            state.getLog().add(GameLogEntry.of("challenge",
+                    describe(challenge, challenger.getUsername(),
+                            blocker.getUsername())));
+
+            publishChallengeEvent(state, challenger, blocker, challenge);
+            publishPublicReveal(state, challenge);
+
+            log.info("Block challenge on '{}' resolved in match {}: claim={} loser={} blockStands={}",
+                    pending.getType(), state.getMatchId(),
+                    challenge.isClaimTrue() ? "TRUE" : "FALSE",
+                    challenge.getInfluenceLostById(),
+                    challenge.isActionContinues() ? "NO" : "YES");
+
+            // Module 21 — a block challenge may have eliminated the last opponent.
+            winnerManager.checkAndFinish(state);
+
+            rearmWindowForPendingAction(state);
+
+            // Module 23 — broadcast the authoritative snapshot after the block
+            // challenge so pendingAction / move status stays in lockstep.
+            gameStateSyncService.sync(state);
+
+            return gameEngine.getSafeGameState(state.getMatchId(), challenger.getUserId());
         }
-
-        CharacterType blocked = parseBlockedCharacter(pending.getBlockedCharacter());
-        boolean blockTrue = blocker.getCards().stream()
-                .anyMatch(card -> card.getCharacter() == blocked);
-
-        GameChallenge.GameChallengeBuilder result = GameChallenge.builder()
-                .challengerUserId(challenger.getUserId())
-                .claimantUserId(blockerId)
-                .actionType(pending.getType())
-                .claimedCharacter(pending.getBlockedCharacter())
-                .blockClaim(true);
-
-        if (blockTrue) {
-            result = resolveTruthfulBlockChallenge(state, pending, challenger,
-                    blocker, blocked, loserCardId, result);
-        } else {
-            result = resolveBluffBlockChallenge(state, pending, challenger,
-                    blocker, blocked, result);
-        }
-
-        GameChallenge challenge = result.build();
-        state.setLastChallenge(challenge);
-        state.getLog().add(GameLogEntry.of("challenge",
-                describe(challenge, challenger.getUsername(),
-                        blocker.getUsername())));
-
-        publishChallengeEvent(state, challenger, blocker, challenge);
-        publishPublicReveal(state, challenge);
-
-        log.info("Block challenge on '{}' resolved in match {}: claim={} loser={} blockStands={}",
-                pending.getType(), state.getMatchId(),
-                challenge.isClaimTrue() ? "TRUE" : "FALSE",
-                challenge.getInfluenceLostById(),
-                challenge.isActionContinues() ? "NO" : "YES");
-
-        // Module 21 — a block challenge may have eliminated the last opponent.
-        winnerManager.checkAndFinish(state);
-
-        rearmWindowForPendingAction(state);
-
-        // Module 23 — broadcast the authoritative snapshot after the block
-        // challenge so pendingAction / move status stays in lockstep.
-        gameStateSyncService.sync(state);
-
-        return gameEngine.getSafeGameState(state.getMatchId(), challenger.getUserId());
     }
 
     /**
@@ -534,20 +537,10 @@ public class ChallengeManager {
 
     /** Restores the actor's original hand for a cancelled Exchange, returning the two drawn cards to the deck. */
     private void restoreExchangeHand(GameState state, GamePlayerState actor, PendingAction pending) {
-        List<UUID> originalIds = pending.getOriginalHandCardIds();
-        List<GameCard> keep = new ArrayList<>();
-        List<GameCard> returnToDeck = new ArrayList<>();
-        for (GameCard card : actor.getCards()) {
-            if (originalIds != null && originalIds.contains(card.getId())) {
-                keep.add(card);
-            } else {
-                returnToDeck.add(card);
-            }
-        }
-        actor.setCards(keep);
-        for (GameCard card : returnToDeck) {
-            cardManager.returnToDeck(state.getDeck(), card);
-        }
+        // Module 20 — the authoritative implementation lives on the Game Engine
+        // so an Exchange that is unwound by a successful challenge and one that
+        // is unwound by an expired card-choice deadline unwind identically.
+        gameEngine.restoreExchangeHand(state, actor, pending);
     }
 
     private void eliminate(GameState state, GamePlayerState player, String reason) {

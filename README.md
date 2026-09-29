@@ -252,6 +252,10 @@ When running in development, Hibernate auto-updates tables via `spring.jpa.hiber
 | `AI_API_KEY_3` | *optional* | Tertiary AI API key (rotation/failover) |
 | `AI_USE_KEY_ROTATION` | `true` | Enables round-robin key selection |
 | `BOT_USE_LLM` | `true` | Toggle external LLM vs deterministic heuristic |
+| `GAME_BLOCK_WINDOW_SECONDS` | `30` | Seconds a player has to answer a block claim |
+| `GAME_CHALLENGE_WINDOW_SECONDS` | `30` | Seconds a player has to answer a challenge |
+| `GAME_EXCHANGE_DECISION_WINDOW_SECONDS` | `60` | Seconds the actor has to choose which 2 of the 4 pooled Exchange cards to keep. On expiry the Exchange is **cancelled** — the drawn cards return to the deck, the hand is restored and the turn advances. No card is ever chosen on the actor's behalf. |
+| `GAME_STORE_MAX_RETAINED_MATCHES` | `500` | Soft cap on in-memory game states. When exceeded, **finished** matches are dropped oldest-first. Live matches are never evicted, so the cap is exceeded on purpose if a full registry holds only live games. |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8080` | Frontend backend API target |
 | `NEXT_PUBLIC_WS_URL` | `ws://localhost:8080/ws` | Frontend WebSocket endpoint |
 
@@ -304,6 +308,40 @@ Every state mutation bumps `stateVersion` monotonically:
    - If incoming `version == lastVersion + 1`: Applied immediately.
    - If incoming `version > lastVersion + 1`: Gap detected; client emits `/app/matches/{matchId}/sync` with idempotency `requestId`.
 
+### Action Resolution Windows
+
+Three actions open an authoritative, server-side decision window. The backend owns
+the deadline, stamps it onto the `pendingAction`, and resolves the action itself when
+it lapses — the client never decides an outcome:
+
+| Action | Window | On expiry |
+| :--- | :--- | :--- |
+| Foreign Aid (block claim) | `GAME_BLOCK_WINDOW_SECONDS` | Block stands; the action is cancelled. |
+| Tax / Steal / Exchange / Assassinate (challenge) | `GAME_CHALLENGE_WINDOW_SECONDS` | Unchallenged; the action resolves. |
+| Exchange (card choice) | `GAME_EXCHANGE_DECISION_WINDOW_SECONDS` | Exchange cancelled; drawn cards return to the deck, the hand is restored, the turn advances. |
+
+### Per-Match Concurrency
+
+Every action lifecycle is check-then-act (read the pending action, validate the actor,
+mutate state, advance the turn, broadcast). A timeout task, a second browser tab, a
+block and a challenge can all reach that window at the same instant, so the whole
+lifecycle is guarded by the monitor of that match's own `GameState` instance.
+
+The lock is **per match**, never global: it is the state's own monitor, so unrelated
+matches never contend with each other. A resolve that loses the race finds the pending
+action already closed and is rejected with `NO_PENDING_ACTION`, which makes resolution
+idempotent no matter how the threads interleave. A resolve arriving after the match
+has finished is refused with `MATCH_NOT_ACTIVE`.
+
+### In-Memory State Retention
+
+`GameStore` deliberately holds finished matches after they end: clients still need the
+final `FINISHED` snapshot, the game-over screen, a late resync and post-match history.
+Retention is bounded rather than immediate — see
+`GAME_STORE_MAX_RETAINED_MATCHES` in §11. Eviction is driven by match creation, so
+there is no background sweeper thread to leak. Persistence is unaffected: every
+outcome is written before a match becomes `FINISHED`.
+
 ---
 
 ## 15. AI Bot System & Three-Key Rotation
@@ -319,7 +357,8 @@ Rajneeti supports full AI bot players (Human vs Bot, Human vs Multiple Bots, Bot
 
 ## 16. Testing Suite
 
-The repository contains 423 automated tests with 100% pass rate.
+The repository contains 487 automated backend tests (3 skipped, all others passing)
+plus 14 frontend unit tests.
 
 ### Executing Backend Tests:
 ```bash
@@ -329,7 +368,7 @@ mvn clean test
 ### Executing Frontend Verification:
 ```bash
 cd frontend
-npm test            # State-version unit tests
+npm test            # State-version + backend→frontend state-mapping unit tests
 npm run typecheck   # TypeScript validation
 npm run lint        # ESLint checking
 npm run build       # Next.js production build validation
@@ -360,6 +399,8 @@ Containers provisioned:
 - **No Plaintext Passwords**: Passwords hashed with BCrypt (strength 12).
 - **Stateless Authentication**: JJWT HMAC-SHA256 tokens validated on every REST and WebSocket request.
 - **Zero Card Leakage**: Opponents' cards are set to `null` before DTO construction and omitted from JSON output by Jackson serialization.
+- **Eliminated Players Hold No Private State**: once a player is eliminated they stop receiving `PRIVATE_STATE` entirely — not even their own hand — and a resync request from them is answered with the viewer-neutral public projection. They remain listed on the public topic so coins, status and the log stay consistent for everyone else.
+- **Exchange Pool Is Actor-Only**: the 4-card Exchange pool is attached only to the pending action the actor owns; every other viewer, including eliminated ones, sees the action as pending with no pool.
 - **Idempotency Guards**: `DuplicateRequestGuard` prevents double-submissions and concurrent replay attacks.
 - **Zero Committed Secrets**: `.env` is gitignored; startup validates secret presence and length.
 

@@ -248,12 +248,12 @@ public class MatchServiceImpl implements MatchService {
         }
 
         // 6b. Mandatory coup: a player holding 10 or more coins may only Coup.
+        // The rule itself lives on the authoritative Game Engine (Module 17); this
+        // route only pre-checks it so the legacy Tax/Steal endpoint rejects a
+        // player in the same way the live action seams do. A null persisted
+        // balance means "not counted yet" and therefore does not force a Coup.
         Integer playerCoins = player.getCoins();
-        if (playerCoins != null && playerCoins >= GameEngine.FORCED_COUP_THRESHOLD) {
-            throw new BusinessException("MANDATORY_COUP",
-                    "You hold " + GameEngine.FORCED_COUP_THRESHOLD
-                            + " or more coins. A Coup is mandatory this turn.");
-        }
+        GameEngine.enforceMandatoryCoup(playerCoins == null ? 0 : playerCoins);
 
         MatchActionType actionType = request.getAction();
 

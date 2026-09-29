@@ -26,6 +26,4 @@ export interface Character {
   block: CharacterBlock;
   quote: string;
   accent: "crimson" | "gold" | "forest" | "parchment";
-}
-
-export const CARD_BACK_PATH = "/assets/cards/back.png";
+}

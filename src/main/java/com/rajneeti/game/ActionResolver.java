@@ -1,6 +1,7 @@
 package com.rajneeti.game;
 
 import com.rajneeti.dto.game.GameStateResponse;
+import com.rajneeti.entity.enums.MatchStatus;
 import com.rajneeti.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,51 +70,126 @@ public class ActionResolver {
     public GameStateResponse resolve(UUID matchId, UUID userId) {
         GameState state = gameEngine.getGameState(matchId);
 
-        PendingAction pending = state.getPendingAction();
-        if (pending == null) {
-            throw new BusinessException("NO_PENDING_ACTION",
-                    "No pending action to resolve.");
+        // Per-match monitor: the whole check-then-act lifecycle is atomic against
+        // a competing timeout, block, challenge or duplicate action.
+        synchronized (state) {
+            // A request can arrive after the match was finished (a late tab, a
+            // queued retry, a timeout that lost its race). Mutating state or
+            // advancing the turn on a finished match would corrupt the final
+            // snapshot, so this is refused exactly like the engine seams do.
+            if (state.getStatus() != MatchStatus.IN_PROGRESS
+                    && state.getStatus() != MatchStatus.CREATED) {
+                throw new BusinessException("MATCH_NOT_ACTIVE",
+                        "Cannot resolve an action: match is not active.");
+            }
+
+            PendingAction pending = state.getPendingAction();
+            if (pending == null) {
+                throw new BusinessException("NO_PENDING_ACTION",
+                        "No pending action to resolve.");
+            }
+
+            if (!userId.equals(pending.getActorUserId())) {
+                throw new BusinessException("NOT_ACTOR",
+                        "Only the action's actor can resolve the pending action.");
+            }
+
+            String type = pending.getType();
+            switch (type) {
+                case GameEngine.ACTION_FOREIGN_AID:
+                    resolveForeignAid(state, pending);
+                    break;
+                case GameEngine.ACTION_TAX:
+                    resolveTax(state, pending);
+                    break;
+                case GameEngine.ACTION_STEAL:
+                    resolveSteal(state, pending);
+                    break;
+                case GameEngine.ACTION_ASSASSINATE:
+                    resolveAssassinate(state, pending);
+                    break;
+                case GameEngine.ACTION_EXCHANGE:
+                    throw new BusinessException("EXCHANGE_CARD_CHOICE_REQUIRED",
+                            "Exchange requires the actor to choose which cards to keep. "
+                                    + "Use /exchange/confirm instead.");
+                default:
+                    throw new BusinessException("ACTION_NOT_RESOLVABLE",
+                            "The action '" + type + "' cannot be resolved through the generic resolver.");
+            }
+
+            // Module 21 — after the action has fully resolved, hand over to the
+            // Winner Manager. It is the single authority that decides whether the
+            // last opponent was eliminated and finishes the match.
+            winnerManager.checkAndFinish(state);
+
+            // Module 23 — the engine seam above already broadcast its own snapshot,
+            // but the lastActionResult recording is only finished HERE, so sync
+            // again so the authoritative verdict reaches every client.
+            gameStateSyncService.sync(state);
+
+            return gameStateMapper.toResponse(state, pending.getActorUserId());
         }
+    }
 
-        if (!userId.equals(pending.getActorUserId())) {
-            throw new BusinessException("NOT_ACTOR",
-                    "Only the action's actor can resolve the pending action.");
+    /**
+     * Module 20 — closes an Exchange whose card-choice deadline expired.
+     *
+     * <p>An Exchange is never resolved generically: the outcome depends on which
+     * 2 of the 4 pooled cards the actor keeps, and only
+     * {@link GameEngine#confirmExchange} may decide that. When the actor does not
+     * decide within the authoritative window, the only safe outcome is a
+     * <em>cancellation</em> — the drawn cards go back to the deck and the turn
+     * advances. Nothing is chosen on the actor's behalf.
+     *
+     * <p>Kept in the Resolver (rather than calling the engine seam from the
+     * scheduler) so that a timeout and a manual interaction stay on one code path
+     * and the recorded {@code lastActionResult} is identical either way.
+     *
+     * @param matchId the match ID
+     * @param userId  the actor's user ID
+     * @return the updated player-safe game state
+     */
+    @Transactional
+    public GameStateResponse resolveExpiredExchange(UUID matchId, UUID userId) {
+        GameState state = gameEngine.getGameState(matchId);
+
+        synchronized (state) {
+            if (state.getStatus() != MatchStatus.IN_PROGRESS
+                    && state.getStatus() != MatchStatus.CREATED) {
+                throw new BusinessException("MATCH_NOT_ACTIVE",
+                        "Cannot cancel an Exchange: match is not active.");
+            }
+
+            PendingAction pending = state.getPendingAction();
+            if (pending == null) {
+                throw new BusinessException("NO_PENDING_ACTION",
+                        "No pending action to resolve.");
+            }
+            if (!GameEngine.ACTION_EXCHANGE.equals(pending.getType())) {
+                throw new BusinessException("INVALID_PENDING_ACTION",
+                        "The pending action is not an Exchange.");
+            }
+            if (!userId.equals(pending.getActorUserId())) {
+                throw new BusinessException("NOT_ACTOR",
+                        "Only the action's actor can resolve the pending action.");
+            }
+
+            int coinsBefore = coinsOf(state, userId);
+            int revealedBefore = state.getRevealedCardsCount();
+
+            gameEngine.cancelExchange(matchId, userId);
+
+            state.setLastActionResult(buildRecording(state, pending,
+                    GameActionResult.RESULT_CANCELLED,
+                    coinsOf(state, userId) - coinsBefore,
+                    0, revealedBefore));
+
+            // The engine seam already broadcast its own snapshot; the verdict is
+            // only recorded HERE, so sync again to publish it authoritatively.
+            gameStateSyncService.sync(state);
+
+            return gameStateMapper.toResponse(state, userId);
         }
-
-        String type = pending.getType();
-        switch (type) {
-            case GameEngine.ACTION_FOREIGN_AID:
-                resolveForeignAid(state, pending);
-                break;
-            case GameEngine.ACTION_TAX:
-                resolveTax(state, pending);
-                break;
-            case GameEngine.ACTION_STEAL:
-                resolveSteal(state, pending);
-                break;
-            case GameEngine.ACTION_ASSASSINATE:
-                resolveAssassinate(state, pending);
-                break;
-            case GameEngine.ACTION_EXCHANGE:
-                throw new BusinessException("EXCHANGE_CARD_CHOICE_REQUIRED",
-                        "Exchange requires the actor to choose which cards to keep. "
-                                + "Use /exchange/confirm instead.");
-            default:
-                throw new BusinessException("ACTION_NOT_RESOLVABLE",
-                        "The action '" + type + "' cannot be resolved through the generic resolver.");
-        }
-
-        // Module 21 — after the action has fully resolved, hand over to the
-        // Winner Manager. It is the single authority that decides whether the
-        // last opponent was eliminated and finishes the match.
-        winnerManager.checkAndFinish(state);
-
-        // Module 23 — the engine seam above already broadcast its own snapshot,
-        // but the lastActionResult recording is only finished HERE, so sync
-        // again so the authoritative verdict reaches every client.
-        gameStateSyncService.sync(state);
-
-        return gameStateMapper.toResponse(state, pending.getActorUserId());
     }
 
     /**

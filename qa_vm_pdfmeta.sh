@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -u
+echo "===PDF_BYTES==="
+echo "SIZE=$(wc -c < /tmp/rajn_stat_fa.pdf 2>/dev/null || echo 0)"
+echo "MAGIC=$(head -c 5 /tmp/rajn_stat_fa.pdf 2>/dev/null)"
+echo "HAS_EOF=$(grep -c '%%EOF' /tmp/rajn_stat_fa.pdf 2>/dev/null || echo 0)"
+echo "HAS_STARTXREF=$(grep -c 'startxref' /tmp/rajn_stat_fa.pdf 2>/dev/null || echo 0)"
+echo "PRODUCER=$(grep -aoE '/Producer\s*\([^)]*\)' /tmp/rajn_stat_fa.pdf 2>/dev/null | head -1)"
+echo "TITLE=$(grep -aoE '/Title\s*\([^)]*\)' /tmp/rajn_stat_fa.pdf 2>/dev/null | head -1)"
+echo "XOBJ=$(grep -ac '/Type /XObject' /tmp/rajn_stat_fa.pdf 2>/dev/null)"
+echo "PAGEOBJ=$(grep -ac '/Type /Page' /tmp/rajn_stat_fa.pdf 2>/dev/null)"
+echo "===HAS_TEXT_CONTENT==="
+echo "HAS_STATISTICS_WORD=$(grep -aoiE 'statistics' /tmp/rajn_stat_fa.pdf 2>/dev/null | head -1)"
+echo "HAS_RAJNEETI_WORD=$(grep -aoiE 'rajneeti' /tmp/rajn_stat_fa.pdf 2>/dev/null | head -1)"
+echo "===END==="
