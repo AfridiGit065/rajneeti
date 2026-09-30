@@ -134,7 +134,7 @@ function ActiveAction({ game }: { game: GameState }) {
       )}
       role="region"
       aria-label="Active Game Action"
-      style={{ width: 450, minHeight: "clamp(88px, 11vh, 140px)", maxWidth: "90vw" }}
+      style={{ width: 420, minHeight: "clamp(88px, 11vh, 140px)", maxWidth: "90vw" }}
     >
       {/* Ambient radial glow */}
       {active && (
@@ -685,7 +685,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
       />
 
       {/* ── Game Arena: full area below header ── */}
-      <div className="relative flex-1 min-h-0 overflow-hidden z-10" id="game-arena">
+      <div className="relative flex-1 min-h-0 z-10 overflow-clip" id="game-arena">
 
         {/* ══════════════════════════════════════════
             OPPONENT SEATS — absolutely positioned
@@ -713,27 +713,27 @@ export function GameBoard({ matchId }: { matchId: string }) {
         })}
 
                 {/* ═══════════════════════════════════════════════════════════════
-            CENTRAL PLAY AREA — STABLE SEPARATED ARCHITECTURE
-            1. Main Game Board Active Action & Deck: strictly centered
-            2. Side Reaction Panel: docked to side (desktop) / bottom sheet (mobile)
-            3. Player Station: strictly at bottom
+            CENTRAL PLAY AREA
+            1. Active Action (center-top) & Deck/Discard (right of it)
+            2. Side Reaction Panel: docked to side
+            3. Player Station: bottom
         ═══════════════════════════════════════════════════════════════ */}
 
-        {/* 1. CENTER STAGE — Main Game Board Active Action */}
+        {/* 1. UPPER CENTER — Active Action + DeckDiscard */}
         <div
           className="absolute left-1/2 z-20 flex flex-col items-center gap-0 pointer-events-auto select-none"
-          style={{ top: "16%", transform: "translateX(-50%)" }}
+          style={{ top: "14%", transform: "translateX(-50%)" }}
         >
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-6">
             <ActiveAction game={game} />
-            <div className="shrink-0 pt-8">
+            <div className="shrink-0 pt-6">
               <DeckDiscard game={game} />
             </div>
           </div>
 
-          {/* Compact summary of the last action verdict below ActiveAction when no reaction panel is active */}
+          {/* Compact summary of the last action verdict */}
           {game.lastActionResult && !hasReaction && !blockResultData ? (
-            <div className="w-full max-w-[450px] mt-2 animate-fade-in pointer-events-auto">
+            <div className="w-full mt-2 animate-fade-in pointer-events-auto">
               <ActionResultSummary result={game.lastActionResult} players={game.players} />
             </div>
           ) : null}

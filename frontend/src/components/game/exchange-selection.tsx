@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/cn";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import {
   EXCHANGE_KEEP_COUNT,

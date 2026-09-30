@@ -155,13 +155,18 @@ export function SideReactionPanel({
         id={`reaction-panel-desktop-${panelRegionId}`}
         aria-label="Reaction and Decision Controls"
         className={cn(
-          "hidden md:flex flex-col justify-center pointer-events-auto select-none absolute z-30 transition-all duration-300",
+          // Take it out of flow; anchor to the game-arena container
+          "hidden md:flex flex-col justify-center pointer-events-auto select-none absolute z-30",
+          // Horizontal dock: right by default, left when Chronicle is open
           dockSide === "right"
-            ? "right-3 lg:right-6 xl:right-10"
-            : "left-3 lg:left-6 xl:left-10",
-          "top-[42%] -translate-y-1/2",
-          "w-[340px] lg:w-[380px] xl:w-[400px] max-w-[calc(50vw-250px)]",
-          "max-h-[60vh] overflow-y-auto",
+            ? "right-2 lg:right-4 xl:right-6"
+            : "left-2 lg:left-4 xl:left-6",
+          // Vertical: middle of the arena
+          "top-1/2 -translate-y-1/2",
+          // Width: fixed comfortable width; no collapsing calc()
+          "w-[300px] sm:w-[320px] lg:w-[360px] xl:w-[380px]",
+          // Height safety
+          "max-h-[70vh] overflow-y-auto",
           className,
         )}
       >
