@@ -30,27 +30,58 @@ export function useCountdown(totalSeconds: number) {
  * change the outcome.
  */
 export function useDeadlineCountdown(deadlineAt: string | undefined, fallbackSeconds: number) {
-  const [remaining, setRemaining] = useState(() =>
-    deadlineAt ? secondsUntil(deadlineAt, fallbackSeconds) : fallbackSeconds,
-  );
+  const windowKey = `${deadlineAt ?? ""}|${fallbackSeconds}`;
+  const [tick, setTick] = useState(() => ({
+    windowKey,
+    remaining: initialRemaining(deadlineAt, fallbackSeconds),
+  }));
+
+  // Re-derive on the deadline itself changing rather than inside an effect, so a
+  // new window starts on its own clock without a cascading render.
+  if (tick.windowKey !== windowKey) {
+    setTick({ windowKey, remaining: initialRemaining(deadlineAt, fallbackSeconds) });
+  }
+
+  const remaining = tick.windowKey === windowKey ? tick.remaining : initialRemaining(deadlineAt, fallbackSeconds);
 
   useEffect(() => {
-    if (!deadlineAt) {
-      setRemaining(fallbackSeconds);
-      return;
-    }
-    setRemaining(secondsUntil(deadlineAt, fallbackSeconds));
+    if (!deadlineAt) return;
     const id = window.setInterval(() => {
-      setRemaining(Math.max(0, secondsUntil(deadlineAt, 0)));
+      setTick((prev) =>
+        prev.windowKey === windowKey
+          ? { windowKey, remaining: Math.max(0, secondsUntil(deadlineAt, 0)) }
+          : prev,
+      );
     }, TICK_S * 1000);
     return () => window.clearInterval(id);
-  }, [deadlineAt, fallbackSeconds]);
+  }, [deadlineAt, windowKey]);
 
   return describeCountdown(remaining);
 }
 
+function initialRemaining(deadlineAt: string | undefined, fallbackSeconds: number) {
+  return deadlineAt ? secondsUntil(deadlineAt, fallbackSeconds) : fallbackSeconds;
+}
+
+/**
+ * Parses a backend timestamp into epoch milliseconds.
+ *
+ * The server stores everything in UTC and serialises it as a `LocalDateTime`,
+ * which Jackson writes without a zone suffix (`2026-09-30T23:07:54`). The
+ * spec reads a zone-less ISO string as *local* time, so east of UTC the parsed
+ * instant landed in the past — the Challenge countdown then reported `expired`
+ * on its very first render and auto-allowed the claim, so the Challenge button
+ * mounted and dismissed itself within one frame and was never seen.
+ *
+ * A stamp that already carries an offset (`Z` or `+06:00`) is left untouched.
+ */
+export function parseServerTimestamp(value: string): number {
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value.trim());
+  return Date.parse(hasZone ? value : `${value.trim()}Z`);
+}
+
 function secondsUntil(deadlineAt: string, fallbackSeconds: number) {
-  const deadline = Date.parse(deadlineAt);
+  const deadline = parseServerTimestamp(deadlineAt);
   if (Number.isNaN(deadline)) return fallbackSeconds;
   return Math.max(0, (deadline - Date.now()) / 1000);
 }
