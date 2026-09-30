@@ -16,6 +16,7 @@ import {
   type ExchangeSelectionState,
 } from "@/lib/game/exchange-selection";
 import { InfluenceCard } from "./influence-card";
+import { audioEngine } from "@/lib/audio/audio-engine";
 import { GameService } from "@/services/game-service";
 import { useToast } from "@/hooks/use-toast";
 import type { GameState, InfluenceCard as InfluenceCardType } from "@/types/game";
@@ -60,9 +61,13 @@ export function ExchangeSelection({
   const handleToggle = useCallback(
     (cardId: string) => {
       if (busy) return;
+      // Decide the sound from the state we are about to move to, so the pick
+      // and the unpick each get their own effect.
+      const willSelect = !live.selectedIds.includes(cardId);
       setSelection((prev) => toggleExchangeCard(prev, cardId, poolIds));
+      audioEngine.play(willSelect ? "cardPick" : "cardUnpick");
     },
-    [busy, poolIds],
+    [busy, live.selectedIds, poolIds],
   );
 
   async function handleConfirm() {
@@ -75,9 +80,11 @@ export function ExchangeSelection({
     setBusy(false);
 
     if (result.ok) {
+      audioEngine.play("confirm");
       success("কার্ড বদল সম্পন্ন হয়েছে!");
       onResolved?.(result.data);
     } else {
+      audioEngine.play("error");
       notifyError(result.error.message);
     }
   }

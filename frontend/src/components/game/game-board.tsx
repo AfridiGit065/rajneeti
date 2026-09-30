@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { audioEngine } from "@/lib/audio/audio-engine";
 import Image from "next/image";
 import { useRealtimeStore } from "@/store/realtime-store";
 import { useMatchRealtime } from "@/hooks/use-match-realtime";
@@ -463,6 +464,30 @@ export function GameBoard({ matchId }: { matchId: string }) {
     return () => { cancelled = true; };
   }, [load, matchTick, adoptState]);
 
+  // A new turn and the final result are the two moments the player is waiting
+  // for, so they get their own cue instead of relying on the toast.
+  const prevTurnRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!game) return;
+    const previous = prevTurnRef.current;
+    prevTurnRef.current = game.currentTurnPlayerId;
+    if (previous === null) return;
+    if (game.currentTurnPlayerId === selfId && previous !== selfId) {
+      audioEngine.play("turn");
+    }
+  }, [game, selfId]);
+
+  const wonRef = useRef(false);
+  useEffect(() => {
+    if (!game?.winnerPlayerId) {
+      wonRef.current = false;
+      return;
+    }
+    if (wonRef.current) return;
+    wonRef.current = true;
+    audioEngine.play(game.winnerPlayerId === selfId ? "win" : "error");
+  }, [game?.winnerPlayerId, selfId]);
+
   async function retry() {
     setLoading(true); setError(null);
     const result = await load();
@@ -480,13 +505,14 @@ export function GameBoard({ matchId }: { matchId: string }) {
     });
     setBusy(null);
     if (result.ok) {
+      audioEngine.play("coin");
       adoptState(result.data);
       success(`${getAction(actionId).nameBn} — অ্যাকশন চলছে`);
       if (actionId === "coup" && targetPlayerId) {
         const target = result.data.players.find((p) => p.id === targetPlayerId);
         if (target) { setInfluenceLostReason(`ক্ষমতা দখল (Coup) আক্রমণের শিকার হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন`); setInfluenceLostOpen(true); }
       }
-    } else { notifyError(result.error.message); }
+    } else { audioEngine.play("error"); notifyError(result.error.message); }
   }
 
   async function handleBlockSubmit(claimed: CharacterId) {

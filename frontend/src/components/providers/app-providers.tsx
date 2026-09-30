@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toast";
 import { useUiStore } from "@/store/ui-store";
 import { RealtimeController } from "@/components/providers/realtime-controller";
+import { AudioController } from "@/components/providers/audio-controller";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const theme = useUiStore((s) => s.settings.theme);
@@ -19,6 +20,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <>
       {children}
       <RealtimeController />
+      <AudioController />
       <Toaster />
     </>
   );
