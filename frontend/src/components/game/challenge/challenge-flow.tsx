@@ -150,8 +150,8 @@ export function ChallengeFlow({
   }
 
   const sim = simulation;
-  const claimantName = claimant?.displayName ?? claimant?.username ?? "দাবিকারী";
-  const challengerName = self?.displayName ?? self?.username ?? "চ্যালেঞ্জকারী";
+  const claimantName = claimant?.displayName ?? claimant?.username ?? "Claimant";
+  const challengerName = self?.displayName ?? self?.username ?? "Challenger";
 
   return (
     <>

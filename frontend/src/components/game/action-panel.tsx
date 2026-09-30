@@ -87,7 +87,7 @@ export function ActionPanel({
       {mandatoryCoup && (
         <div className="mb-2 flex items-center justify-center gap-2 rounded-xl border border-crimson-500/50 bg-crimson-950/80 px-4 py-1.5 text-xs font-bold text-crimson-200 animate-pulse">
           <AlertTriangle className="size-4 text-crimson-400" aria-hidden />
-          <span>১০+ কয়েন সংগৃহীত: অভ্যুত্থান (Coup) বাধ্যতামূলক!</span>
+          <span>10+ COINS HELD: COUP IS MANDATORY!</span>
         </div>
       )}
 
@@ -116,7 +116,7 @@ export function ActionPanel({
                       : "border border-forest-500/20 bg-deep-900/70 hover:border-gold-400 hover:bg-deep-850 hover:shadow-gold",
                 )}
                 title={`${action.nameEn} (${action.nameBn}) — ${
-                  character ? `Claims ${character.nameBn}` : "No character needed"
+                  character ? `Claims ${character.nameEn}` : "No character needed"
                 }${action.cost ? ` | Cost: ${action.cost} coins` : ""}${action.gain ? ` | Gain: +${action.gain} coins` : ""}`}
               >
                 {/* Cost / Gain Pill or Character Tag */}
@@ -155,8 +155,8 @@ export function ActionPanel({
 
                 {/* Claimed Character Pill */}
                 {character && !disabled && (
-                  <span className="mt-1 inline-block truncate rounded px-1 py-0.2 font-bengali text-[9px] font-medium text-gold-400/90 bg-gold-500/10 border border-gold-500/20">
-                    {character.nameBn}
+                  <span className="mt-1 inline-block truncate rounded px-1 py-0.2 text-[9px] font-semibold text-gold-400/90 bg-gold-500/10 border border-gold-500/20">
+                    {character.nameEn}
                   </span>
                 )}
               </button>
@@ -174,4 +174,4 @@ export function ActionPanel({
       />
     </div>
   );
-}
+}

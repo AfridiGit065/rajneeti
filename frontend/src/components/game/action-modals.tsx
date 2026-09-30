@@ -69,19 +69,19 @@ export function ActionModals({
               <Coins className="size-8" />
             </div>
             <div>
-              <h3 className="font-bengali text-2xl font-bold text-ivory">
-                আয় (Income) সম্পন্ন হচ্ছে
+              <h3 className="font-display text-2xl font-bold text-ivory">
+                Income
               </h3>
               <p className="font-cinzel text-xs text-muted tracking-widest mt-0.5">
-                Action: Income (+1 Coin)
+                ACTION: INCOME (+1 COIN)
               </p>
             </div>
-            <div className="rounded-xl border border-forest-500/25 bg-deep-900/70 p-4 text-xs font-bengali text-parchment-200 leading-relaxed">
-              &apos;আয়&apos; একটি মৌলিক অ্যাকশন। এটি কোনো চরিত্র দাবি করে না, তাই এটি চ্যালেঞ্জ বা ব্লক করা যায় না। আপনার কোষাগারে সরাসরি ১টি স্বর্ণমুদ্রা যোগ হবে।
+            <div className="rounded-xl border border-forest-500/25 bg-deep-900/70 p-4 text-xs text-parchment-200 leading-relaxed">
+              Income is a basic action. It does not claim any character and cannot be challenged or blocked. +1 coin will be added to your treasury directly.
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" fullWidth onClick={onClose}>
-                বাতিল
+                Cancel
               </Button>
               <Button
                 variant="premium"
@@ -91,7 +91,7 @@ export function ActionModals({
                   onClose();
                 }}
               >
-                নিশ্চিত করুন (+১ কয়েন)
+                Confirm (+1 Coin)
               </Button>
             </div>
           </div>
@@ -105,8 +105,8 @@ export function ActionModals({
                 <Globe className="size-6" />
               </span>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-ivory">
-                  বিদেশি অনুদান (Foreign Aid)
+                <h3 className="font-display text-xl font-bold text-ivory">
+                  Foreign Aid
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
                   +2 Coins · Blockable by Minister
@@ -116,19 +116,19 @@ export function ActionModals({
 
             <div className="rounded-xl border border-gold-500/30 bg-deep-950/70 p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-bengali text-xs font-bold text-gold-300">
-                  সম্ভাব্য ব্লক পর্যায় (Block Window):
+                <span className="text-xs font-bold text-gold-300">
+                  Block Opportunity Window:
                 </span>
-                <Badge tone="crimson">মন্ত্রী দ্বারা ব্লকযোগ্য</Badge>
+                <Badge tone="crimson">Blockable by Minister</Badge>
               </div>
-              <p className="text-xs text-parchment-300 font-bengali leading-relaxed">
-                আপনি ব্যাংক থেকে ২টি কয়েন দাবি করছেন। অন্য কোনো খেলোয়াড় যদি নিজের হাতে বা ব্লাফ করে <strong className="text-ivory">“মন্ত্রী”</strong> দাবি করে, তবে তারা আপনার এই অনুদানটি ব্লক করতে পারবে।
+              <p className="text-xs text-parchment-300 leading-relaxed">
+                You are claiming 2 coins from the treasury. Any player claiming <strong className="text-ivory">Minister (মন্ত্রী)</strong> may attempt to block this foreign aid.
               </p>
             </div>
 
             <div className="flex gap-2">
               <Button variant="ghost" fullWidth onClick={onClose}>
-                বাতিল
+                Cancel
               </Button>
               <Button
                 variant="premium"
@@ -138,7 +138,7 @@ export function ActionModals({
                   onClose();
                 }}
               >
-                অনুদান ঘোষণা করুন (+২)
+                Claim Foreign Aid (+2)
               </Button>
             </div>
           </div>
@@ -152,8 +152,8 @@ export function ActionModals({
                 <ScrollText className="size-6" />
               </span>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-ivory">
-                  কর আদায় (Tax)
+                <h3 className="font-display text-xl font-bold text-ivory">
+                  Tax
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
                   +3 Coins · Requires Minister Claim
@@ -172,23 +172,23 @@ export function ActionModals({
                   />
                 </div>
                 <div>
-                  <span className="font-bengali text-xs font-bold text-gold-300">
-                    চরিত্র দাবি: মন্ত্রী (The Minister)
+                  <span className="text-xs font-bold text-gold-300">
+                    Claim Character: Minister (মন্ত্রী)
                   </span>
-                  <p className="text-[11px] text-muted font-bengali">
-                    কর আদায়ের জন্য আপনাকে প্রকাশ্যে &apos;মন্ত্রী&apos; দাবি করতে হবে।
+                  <p className="text-[11px] text-muted">
+                    To collect Tax, you must openly claim the Minister.
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/5 bg-deep-950 p-2.5 text-xs text-parchment-300 font-bengali leading-relaxed">
-                ⚠️ এটি <strong className="text-gold-300">চ্যালেঞ্জযোগ্য</strong>। আপনার হাতে মন্ত্রী না থাকলেও ব্লাফ করতে পারেন, তবে কেউ চ্যালেঞ্জ করে আপনার মিথ্যা প্রমাণ করলে ১টি ইনফ্লুয়েন্স হারাবেন।
+              <div className="rounded-lg border border-white/5 bg-deep-950 p-2.5 text-xs text-parchment-300 leading-relaxed">
+                ⚠️ This claim is <strong className="text-gold-300">challengeable</strong>. You can bluff without having the Minister, but if challenged and caught bluffing, you will lose 1 influence.
               </div>
             </div>
 
             <div className="flex gap-2">
               <Button variant="ghost" fullWidth onClick={onClose}>
-                বাতিল
+                Cancel
               </Button>
               <Button
                 variant="premium"
@@ -198,7 +198,7 @@ export function ActionModals({
                   onClose();
                 }}
               >
-                মন্ত্রী দাবি করে কর নাও (+৩)
+                Claim Minister & Collect Tax (+3)
               </Button>
             </div>
           </div>
@@ -212,17 +212,17 @@ export function ActionModals({
                 <Hand className="size-6" />
               </span>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-ivory">
-                  চুরি (Steal) · লক্ষ্য নির্বাচন
+                <h3 className="font-display text-xl font-bold text-ivory">
+                  Steal — Select Target
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
-                  Select Target Player (+2 Coins)
+                  SELECT TARGET PLAYER (+2 COINS)
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-parchment-300 font-bengali">
-              কাকে টার্গেট করে ২ কয়েন চুরি করতে চান? নিচে থেকে একজন জীবিত প্রতিপক্ষ বেছে নিন:
+            <p className="text-xs text-parchment-300">
+              Choose a player to steal from. The selected player will lose 2 coins.
             </p>
 
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -242,21 +242,21 @@ export function ActionModals({
                   <div className="flex items-center gap-2.5">
                     <Users className="size-4 text-gold-400" />
                     <div>
-                      <p className="font-bengali text-sm font-bold text-ivory">
+                      <p className="text-sm font-bold text-ivory">
                         {opp.displayName ?? opp.username}
                       </p>
                       <p className="text-[10px] text-muted">
-                        ইনফ্লুয়েন্স: {opp.influenceCards.filter((c) => !c.revealed).length}টি
+                        INFLUENCE: {opp.influenceCards.filter((c) => !c.revealed).length}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <span className="font-cinzel text-sm font-bold text-gold-300">
-                      {opp.coins} Coins
+                      {opp.coins} COINS
                     </span>
                     {opp.coins === 0 && (
-                      <span className="block text-[10px] text-crimson-400 font-bengali">
-                        কয়েন নেই
+                      <span className="block text-[10px] text-crimson-400 font-semibold">
+                        NO COINS
                       </span>
                     )}
                   </div>
@@ -265,7 +265,7 @@ export function ActionModals({
             </div>
 
             <Button variant="ghost" fullWidth onClick={onClose}>
-              বাতিল
+              Cancel
             </Button>
           </div>
         )}
@@ -277,27 +277,27 @@ export function ActionModals({
               <div className="relative size-12 rounded-lg overflow-hidden border border-forest-400 shrink-0">
                 <Image
                   src="/assets/cards/dalal.png"
-                  alt="Dalal"
+                  alt="Broker"
                   fill
                   className="object-cover object-top"
                 />
               </div>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-ivory">
-                  দালাল দাবি (Claim Dalal)
+                <h3 className="font-display text-xl font-bold text-ivory">
+                  Steal — Claim Broker
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
-                  Target: {modalStep.targetPlayer.displayName ?? modalStep.targetPlayer.username}
+                  Target: {modalStep.targetPlayer.displayName ?? modalStep.targetPlayer.username} (+2 COINS)
                 </p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-forest-500/30 bg-deep-950/80 p-4 space-y-2 text-xs font-bengali text-parchment-200">
+            <div className="rounded-xl border border-forest-500/30 bg-deep-950/80 p-4 space-y-2 text-xs text-parchment-200">
               <p>
-                আপনি <strong className="text-ivory">{modalStep.targetPlayer.displayName ?? modalStep.targetPlayer.username}</strong>-এর থেকে ২ কয়েন চুরি করার জন্য নিজেকে <strong className="text-gold-300">“দালাল”</strong> হিসেবে দাবি করছেন।
+                You are claiming <strong className="text-gold-300">Broker (দালাল)</strong> to steal 2 coins from <strong className="text-ivory">{modalStep.targetPlayer.displayName ?? modalStep.targetPlayer.username}</strong>.
               </p>
               <p className="text-muted text-[11px]">
-                🛡️ টার্গেট খেলোয়াড় আমলা বা দালাল দাবি করে এই চুরি ব্লক করার চেষ্টা করতে পারে।
+                🛡️ The target player may claim Bureaucrat or Broker to block this steal.
               </p>
             </div>
 
@@ -307,7 +307,7 @@ export function ActionModals({
                 fullWidth
                 onClick={() => setModalStep({ type: "select_target_steal" })}
               >
-                টার্গেট পরিবর্তন
+                Change Target
               </Button>
               <Button
                 variant="premium"
@@ -317,7 +317,7 @@ export function ActionModals({
                   onClose();
                 }}
               >
-                চুরি নিশ্চিত করুন (+২)
+                Confirm Steal (+2 Coins)
               </Button>
             </div>
           </div>
@@ -330,17 +330,17 @@ export function ActionModals({
               <div className="relative size-12 rounded-lg overflow-hidden border border-parchment-400 shrink-0">
                 <Image
                   src="/assets/cards/amla.png"
-                  alt="Amla"
+                  alt="Bureaucrat"
                   fill
                   className="object-cover object-top"
                 />
               </div>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-ivory">
-                  কার্ড বদল (Exchange)
+                <h3 className="font-display text-xl font-bold text-ivory">
+                  Exchange
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
-                  Claim Amla · Draw 2 & Keep 2
+                  Claim Bureaucrat · Draw 2 & Keep 2
                 </p>
               </div>
             </div>
@@ -350,29 +350,29 @@ export function ActionModals({
                 <div className="relative size-12 rounded-lg overflow-hidden border border-gold-400 shrink-0">
                   <Image
                     src="/assets/cards/amla.png"
-                    alt="Amla"
+                    alt="Bureaucrat"
                     fill
                     className="object-cover object-top"
                   />
                 </div>
                 <div>
-                  <span className="font-bengali text-xs font-bold text-gold-300">
-                    চরিত্র দাবি: আমলা (The Amla)
+                  <span className="text-xs font-bold text-gold-300">
+                    Claim Character: Bureaucrat (আমলা)
                   </span>
-                  <p className="text-[11px] text-muted font-bengali">
-                    কার্ড বদলের জন্য আপনাকে প্রকাশ্যে &apos;আমলা&apos; দাবি করতে হবে।
+                  <p className="text-[11px] text-muted">
+                    To exchange cards, you must openly claim the Bureaucrat.
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/5 bg-deep-950 p-2.5 text-xs text-parchment-300 font-bengali leading-relaxed">
-                ⚠️ এটি <strong className="text-gold-300">চ্যালেঞ্জযোগ্য</strong>। ডেক থেকে ২টি নতুন কার্ড তুলে ২টি রেখে বাকিগুলো ফেরত দেবেন। চ্যালেঞ্জ সফল হলে ১টি ইনফ্লুয়েন্স হারাবেন।
+              <div className="rounded-lg border border-white/5 bg-deep-950 p-2.5 text-xs text-parchment-300 leading-relaxed">
+                ⚠️ This claim is <strong className="text-gold-300">challengeable</strong>. You will draw 2 cards from the deck, keep 2, and return the rest. If challenged and caught bluffing, you will lose 1 influence.
               </div>
             </div>
 
             <div className="flex gap-2">
               <Button variant="ghost" fullWidth onClick={onClose}>
-                বাতিল
+                Cancel
               </Button>
               <Button
                 variant="premium"
@@ -382,7 +382,7 @@ export function ActionModals({
                   onClose();
                 }}
               >
-                আমলা দাবি করে বদল শুরু করুন
+                Claim Bureaucrat & Start Exchange
               </Button>
             </div>
           </div>
@@ -396,8 +396,8 @@ export function ActionModals({
                 <Skull className="size-6" />
               </span>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-ivory">
-                  সরিয়ে দেওয়া (Assassinate)
+                <h3 className="font-display text-xl font-bold text-ivory">
+                  Assassinate — Select Target
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
                   Cost: 3 Coins · Target Elimination
@@ -405,8 +405,8 @@ export function ActionModals({
               </div>
             </div>
 
-            <p className="text-xs text-parchment-300 font-bengali">
-              ৩ কয়েন খরচ করে কোন খেলোয়াড়কে আঘাত করতে চান? লক্ষ্য নির্বাচন করুন:
+            <p className="text-xs text-parchment-300">
+              Select a player to eliminate. Cost: 3 COINS.
             </p>
 
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -422,23 +422,23 @@ export function ActionModals({
                   <div className="flex items-center gap-2.5">
                     <Skull className="size-4 text-crimson-400" />
                     <div>
-                      <p className="font-bengali text-sm font-bold text-ivory">
+                      <p className="text-sm font-bold text-ivory">
                         {opp.displayName ?? opp.username}
                       </p>
                       <p className="text-[10px] text-muted">
-                        অবশিষ্ট ইনফ্লুয়েন্স: {opp.influenceCards.filter((c) => !c.revealed).length}টি
+                        INFLUENCE: {opp.influenceCards.filter((c) => !c.revealed).length}
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bengali text-crimson-300 font-bold">
-                    টার্গেট করুন ➔
+                  <span className="text-xs text-crimson-300 font-bold uppercase tracking-wider font-cinzel">
+                    Select Target ➔
                   </span>
                 </button>
               ))}
             </div>
 
             <Button variant="ghost" fullWidth onClick={onClose}>
-              বাতিল
+              Cancel
             </Button>
           </div>
         )}
@@ -450,14 +450,14 @@ export function ActionModals({
               <div className="relative size-12 rounded-lg overflow-hidden border border-crimson-400 shrink-0">
                 <Image
                   src="/assets/cards/ghatok.png"
-                  alt="Ghatok"
+                  alt="Assassin"
                   fill
                   className="object-cover object-top"
                 />
               </div>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-crimson-300">
-                  হত্যার খরচ নিশ্চিতকরণ
+                <h3 className="font-display text-xl font-bold text-crimson-300">
+                  Assassinate — Confirm Target
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
                   Claim Assassin · Cost: 3 Coins
@@ -465,16 +465,16 @@ export function ActionModals({
               </div>
             </div>
 
-            <div className="rounded-xl border border-crimson-500/40 bg-crimson-950/40 p-4 space-y-2 text-xs font-bengali text-parchment-200">
+            <div className="rounded-xl border border-crimson-500/40 bg-crimson-950/40 p-4 space-y-2 text-xs text-parchment-200">
               <div className="flex justify-between items-center text-sm font-bold pb-2 border-b border-crimson-500/20">
-                <span>টার্গেট: {modalStep.targetPlayer.displayName ?? modalStep.targetPlayer.username}</span>
-                <span className="text-crimson-300 font-cinzel">-৩ কয়েন</span>
+                <span>Target: {modalStep.targetPlayer.displayName ?? modalStep.targetPlayer.username}</span>
+                <span className="text-crimson-300 font-cinzel">-3 COINS</span>
               </div>
               <p>
-                আপনি <strong className="text-ivory">ঘাতক (The Assassin)</strong> দাবি করছেন। সফল হলে টার্গেটের ১টি কার্ড নষ্ট হবে।
+                You are claiming <strong className="text-ivory">Assassin (ঘাতক)</strong>. If successful, the target will lose 1 influence card.
               </p>
               <p className="text-muted text-[11px]">
-                🛡️ টার্গেট &apos;গোয়েন্দা&apos; দাবি করে এই হত্যাচেষ্টা ব্লক করতে পারে।
+                🛡️ The target may claim Detective (গোয়েন্দা) to block this assassination.
               </p>
             </div>
 
@@ -484,7 +484,7 @@ export function ActionModals({
                 fullWidth
                 onClick={() => setModalStep({ type: "select_target_assassinate" })}
               >
-                টার্গেট পরিবর্তন
+                Change Target
               </Button>
               <Button
                 variant="danger"
@@ -494,7 +494,7 @@ export function ActionModals({
                   onClose();
                 }}
               >
-                ৩ কয়েন দিয়ে হত্যা করো
+                Confirm Assassination (-3 Coins)
               </Button>
             </div>
           </div>
@@ -508,8 +508,8 @@ export function ActionModals({
                 <Crown className="size-6" />
               </span>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-gold-gradient">
-                  ক্ষমতা দখল (Coup) · লক্ষ্য নির্বাচন
+                <h3 className="font-display text-xl font-bold text-gold-gradient">
+                  Coup — Select Target
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
                   Cost: 7 Coins · Unblockable & Unchallengeable
@@ -517,8 +517,8 @@ export function ActionModals({
               </div>
             </div>
 
-            <p className="text-xs text-parchment-300 font-bengali">
-              ৭ কয়েন দিয়ে কার রাজনৈতিক ক্ষমতা ধ্বংস করতে চান? নিচে থেকে টার্গেট বেছে নিন:
+            <p className="text-xs text-parchment-300">
+              Select a player to eliminate. Cost: 7 COINS.
             </p>
 
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -532,23 +532,23 @@ export function ActionModals({
                   <div className="flex items-center gap-2.5">
                     <Crown className="size-4 text-gold-400" />
                     <div>
-                      <p className="font-bengali text-sm font-bold text-ivory">
+                      <p className="text-sm font-bold text-ivory">
                         {opp.displayName ?? opp.username}
                       </p>
                       <p className="text-[10px] text-muted">
-                        ইনফ্লুয়েন্স: {opp.influenceCards.filter((c) => !c.revealed).length}টি
+                        INFLUENCE: {opp.influenceCards.filter((c) => !c.revealed).length}
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs font-bengali text-gold-300 font-bold">
-                    কুপ করুন ➔
+                  <span className="text-xs text-gold-300 font-bold uppercase tracking-wider font-cinzel">
+                    Coup ➔
                   </span>
                 </button>
               ))}
             </div>
 
             <Button variant="ghost" fullWidth onClick={onClose}>
-              বাতিল
+              Cancel
             </Button>
           </div>
         )}
@@ -561,27 +561,27 @@ export function ActionModals({
                 <AlertTriangle className="size-7" />
               </div>
               <div>
-                <h3 className="font-bengali text-xl font-bold text-crimson-300">
-                  চূড়ান্ত কুপ নিশ্চিতকরণ
+                <h3 className="font-display text-xl font-bold text-crimson-300">
+                  Coup — Confirm Target
                 </h3>
                 <p className="font-cinzel text-xs text-muted">
-                  Destructive Action Confirmation
+                  Cost: 7 Coins · Unblockable & Unchallengeable
                 </p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-crimson-500/50 bg-crimson-950/60 p-4 space-y-2 text-xs font-bengali text-parchment-200">
+            <div className="rounded-xl border border-crimson-500/50 bg-crimson-950/60 p-4 space-y-2 text-xs text-parchment-200">
               <div className="flex justify-between items-center text-sm font-bold pb-2 border-b border-crimson-500/30">
                 <span className="text-ivory">
-                  টার্গেট: {modalStep.targetPlayer.displayName ?? modalStep.targetPlayer.username}
+                  Target: {modalStep.targetPlayer.displayName ?? modalStep.targetPlayer.username}
                 </span>
-                <span className="text-crimson-400 font-cinzel">-৭ কয়েন</span>
+                <span className="text-crimson-400 font-cinzel">-7 COINS</span>
               </div>
               <p className="text-crimson-200">
-                ⚠️ এটি একটি অপ্রতিরোধ্য ও অপরিবর্তনীয় সিদ্ধান্ত!
+                ⚠️ This action is unblockable and cannot be challenged!
               </p>
               <p className="text-muted text-[11px] leading-relaxed">
-                টার্গেট খেলোয়াড় তৎক্ষণাৎ তার ১টি ইনফ্লুয়েন্স কার্ড উন্মোচিত করে হারাতে বাধ্য হবে। কোনো খেলোয়াড় এই অ্যাকশন ব্লক করতে পারবে না এবং কোনো চ্যালেঞ্জ গ্রহণযোগ্য নয়।
+                The selected player must immediately reveal and lose 1 influence card. No player can block or challenge a Coup.
               </p>
             </div>
 
@@ -591,7 +591,7 @@ export function ActionModals({
                 fullWidth
                 onClick={() => setModalStep({ type: "select_target_coup" })}
               >
-                টার্গেট পরিবর্তন
+                Change Target
               </Button>
               <Button
                 variant="danger"
@@ -601,7 +601,7 @@ export function ActionModals({
                   onClose();
                 }}
               >
-                ৭ কয়েন দিয়ে ক্ষমতা দখল সম্পন্ন করুন!
+                Confirm Coup (-7 Coins)
               </Button>
             </div>
           </div>

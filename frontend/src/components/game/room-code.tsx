@@ -35,7 +35,7 @@ export function RoomCode({
       // Clipboard may be unavailable; fall back to nothing.
     }
     setCopied(true);
-    success("রুম কোড কপি হয়েছে", code);
+    success("Room code copied", code);
     window.setTimeout(() => setCopied(false), 1600);
   }
 
@@ -51,7 +51,7 @@ export function RoomCode({
         sizes[size],
         className,
       )}
-      aria-label={`রুম কোড ${code} কপি করুন`}
+      aria-label={`Copy room code ${code}`}
     >
       {code}
       {copied ? (

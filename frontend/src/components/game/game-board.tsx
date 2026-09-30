@@ -37,6 +37,7 @@ import {
   EliminationOverlay,
 } from "./card-reveal-elimination";
 import { ExchangeSelection } from "./exchange-selection";
+import { SideReactionPanel } from "./side-reaction-panel";
 import { getAction, canChallenge } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { shouldShowExchangeSelection } from "@/lib/game/exchange-selection";
@@ -253,8 +254,8 @@ function ActiveAction({ game }: { game: GameState }) {
             )}
           </p>
 
-          <p className="font-bengali text-xs text-muted/70">
-            খেলোয়াড়ের পদক্ষেপের প্রতীক্ষায়…
+          <p className="text-xs text-muted/70">
+            Waiting for player action…
           </p>
         </div>
       )}
@@ -283,11 +284,11 @@ function ActionResultSummary({
     <div className="w-full rounded-xl border border-forest-500/25 bg-deep-900/85 backdrop-blur-md px-4 py-2.5 text-xs select-none shadow-md animate-fade-in">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-forest-500/15 pb-1.5">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-gold-300 font-bengali">{action.nameBn}</span>
-          <span className="text-muted text-[11px]">({action.nameEn})</span>
+          <span className="font-bold text-gold-300">{action.nameEn}</span>
+          <span className="text-muted text-[11px] font-bengali">({action.nameBn})</span>
         </div>
         <Badge tone={cancelled ? "crimson" : "emerald"}>
-          {cancelled ? "ব্লক — বাতিল (Blocked)" : "সম্পন্ন (Completed)"}
+          {cancelled ? "Blocked" : "Completed"}
         </Badge>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted text-[11px]">
@@ -507,10 +508,10 @@ export function GameBoard({ matchId }: { matchId: string }) {
     if (result.ok) {
       audioEngine.play("coin");
       adoptState(result.data);
-      success(`${getAction(actionId).nameBn} — অ্যাকশন চলছে`);
+      success(`${getAction(actionId).nameEn} — Action in progress`);
       if (actionId === "coup" && targetPlayerId) {
         const target = result.data.players.find((p) => p.id === targetPlayerId);
-        if (target) { setInfluenceLostReason(`ক্ষমতা দখল (Coup) আক্রমণের শিকার হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন`); setInfluenceLostOpen(true); }
+        if (target) { setInfluenceLostReason("Target of a Coup — you must lose 1 influence"); setInfluenceLostOpen(true); }
       }
     } else { audioEngine.play("error"); notifyError(result.error.message); }
   }
@@ -519,7 +520,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     setBlockBusy(true);
     const result = await GameService.block(matchId, claimed);
     setBlockBusy(false);
-    if (result.ok) { adoptState(result.data); success("ব্লক দাবি জমা হয়েছে — অ্যাকশনটি ব্লক করা হয়েছে"); }
+    if (result.ok) { adoptState(result.data); success("Block claim submitted — action blocked"); }
     else { notifyError(result.error.message); }
   }
 
@@ -536,12 +537,12 @@ export function GameBoard({ matchId }: { matchId: string }) {
         const blocker = blockEvent?.blocker ?? challenger;
         const outcome: BlockOutcome = res.result === "failed" ? "challenger_loses_influence" : "block_claim_is_bluff";
         setBlockResultData({ outcome, blocker, challenger, claimedCharacter: res.claimedCharacter, actionId: blockEvent?.actionId ?? result.data.activeAction?.action ?? "income" });
-        if (outcome === "challenger_loses_influence") setInfluenceLostReason("ব্লকের বিরুদ্ধে করা চ্যালেঞ্জে ব্যর্থ হওয়ায় ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
-        else setInfluenceLostReason("ব্লকের মিথ্যা দাবি ফাঁস হওয়ায় ব্লকার ১টি ইনফ্লুয়েন্স হারাচ্ছেন");
+        if (outcome === "challenger_loses_influence") setInfluenceLostReason("Challenge against block failed — you lose 1 influence");
+        else setInfluenceLostReason("Block bluff exposed — blocker loses 1 influence");
         setInfluenceLostOpen(true);
       }
       setBlockDialogOpen(false);
-      success("ব্লক চ্যালেঞ্জ সম্পন্ন হয়েছে");
+      success("Block challenge resolved");
     } else { notifyError(result.error.message); }
   }
 
@@ -550,7 +551,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     setBlockBusy(true);
     const result = await GameService.resolve(matchId);
     setBlockBusy(false);
-    if (result.ok) { adoptState(result.data); setBlockDialogOpen(false); const cancelled = result.data.lastActionResult?.result === "CANCELLED"; success(cancelled ? "ব্লক গৃহীত হয়েছে — অ্যাকশন বাতিল" : "অ্যাকশন সমাধান সম্পন্ন হয়েছে"); }
+    if (result.ok) { adoptState(result.data); setBlockDialogOpen(false); const cancelled = result.data.lastActionResult?.result === "CANCELLED"; success(cancelled ? "Block accepted — action cancelled" : "Action resolved successfully"); }
     else { notifyError(result.error.message); }
   }
 
@@ -567,7 +568,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
       return { ...p, isAlive, influenceCards: updatedCards };
     });
     setGame({ ...game, players: updatedPlayers, revealedCardsCount: game.revealedCardsCount + 1 });
-    success("কার্ড সফলভাবে উন্মোচিত হয়েছে");
+    success("Card revealed successfully");
   }
 
   const blockEvent = (() => {
@@ -616,15 +617,19 @@ export function GameBoard({ matchId }: { matchId: string }) {
     Boolean(game.pendingChallenge) ||
     (challengeClaimKey !== null && handledChallengeKey !== challengeClaimKey);
 
-  const isBlockActive = Boolean(
-    showBlockOffer ||
-    showActorResolve ||
-    blockEvent ||
-    blockResultData ||
-    game.pendingBlock
+  const dockSide: "right" | "left" = chronicleOpen ? "left" : "right";
+
+  const hasBlockOffer = Boolean(showBlockOffer && blockWindowAction && !blockEvent);
+  const hasBlockResolve = Boolean(showActorResolve && blockWindowAction && !blockEvent);
+  const hasBlockEvent = Boolean(blockEvent);
+  const hasBlockResult = Boolean(blockResultData);
+  const hasChallenge = Boolean(
+    isChallengeActive &&
+      (game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING)
   );
 
-  const isResponseState = isBlockActive || isChallengeActive || Boolean(game.lastActionResult);
+  const hasReaction =
+    hasBlockResult || hasBlockEvent || hasBlockOffer || hasBlockResolve || hasChallenge;
 
   // Plain functions: ChallengeFlow reads `onFlowSettled` through a ref, so a
   // fresh identity per render is fine and must not become a hook-order hazard.
@@ -708,143 +713,78 @@ export function GameBoard({ matchId }: { matchId: string }) {
         })}
 
                 {/* ═══════════════════════════════════════════════════════════════
-            CENTRAL PLAY AREA — STATE-AWARE REFLOW
-            - Normal State: Pristine cinematic layout (Active Action → Cards → Player → Dock)
-            - Response State: Coordinated vertical flow (Block Opportunity → Active Action → Challenge → Cards → Player → Dock)
+            CENTRAL PLAY AREA — STABLE SEPARATED ARCHITECTURE
+            1. Main Game Board Active Action & Deck: strictly centered
+            2. Side Reaction Panel: docked to side (desktop) / bottom sheet (mobile)
+            3. Player Station: strictly at bottom
         ═══════════════════════════════════════════════════════════════ */}
-        {isResponseState ? (
-          <div
-            className="central-response-stage absolute inset-x-0 top-0 bottom-0 z-20 flex flex-col items-center justify-between pt-[clamp(68px,8.5vh,86px)] pb-2 pointer-events-none overflow-y-auto"
-            style={{ scrollbarWidth: "none" }}
-          >
-            {/* Upper Event Flow: Block Opportunity → Active Action → Challenge Window */}
-            <div className="flex flex-col items-center w-full max-w-[540px] shrink-0">
-              {/* 1. Block Opportunity / Block Results */}
-              {(blockResultData || game.lastActionResult || blockEvent || showBlockOffer || showActorResolve) && (
-                <div className="w-full pointer-events-auto mb-5 sm:mb-6 animate-fade-in">
-                  {blockResultData && (
-                    <BlockResult result={blockResultData} onDismiss={() => setBlockResultData(null)} />
-                  )}
-                  {game.lastActionResult && !blockResultData ? (
-                    <ActionResultSummary result={game.lastActionResult} players={game.players} />
-                  ) : null}
-                  {blockEvent ? (
-                    <BlockPanel
-                      activeBlock={blockEvent}
-                      currentPlayer={currentPlayer}
-                      onOpenDialog={() => setBlockDialogOpen(true)}
-                    />
-                  ) : null}
-                  {showBlockOffer && blockWindowAction && !blockEvent ? (
-                    <BlockOffer action={blockWindowAction} busy={blockBusy} onBlock={handleBlockSubmit} />
-                  ) : null}
-                  {showActorResolve && blockWindowAction && !blockEvent ? (
-                    <BlockWindowPanel
-                      action={blockWindowAction}
-                      busy={blockBusy}
-                      onResolve={() => void resolvePendingAction()}
-                    />
-                  ) : null}
-                </div>
-              )}
 
-              {/* 2. Active Action + Deck/Discard beside it */}
-              <div className="flex items-start gap-4 pointer-events-auto mb-6 sm:mb-7">
-                <ActiveAction game={game} />
-                <div className="shrink-0 pt-6 sm:pt-8">
-                  <DeckDiscard game={game} />
-                </div>
-              </div>
-
-              {/* 3. Challenge Window / Response Panel (below Active Action) */}
-              {(game.status === MatchStatus.IN_PROGRESS || game.status === MatchStatus.WAITING) && (
-                <div
-                  className={cn(
-                    "w-full pointer-events-auto",
-                    // Holds the panel's resting height while a challenge is live, so
-                    // the countdown ticking and the hand-off to the reveal sequence
-                    // never re-centre the lower player station. Only reserved from
-                    // `sm` up: below that the response stage already scrolls, so
-                    // reserving more height would only add dead space.
-                    isChallengeActive && "sm:min-h-[16rem]",
-                  )}
-                >
-                  <ChallengeFlow
-                    game={game}
-                    selfId={selfId}
-                    onResolved={adoptState}
-                    onPanelHandled={handleChallengePanelHandled}
-                    onFlowStarted={handleChallengeFlowStarted}
-                    onFlowSettled={handleChallengeFlowSettled}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Lower Player Station: Own Cards → Your Player → Action Dock */}
-            <div className="flex flex-col items-center w-full max-w-[540px] shrink-0 pointer-events-auto">
-              {/* 4. Own Influence Cards (scaled down to 165–195px in response mode) */}
-              <div className="mb-2 sm:mb-2.5">
-                <OwnCards cards={currentPlayer.influenceCards} responseMode={true} />
-              </div>
-
-              {/* 5. Own Player Status */}
-              <div className="w-full max-w-[460px] mb-2 sm:mb-2.5">
-                <PlayerSeat player={currentPlayer} />
-              </div>
-
-              {/* 6. Floating Action Dock */}
-              <div>
-                <ActionPanel
-                  player={currentPlayer}
-                  opponents={opponents}
-                  busy={busy !== null}
-                  onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
-                />
-              </div>
+        {/* 1. CENTER STAGE — Main Game Board Active Action */}
+        <div
+          className="absolute left-1/2 z-20 flex flex-col items-center gap-0 pointer-events-auto select-none"
+          style={{ top: "16%", transform: "translateX(-50%)" }}
+        >
+          <div className="flex items-start gap-4">
+            <ActiveAction game={game} />
+            <div className="shrink-0 pt-8">
+              <DeckDiscard game={game} />
             </div>
           </div>
-        ) : (
-          <>
-            {/* ── NORMAL STATE: Exact unchanged layout ── */}
-            {/* CENTER STAGE */}
-            <div
-              className="absolute left-1/2 z-20 flex flex-col items-center gap-0"
-              style={{ top: "17%", transform: "translateX(-50%)" }}
-            >
-              <div className="flex items-start gap-4">
-                <ActiveAction game={game} />
-                <div className="shrink-0 pt-8">
-                  <DeckDiscard game={game} />
-                </div>
-              </div>
+
+          {/* Compact summary of the last action verdict below ActiveAction when no reaction panel is active */}
+          {game.lastActionResult && !hasReaction && !blockResultData ? (
+            <div className="w-full max-w-[450px] mt-2 animate-fade-in pointer-events-auto">
+              <ActionResultSummary result={game.lastActionResult} players={game.players} />
             </div>
+          ) : null}
+        </div>
 
-            {/* BOTTOM STATION */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end select-none pointer-events-auto"
-              style={{
-                top: "clamp(calc(17% + 135px), 44%, 68%)",
-                bottom: "8px",
-              }}
-            >
-              <OwnCards cards={currentPlayer.influenceCards} responseMode={false} />
+        {/* 2. SIDE REACTION / BLOCK / CHALLENGE PANEL */}
+        <SideReactionPanel
+          game={game}
+          selfId={selfId}
+          currentPlayer={currentPlayer}
+          dockSide={dockSide}
+          blockResultData={blockResultData}
+          onDismissBlockResult={() => setBlockResultData(null)}
+          blockEvent={blockEvent}
+          onOpenBlockDialog={() => setBlockDialogOpen(true)}
+          showBlockOffer={showBlockOffer}
+          blockWindowAction={blockWindowAction}
+          blockBusy={blockBusy}
+          onBlockSubmit={handleBlockSubmit}
+          showActorResolve={showActorResolve}
+          onResolvePendingAction={() => void resolvePendingAction()}
+          isChallengeActive={isChallengeActive}
+          onAdoptState={adoptState}
+          onChallengePanelHandled={handleChallengePanelHandled}
+          onChallengeFlowStarted={handleChallengeFlowStarted}
+          onChallengeFlowSettled={handleChallengeFlowSettled}
+        />
 
-              <div className="mt-[18px] min-w-[320px] max-w-[480px]">
-                <PlayerSeat player={currentPlayer} />
-              </div>
+        {/* 3. BOTTOM STATION — Player Cards, Status, Action Dock */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center justify-end select-none pointer-events-auto"
+          style={{
+            top: "clamp(calc(16% + 140px), 44%, 68%)",
+            bottom: "8px",
+          }}
+        >
+          <OwnCards cards={currentPlayer.influenceCards} responseMode={false} />
 
-              <div className="mt-[14px]">
-                <ActionPanel
-                  player={currentPlayer}
-                  opponents={opponents}
-                  busy={busy !== null}
-                  onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
-                />
-              </div>
-            </div>
-          </>
-        )}
+          <div className="mt-[18px] min-w-[320px] max-w-[480px]">
+            <PlayerSeat player={currentPlayer} />
+          </div>
+
+          <div className="mt-[14px]">
+            <ActionPanel
+              player={currentPlayer}
+              opponents={opponents}
+              busy={busy !== null}
+              onAction={(actionId, targetPlayerId) => void handleAction(actionId, targetPlayerId)}
+            />
+          </div>
+        </div>
 
         {/* ══════════════════════════════════════════
             CHRONICLE DRAWER — fixed right overlay

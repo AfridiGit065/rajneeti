@@ -44,14 +44,6 @@ export function OwnCards({
           >
             YOUR INFLUENCE CARDS
           </span>
-          <span
-            className={cn(
-              "font-bengali text-gold-400/80 font-medium",
-              responseMode ? "text-[10px]" : "text-[11px]",
-            )}
-          >
-            (আপনার কার্ড)
-          </span>
         </span>
         <span className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-widest text-muted/60">
           <Lock className="size-2.5" aria-hidden />
@@ -97,20 +89,20 @@ export function OwnCards({
               </div>
               {/* Card status pill */}
               {card.revealed ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-crimson-500/50 bg-crimson-950/70 px-2 py-0.2 text-[8.5px] font-bold uppercase tracking-wider text-crimson-300 shadow-sm">
-                  Lost / উন্মোচিত
+                <span className="inline-flex items-center gap-1 rounded-full border border-crimson-500/50 bg-crimson-950/70 px-2 py-0.2 text-[8.5px] font-bold uppercase tracking-wider text-crimson-300 shadow-sm font-cinzel">
+                  Lost
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full border border-forest-400/40 bg-forest-900/60 px-2 py-0.2 text-[8.5px] font-bold tracking-wide text-forest-300 shadow-sm">
-                  Active / সচল
+                <span className="inline-flex items-center gap-1 rounded-full border border-forest-400/40 bg-forest-900/60 px-2 py-0.2 text-[8.5px] font-bold uppercase tracking-wider text-forest-300 shadow-sm font-cinzel">
+                  Active
                 </span>
               )}
             </div>
           ))
         ) : (
           <div className="flex items-center justify-center rounded-xl border border-crimson-500/30 bg-crimson-950/20 px-5 py-4">
-            <p className="text-xs font-semibold text-crimson-300">
-              কোনো প্রভাব অবশিষ্ট নেই — (No Influence Left)
+            <p className="text-xs font-semibold text-crimson-300 font-cinzel tracking-wider uppercase">
+              No Influence Left
             </p>
           </div>
         )}

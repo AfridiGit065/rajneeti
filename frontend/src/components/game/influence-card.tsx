@@ -109,8 +109,8 @@ export function InfluenceCard({
       aria-label={
         label ??
         (flipped
-          ? `${character.nameBn} — ${character.ability.nameBn}`
-          : "গোপন প্রভাব কার্ড")
+          ? `${character.nameEn} (${character.nameBn})`
+          : "Hidden Influence Card")
       }
       onClick={onClick}
       onKeyDown={
@@ -141,12 +141,22 @@ export function InfluenceCard({
         )}
       >
         {/* Back face — shown while the card is hidden */}
-        <div className="influence-card-face influence-card-face-back absolute inset-0">
+        <div
+          className={cn(
+            "influence-card-face influence-card-face-back absolute inset-0",
+            flipped && "pointer-events-none",
+          )}
+        >
           <CardBack size={size} />
         </div>
 
         {/* Front face — artwork, name, ability and role styling */}
-        <div className="influence-card-face influence-card-face-front absolute inset-0">
+        <div
+          className={cn(
+            "influence-card-face influence-card-face-front absolute inset-0",
+            !flipped && "pointer-events-none",
+          )}
+        >
           <div
             key={state}
             className={cn(
@@ -225,7 +235,7 @@ export function InfluenceCard({
             {/* Lost-influence marker */}
             {state === "discarded" ? (
               <span className="pointer-events-none absolute inset-x-0 top-1/3 z-10 -rotate-6 border-y border-crimson-500/60 bg-crimson-600/75 px-1 py-px text-center text-[0.5rem] font-black uppercase tracking-[0.2em] text-ivory sm:text-[0.6rem]">
-                অপসারিত
+                LOST
               </span>
             ) : null}
           </div>

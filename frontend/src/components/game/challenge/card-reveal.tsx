@@ -53,7 +53,7 @@ export function CardReveal({
           {label ?? (isReplacement ? "Replacement Card" : "Revealed Card")}
         </span>
         <h3 className="font-display text-3xl font-bold text-ivory sm:text-4xl">
-          {isReplacement ? "Drawing new card from deck…" : `${character.nameBn} (${character.nameEn})`}
+          {isReplacement ? "Drawing new card from deck…" : `${character.nameEn} (${character.nameBn})`}
         </h3>
         {isReplacement ? (
           <p className="max-w-md text-sm text-muted">

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CHARACTER_MAP } from "@/lib/game/characters";
+import { CHARACTER_MAP, getCharacterDisplayName } from "@/lib/game/characters";
 import { getAction } from "@/lib/game/actions";
 import {
   ShieldAlert,
@@ -76,7 +76,7 @@ export function BlockResult({
           <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-gold-500/40 bg-deep-950 shadow-gold">
             <Image
               src={character.imagePath}
-              alt={character.nameBn}
+              alt={getCharacterDisplayName(result.claimedCharacter)}
               fill
               className="object-cover object-top"
             />
@@ -85,10 +85,12 @@ export function BlockResult({
         <div>
           <h3 className="text-lg font-bold text-ivory">
             {result.blocker.displayName ?? result.blocker.username}&apos;s Block:{" "}
-            <span className="text-gold-300 font-bengali">{character?.nameBn} Claim</span>
+            <span className="text-gold-300">
+              {getCharacterDisplayName(result.claimedCharacter, true)} Claim
+            </span>
           </h3>
           <p className="text-xs text-muted mt-0.5">
-            Action: {action.nameEn} ({action.nameBn})
+            Action: {action.nameEn}
           </p>
         </div>
       </div>
@@ -109,7 +111,7 @@ export function BlockResult({
         )}
         {result.outcome === "block_claim_is_bluff" && (
           <p>
-            🎭 <strong>Bluff Caught!</strong> {result.blocker.displayName ?? result.blocker.username} does not hold {character?.nameBn}! Blocker loses 1 influence card for false block claim, and action resolves.
+            🎭 <strong>Bluff Caught!</strong> {result.blocker.displayName ?? result.blocker.username} does not hold {getCharacterDisplayName(result.claimedCharacter, true)}! Blocker loses 1 influence card for false block claim, and action resolves.
           </p>
         )}
         {result.outcome === "challenger_loses_influence" && (
@@ -188,7 +190,7 @@ export function BlockDialog({
             </h2>
           </div>
           <p className="text-xs text-muted">
-            Action: <strong className="text-parchment-200">{action.nameEn}</strong> ({action.nameBn})
+            Action: <strong className="text-parchment-200">{action.nameEn}</strong>
           </p>
         </div>
 
@@ -198,7 +200,7 @@ export function BlockDialog({
             <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border-2 border-gold-500/50 bg-deep-900 shadow-gold">
               <Image
                 src={character.imagePath}
-                alt={character.nameBn}
+                alt={getCharacterDisplayName(event.claimedCharacter)}
                 fill
                 className="object-cover object-top"
               />
@@ -208,28 +210,28 @@ export function BlockDialog({
             <span className="text-[10px] font-cinzel font-bold uppercase tracking-wider text-muted">
               Claimed Character Role
             </span>
-            <p className="font-bengali text-xl font-bold text-gold-gradient">
-              {character?.nameBn}
+            <p className="font-display text-xl font-bold text-gold-gradient">
+              {getCharacterDisplayName(event.claimedCharacter)}
             </p>
             <p className="font-cinzel text-xs text-muted uppercase tracking-widest">
-              {character?.nameEn}
+              {character?.nameBn}
             </p>
             <p className="text-[11px] text-parchment-300 mt-1">
               {event.claimedCharacter === "minister" && "Claimed Minister (মন্ত্রী) to block Foreign Aid."}
               {(event.claimedCharacter === "amla" || event.claimedCharacter === "dalal") &&
-                "Claimed Amla / Dalal (আমলা/দালাল) to block Extortion."}
-              {event.claimedCharacter === "goyenda" && "Claimed Goyenda (গোয়েন্দা) to block Assassination."}
+                "Claimed Bureaucrat / Broker (আমলা/দালাল) to block Steal."}
+              {event.claimedCharacter === "goyenda" && "Claimed Detective (গোয়েন্দা) to block Assassination."}
             </p>
           </div>
         </div>
 
         {isSelfBlocker ? (
-          <p className="text-center text-xs text-muted font-bengali">
-            আপনি নিজের ব্লক চ্যালেঞ্জ করতে পারবেন না।
+          <p className="text-center text-xs text-muted">
+            You cannot challenge your own block.
           </p>
         ) : !isActor ? (
-          <p className="text-center text-xs text-muted font-bengali">
-            অ্যাকশনের কর্তা ছাড়া অন্যরা চ্যালেঞ্জ করতে পারে — ব্লক সত্য হলে চ্যালেঞ্জকারী ১টি ইনফ্লুয়েন্স হারাবে।
+          <p className="text-center text-xs text-muted">
+            Any player can challenge this block claim. If the claim is truthful, the challenger will lose 1 influence.
           </p>
         ) : null}
 
@@ -242,7 +244,7 @@ export function BlockDialog({
             className="gap-1.5 font-cinzel font-semibold text-xs tracking-wider uppercase"
           >
             <XCircle className="size-4 text-muted" />
-            Close
+            Cancel
           </Button>
 
           {isActor ? (
@@ -313,15 +315,13 @@ export function BlockOffer({
                 Block Opportunity
               </span>
               <h2 className="font-display text-2xl font-bold text-ivory mt-0.5">
-                React to {act.nameEn} ({act.nameBn})
+                React to {act.nameEn}
               </h2>
             </div>
           </div>
 
-          <p className="text-xs text-parchment-300 font-bengali leading-relaxed">
-            কোন চরিত্রের মালিকানা দাবি করে {act.nameBn} অ্যাকশনটি ব্লক করবেন? ব্লাফ করাও
-            বৈধ — হাতে কার্ড না থাকলেও দাবি করতে পারেন, তবে চ্যালেঞ্জ করে ফাঁস করলে ১টি
-            ইনফ্লুয়েন্স হারাবেন।
+          <p className="text-xs text-parchment-300 leading-relaxed">
+            Do you want to block this action? Claim a character role to block {act.nameEn}. Bluffing is allowed, but if challenged and caught, you will lose 1 influence.
           </p>
 
           <div className="grid gap-2 sm:grid-cols-2">
@@ -338,17 +338,17 @@ export function BlockOffer({
                   <div className="relative size-10 shrink-0 overflow-hidden rounded-lg border border-gold-500/40 bg-deep-900">
                     <Image
                       src={ch.imagePath}
-                      alt={ch.nameBn}
+                      alt={getCharacterDisplayName(id)}
                       fill
                       className="object-cover object-top"
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bengali text-sm font-bold text-gold-300">
-                      {ch.nameBn}
+                    <p className="text-sm font-bold text-gold-300">
+                      {getCharacterDisplayName(id)}
                     </p>
                     <p className="font-cinzel text-[10px] text-muted uppercase tracking-wider">
-                      {ch.nameEn}
+                      {ch.nameBn}
                     </p>
                   </div>
                 </button>
@@ -380,9 +380,9 @@ export function BlockOffer({
             <Badge tone="crimson">Can React</Badge>
           </div>
           <p className="text-xs text-muted mt-0.5">
-            {act.nameEn} ({act.nameBn}) — claim{" "}
+            {act.nameEn} — claim{" "}
             <span className="text-gold-300 font-semibold">
-              {claimants.map((id) => CHARACTER_MAP[id]?.nameBn ?? id).join(" / ")}
+              {claimants.map((id) => getCharacterDisplayName(id)).join(" / ")}
             </span>{" "}
             to block.
           </p>
@@ -428,11 +428,11 @@ export function BlockWindowPanel({
             <Badge tone="gold">Waiting</Badge>
           </div>
           <p className="text-xs text-muted mt-0.5">
-            {act.nameEn} ({act.nameBn}) pending — blockable by{" "}
+            {act.nameEn} pending — blockable by{" "}
             <span className="text-gold-300 font-semibold">
-              {claimants.map((id) => CHARACTER_MAP[id]?.nameBn ?? id).join(" / ")}
+              {claimants.map((id) => getCharacterDisplayName(id)).join(" / ")}
             </span>
-            . Resolve now (no block submitted yet)?
+            . Resolve now (no block submitted)?
           </p>
         </div>
       </div>
@@ -462,7 +462,6 @@ export function BlockPanel({
 }) {
   if (!activeBlock) return null;
 
-  const character = CHARACTER_MAP[activeBlock.claimedCharacter];
   const action = getAction(activeBlock.actionId);
 
   return (
@@ -479,7 +478,7 @@ export function BlockPanel({
             <Badge tone="crimson">Blocked Action</Badge>
           </div>
           <p className="text-xs text-muted mt-0.5">
-            Action: {action.nameEn} ({action.nameBn}) · Claimed: <span className="text-gold-300 font-semibold">{character?.nameBn}</span> ({character?.nameEn})
+            Action: {action.nameEn} · Claimed: <span className="text-gold-300 font-semibold">{getCharacterDisplayName(activeBlock.claimedCharacter, true)}</span>
           </p>
         </div>
       </div>

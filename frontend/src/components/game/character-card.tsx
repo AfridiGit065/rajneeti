@@ -68,7 +68,7 @@ export function CharacterCard({
         ) : (
           <Image
             src={character.imagePath}
-            alt={`${character.nameBn} — ${character.nameEn} কার্ড`}
+            alt={`${character.nameEn} (${character.nameBn}) Card`}
             fill
             sizes="(max-width: 768px) 50vw, 300px"
             className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
@@ -97,8 +97,8 @@ export function CharacterCard({
         <div className="divider-gold my-2.5" />
         <div className="space-y-1.5 text-parchment-300">
           <div className="flex items-start gap-2">
-            <span className={cn("text-xs font-bold uppercase tracking-wider", accent.text)}>
-              ক্ষমতা
+            <span className={cn("text-xs font-bold uppercase tracking-wider font-cinzel", accent.text)}>
+              Ability
             </span>
             <p className="text-sm leading-snug">
               <span className="font-medium text-ivory">{character.ability.nameBn}</span>
@@ -107,9 +107,9 @@ export function CharacterCard({
             </p>
           </div>
           {typeof character.ability.cost === "number" && character.ability.cost > 0 ? (
-            <div className="flex items-center gap-1.5 text-xs text-gold-300">
+            <div className="flex items-center gap-1.5 text-xs text-gold-300 font-cinzel">
               <Coins className="size-3.5" aria-hidden />
-              খরচ: {character.ability.cost} কয়েন
+              Cost: {character.ability.cost} Coins
             </div>
           ) : null}
         </div>

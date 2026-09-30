@@ -59,10 +59,10 @@ export function ChallengeDialog({
             <div className="min-w-0 leading-tight">
               <p className="truncate text-sm text-muted">
                 <span className="font-semibold text-ivory">{claimantName}</span> claims —
-                &ldquo;I am {character.nameBn}&rdquo;
+                &ldquo;I claim {character.nameEn}&rdquo;
               </p>
               <p className="mt-0.5 font-cinzel text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-gold-400">
-                {character.nameEn}
+                {character.nameBn}
               </p>
             </div>
           </div>

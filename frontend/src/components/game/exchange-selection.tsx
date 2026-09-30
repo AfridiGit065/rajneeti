@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { cn } from "@/lib/cn";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Check } from "@/components/ui/icons";
+import { cn } from "@/lib/utils/cn";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import {
   EXCHANGE_KEEP_COUNT,
@@ -81,7 +81,7 @@ export function ExchangeSelection({
 
     if (result.ok) {
       audioEngine.play("confirm");
-      success("কার্ড বদল সম্পন্ন হয়েছে!");
+      success("Exchange completed!");
       onResolved?.(result.data);
     } else {
       audioEngine.play("error");
@@ -94,32 +94,32 @@ export function ExchangeSelection({
       className="fixed inset-0 z-[55] flex items-center justify-center overflow-y-auto bg-black/85 backdrop-blur-md p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
-      aria-label="কার্ড বদল নির্বাচন"
+      aria-label="Exchange — Select Cards"
     >
       <div className="relative w-full max-w-lg space-y-5 rounded-3xl border-2 border-gold-500/40 bg-surface p-6 panel-emboss panel-texture shadow-2xl">
         <div>
-          <h3 className="font-bengali text-xl font-bold text-ivory">
-            কার্ড বদল (Exchange)
+          <h3 className="font-display text-xl font-bold text-ivory">
+            Exchange
           </h3>
           <p className="mt-1 font-cinzel text-xs text-muted">
             Keep Selected Cards — choose exactly {EXCHANGE_KEEP_COUNT}
           </p>
         </div>
 
-        <p className="font-bengali text-xs leading-relaxed text-parchment-300">
-          ডেক থেকে ২টি নতুন কার্ড তোলা হয়েছে। আপনার হাতে এখন ৪টি কার্ড।
-          নিচের কার্ডগুলোর মধ্য থেকে{" "}
-          <strong className="text-gold-300">ঠিক ২টি রাখুন</strong> — বাকিগুলো ডেকে
-          ফেরত যাবে। কার্ডে ক্লিক করলেও হবে, অথবা নিচের{" "}
-          <strong className="text-gold-300">পিক</strong> বাটনটিতে চাপ দিন।
+        <p className="text-xs leading-relaxed text-parchment-300">
+          2 new cards have been drawn from the deck. You now hold 4 cards.
+          From the cards below,{" "}
+          <strong className="text-gold-300">keep exactly 2</strong> — the rest will be returned
+          to the deck. Click a card directly, or use the{" "}
+          <strong className="text-gold-300">Pick</strong> button below each card.
         </p>
 
         <div className="grid grid-cols-2 items-start gap-2 sm:grid-cols-4">
           {cards.map((card) => {
             const character = CHARACTER_MAP[card.characterId];
             const isSelected = live.selectedIds.includes(card.id);
-            const cardLabel = `${character?.nameBn ?? card.characterId} — ${
-              isSelected ? "রাখা হয়েছে" : "ফেরত যাবে"
+            const cardLabel = `${character?.nameEn ?? card.characterId} — ${
+              isSelected ? "Selected" : "Return"
             }`;
             return (
               <div
@@ -168,9 +168,9 @@ export function ExchangeSelection({
                   onClick={() => handleToggle(card.id)}
                   aria-pressed={isSelected}
                   aria-label={cardLabel}
-                  className="text-[11px]"
+                  className="text-[11px] font-cinzel uppercase tracking-wider"
                 >
-                  {isSelected ? "✓ SELECTED" : "পিক করুন · PICK"}
+                  {isSelected ? "✓ SELECTED" : "PICK"}
                 </Button>
               </div>
             );
@@ -180,12 +180,12 @@ export function ExchangeSelection({
         <p
           aria-live="polite"
           className={cn(
-            "text-center font-bengali text-[11px]",
+            "text-center text-[11px]",
             complete ? "font-bold text-gold-300" : "text-muted",
           )}
         >
-          নির্বাচিত: {selectedCount}/{EXCHANGE_KEEP_COUNT}
-          {complete ? " — দুটি কার্ড প্রস্তুত, নিশ্চিত করুন" : ""}
+          Selected: {selectedCount}/{EXCHANGE_KEEP_COUNT}
+          {complete ? " — 2 cards ready, please confirm" : ""}
         </p>
 
         <Button
@@ -195,13 +195,8 @@ export function ExchangeSelection({
           disabled={!complete || busy}
           onClick={() => void handleConfirm()}
         >
-          <span className="flex flex-col items-center leading-tight">
-            <span className="font-bengali">
-              ঠিক ২টি কার্ড রাখুন
-            </span>
-            <span className="font-cinzel text-[10px] opacity-80">
-              Confirm Exchange
-            </span>
+          <span className="font-cinzel text-xs font-bold uppercase tracking-wider">
+            Confirm Exchange
           </span>
         </Button>
       </div>

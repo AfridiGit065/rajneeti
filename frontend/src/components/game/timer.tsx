@@ -29,7 +29,7 @@ export function Timer({ seconds, label, className, compact = false }: TimerProps
         className,
       )}
       role="timer"
-      aria-label={label ? `${label}: ${display}` : `অবশিষ্ট সময়: ${display}`}
+      aria-label={label ? `${label}: ${display}` : `Time remaining: ${display}`}
     >
       <TimerReset className={cn("shrink-0", compact ? "size-3.5" : "size-4")} aria-hidden />
       <span className="font-mono font-semibold tabular-nums">{display}</span>

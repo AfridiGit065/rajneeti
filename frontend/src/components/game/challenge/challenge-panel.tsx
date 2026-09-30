@@ -57,7 +57,7 @@ export function ChallengePanel({
         className,
       )}
       role="region"
-      aria-label={`Challenge Opportunity — ${claimant.displayName ?? claimant.username} claimed: ${character?.nameBn}`}
+      aria-label={`Challenge Opportunity — ${claimant.displayName ?? claimant.username} claimed: ${character?.nameEn}`}
     >
       <div
         className="pointer-events-none absolute inset-x-0 -top-16 h-36 bg-gradient-to-b from-crimson-500/22 to-transparent blur-2xl animate-glow-pulse"
@@ -110,15 +110,15 @@ export function ChallengePanel({
           <div className="rounded-xl border border-gold-500/25 bg-deep-900/70 px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-muted">
-                Claims — <span className="font-semibold text-ivory">&ldquo;I am {character.nameBn}&rdquo;</span>
+                Claims — <span className="font-semibold text-ivory">&ldquo;I claim {character.nameEn}&rdquo;</span>
               </p>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge tone="neutral" className={cn(ACCENT_CHIP[character.accent])}>
-                {character.nameBn}
+                {character.nameEn}
               </Badge>
               <span className="font-cinzel text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted">
-                {character.nameEn}
+                {character.nameBn}
               </span>
             </div>
           </div>

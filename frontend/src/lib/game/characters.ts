@@ -1,4 +1,4 @@
-﻿import type { Character } from "@/types/character";
+import type { Character } from "@/types/character";
 
 /** Complete game roster. Card artwork at /public/assets/cards/<id>.png */
 export const CHARACTERS: readonly Character[] = [
@@ -137,4 +137,21 @@ export const CHARACTER_MAP: Readonly<Record<string, Character>> =
 
 export function isCharacterId(value: string): value is Character["id"] {
   return Object.prototype.hasOwnProperty.call(CHARACTER_MAP, value);
+}
+
+export const CHARACTER_ENGLISH_NAMES: Record<Character["id"], string> = {
+  minister: "Minister",
+  ghatok: "Assassin",
+  dalal: "Broker",
+  amla: "Bureaucrat",
+  goyenda: "Detective",
+};
+
+export function getCharacterDisplayName(id: string, withBangla = false): string {
+  const ch = CHARACTER_MAP[id];
+  const en = (isCharacterId(id) ? CHARACTER_ENGLISH_NAMES[id] : undefined) ?? ch?.nameEn ?? id;
+  if (withBangla && ch?.nameBn) {
+    return `${en} (${ch.nameBn})`;
+  }
+  return en;
 }

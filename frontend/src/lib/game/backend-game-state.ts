@@ -261,7 +261,7 @@ export function toGameState(backend: BackendGameState): GameState {
   }));
 
   const exchangePool: InfluenceCard[] | undefined =
-    backend.pendingAction?.type === "EXCHANGE" && backend.pendingAction.exchangePool
+    backend.pendingAction?.type?.toUpperCase() === "EXCHANGE" && backend.pendingAction.exchangePool
       ? backend.pendingAction.exchangePool.map((card) => ({
           id: card.cardId,
           characterId: toCharacterId(card.characterId),

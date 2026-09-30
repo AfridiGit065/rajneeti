@@ -14,11 +14,11 @@ export type PlayerPresence =
 export type PlayerTone = "gold" | "crimson" | "forest" | "parchment";
 
 const PRESENCE_META: Record<PlayerPresence, { label: string; dot: string; text: string }> = {
-  online: { label: "অনলাইন", dot: "bg-forest-400", text: "text-forest-300" },
-  away: { label: "দূরে", dot: "bg-gold-400", text: "text-gold-300" },
-  "in-game": { label: "খেলায়", dot: "bg-forest-300", text: "text-parchment-300" },
-  offline: { label: "অফলাইন", dot: "bg-deep-650", text: "text-muted" },
-  eliminated: { label: "বহিষ্কৃত", dot: "bg-crimson-400", text: "text-crimson-300" },
+  online: { label: "Online", dot: "bg-forest-400", text: "text-forest-300" },
+  away: { label: "Away", dot: "bg-gold-400", text: "text-gold-300" },
+  "in-game": { label: "In Game", dot: "bg-forest-300", text: "text-parchment-300" },
+  offline: { label: "Offline", dot: "bg-deep-650", text: "text-muted" },
+  eliminated: { label: "Eliminated", dot: "bg-crimson-400", text: "text-crimson-300" },
 };
 
 const TONE_RINGS: Record<PlayerTone, string> = {
@@ -82,7 +82,7 @@ export function PlayerStatus({
         {isReady ? (
           <span
             className="absolute -left-1 -top-1 flex size-4 items-center justify-center rounded-full bg-gold-400 text-deep-950 shadow-gold"
-            aria-label="প্রস্তুত"
+            aria-label="Ready"
           >
             <Check className="size-2.5" strokeWidth={3} aria-hidden />
           </span>
@@ -95,7 +95,7 @@ export function PlayerStatus({
           {isHost ? (
             <span className="inline-flex items-center gap-0.5 rounded-full bg-gold-500/12 px-1.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wider text-gold-300">
               <Crown className="size-2.5" aria-hidden />
-              হোস্ট
+              Host
             </span>
           ) : null}
         </div>
@@ -106,7 +106,7 @@ export function PlayerStatus({
           </span>
           <span className={cn("text-[0.7rem] font-medium", meta.text)}>{meta.label}</span>
           {seat != null ? (
-            <span className="text-[0.7rem] text-muted">• সিট {seat}</span>
+            <span className="text-[0.7rem] text-muted">• Seat {seat}</span>
           ) : null}
         </div>
       </div>

@@ -23,7 +23,7 @@ export function PlayerInfluenceCards({
     return (
       <div
         className={cn("flex items-end gap-1", className)}
-        aria-label="০ ইনফ্লুয়েন্স — অপসারিত"
+        aria-label="0 Influence — Eliminated"
       >
         {[0, 1].map((slot) => (
           <div
@@ -35,7 +35,7 @@ export function PlayerInfluenceCards({
             )}
             aria-hidden
           >
-            <span className="font-bengali text-base font-bold text-crimson-400/80">০</span>
+            <span className="font-mono text-base font-bold text-crimson-400/80">0</span>
           </div>
         ))}
       </div>

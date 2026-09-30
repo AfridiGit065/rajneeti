@@ -29,7 +29,7 @@ export function CoinDisplay({
         sizes[size],
         className,
       )}
-      aria-label={`${coins} কয়েন`}
+      aria-label={`${coins} Coins`}
     >
       <Coins
         className={cn("text-gold-400", iconSizes[size], animate && "animate-coin-pop")}

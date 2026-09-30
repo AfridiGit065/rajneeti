@@ -31,7 +31,7 @@ export function InfluenceDisplay({
         sizes[size],
         className,
       )}
-      aria-label={`${count} ইনফ্লুয়েন্স${revealed > 0 ? `, ${revealed} উন্মোচিত` : ""}`}
+      aria-label={`${count} Influence${revealed > 0 ? `, ${revealed} revealed` : ""}`}
     >
       <Shield className={cn(iconSizes[size], lostColor)} aria-hidden />
       {count}
