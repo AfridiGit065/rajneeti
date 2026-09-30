@@ -39,6 +39,7 @@ import { ExchangeSelection } from "./exchange-selection";
 import { getAction, canChallenge } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
 import { shouldShowExchangeSelection } from "@/lib/game/exchange-selection";
+import { mergeSnapshotIntoGame } from "@/lib/realtime/snapshot-merge";
 import { CardBackImage } from "./card-back-image";
 import { GameService } from "@/services/game-service";
 import { useAuthStore } from "@/store/auth-store";
@@ -425,20 +426,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     const incoming: VersionKey = { stateVersion: gameSnapshot.stateVersion, scope: gameSnapshot.scope };
     if (isSuperseded(appliedVersionRef.current, incoming)) return;
     appliedVersionRef.current = incoming;
-    setGame((prev) => {
-      const next = toGameState(gameSnapshot.state);
-      if (gameSnapshot.scope === "public" && prev) {
-        const prevMe = prev.players.find((p) => p.userId === selfId);
-        const hasRealCards = prevMe && prevMe.influenceCards.length > 0 && !prevMe.influenceCards[0].id.startsWith("hidden-");
-        if (hasRealCards) {
-          return { ...next, players: next.players.map((p) => {
-            if (p.userId === selfId) return { ...p, influenceCards: prevMe.influenceCards.slice(0, p.influenceCards.length) };
-            return p;
-          }) };
-        }
-      }
-      return next;
-    });
+    setGame((prev) => mergeSnapshotIntoGame(prev, toGameState(gameSnapshot.state), selfId, gameSnapshot.scope));
   }, [gameSnapshot, selfId]);
 
   useEffect(() => {
