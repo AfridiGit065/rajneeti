@@ -7,8 +7,11 @@ import {
   exchangeSelectionCount,
   isExchangeSelectionComplete,
   pruneExchangeSelection,
+  shouldShowExchangeSelection,
   toggleExchangeCard,
+  type ExchangeSelectionGateInput,
 } from "@/lib/game/exchange-selection";
+import { MatchStatus } from "@/types/game";
 
 const POOL = ["card-a", "card-b", "card-c", "card-d"];
 
@@ -110,4 +113,62 @@ test("12. the exchange timeout is not owned by the selection state", () => {
 test("a card id outside the pool is ignored", () => {
   const state = select(createExchangeSelection(), "not-in-pool");
   assert.deepEqual(state.selectedIds, []);
+});
+
+/**
+ * Regression: the overlay used to be gated on `MatchStatus.IN_PROGRESS`, but a
+ * running match reports the backend status `CREATED`, which the client maps to
+ * `WAITING`. The selection UI therefore never rendered and the player was left
+ * looking at an inert hand.
+ */
+function liveExchangeGame(
+  overrides: Partial<ExchangeSelectionGateInput> = {},
+): ExchangeSelectionGateInput {
+  return {
+    status: MatchStatus.WAITING, // what toGameState() yields for "CREATED"
+    activeAction: { action: "exchange", claimedCharacter: "amla" },
+    exchangePool: POOL.map((id) => ({ id })),
+    currentTurnPlayerId: "me",
+    ...overrides,
+  };
+}
+
+test("shows the selection for a live match reported as CREATED/WAITING", () => {
+  assert.equal(shouldShowExchangeSelection(liveExchangeGame(), "me"), true);
+});
+
+test("hides the selection for another player or without a pending exchange", () => {
+  assert.equal(
+    shouldShowExchangeSelection(liveExchangeGame(), "someone-else"),
+    false,
+  );
+  assert.equal(
+    shouldShowExchangeSelection(
+      liveExchangeGame({ activeAction: null }),
+      "me",
+    ),
+    false,
+  );
+  assert.equal(
+    shouldShowExchangeSelection(liveExchangeGame({ exchangePool: [] }), "me"),
+    false,
+  );
+});
+
+test("never shows the selection once the match is over", () => {
+  assert.equal(
+    shouldShowExchangeSelection(
+      liveExchangeGame({ status: MatchStatus.FINISHED }),
+      "me",
+    ),
+    false,
+  );
+  assert.equal(
+    shouldShowExchangeSelection(
+      liveExchangeGame({ status: MatchStatus.ABANDONED }),
+      "me",
+    ),
+    false,
+  );
+  assert.equal(shouldShowExchangeSelection(null, "me"), false);
 });

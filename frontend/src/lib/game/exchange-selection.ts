@@ -9,6 +9,8 @@
  * server will refuse.
  */
 
+import { MatchStatus, type ActionIntent } from "@/types/game";
+
 /** The number of cards the player must keep. Mirrors the backend rule. */
 export const EXCHANGE_KEEP_COUNT = 2;
 
@@ -90,4 +92,34 @@ export function exchangeKeepCardIds(
 ): string[] {
   const selected = new Set(state.selectedIds);
   return poolIds.filter((id) => selected.has(id));
+}
+
+/** The part of the game state the overlay gate needs. */
+export interface ExchangeSelectionGateInput {
+  status: MatchStatus;
+  activeAction: ActionIntent | null;
+  exchangePool?: readonly { id: string }[];
+  currentTurnPlayerId: string | null;
+}
+
+/**
+ * True when the local player must pick 2 cards out of the offered pool.
+ *
+ * The gate deliberately does NOT test for `MatchStatus.IN_PROGRESS`: a running
+ * match reports the backend status `CREATED`, which the client maps to
+ * `WAITING`, so an IN_PROGRESS test hid the selection UI for every live match
+ * and left the player looking at an inert hand. The pending action, the
+ * private pool the server only sends to the acting player, and the turn are
+ * the authoritative signals that the choice is waiting.
+ */
+export function shouldShowExchangeSelection(
+  game: ExchangeSelectionGateInput | null | undefined,
+  selfId: string,
+): boolean {
+  if (!game) return false;
+  if (game.status === MatchStatus.FINISHED) return false;
+  if (game.status === MatchStatus.ABANDONED) return false;
+  if (game.activeAction?.action !== "exchange") return false;
+  if (!game.exchangePool || game.exchangePool.length === 0) return false;
+  return game.currentTurnPlayerId === selfId;
 }

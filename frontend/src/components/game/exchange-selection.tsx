@@ -163,7 +163,7 @@ export function ExchangeSelection({
                   aria-label={cardLabel}
                   className="text-[11px]"
                 >
-                  {isSelected ? "✓ পিক করা" : "পিক করুন"}
+                  {isSelected ? "✓ SELECTED" : "পিক করুন · PICK"}
                 </Button>
               </div>
             );

@@ -38,6 +38,7 @@ import {
 import { ExchangeSelection } from "./exchange-selection";
 import { getAction, canChallenge } from "@/lib/game/actions";
 import { CHARACTER_MAP } from "@/lib/game/characters";
+import { shouldShowExchangeSelection } from "@/lib/game/exchange-selection";
 import { CardBackImage } from "./card-back-image";
 import { GameService } from "@/services/game-service";
 import { useAuthStore } from "@/store/auth-store";
@@ -565,7 +566,7 @@ export function GameBoard({ matchId }: { matchId: string }) {
     return { blocker, targetOrActor: actor, actionId: act.action, claimedCharacter: act.blockedCharacter ?? fallback };
   })();
 
-  const showExchangeSelection = game?.status === MatchStatus.IN_PROGRESS && game?.activeAction?.action === "exchange" && (game?.exchangePool?.length ?? 0) > 0 && game?.currentTurnPlayerId === selfId;
+  const showExchangeSelection = shouldShowExchangeSelection(game, selfId);
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-app px-4"><LoadingState label="Loading game board…" /></div>;
   if (error !== null || !game) return <div className="flex min-h-screen items-center justify-center bg-app px-4"><div className="w-full max-w-lg"><ErrorState title="Could not load game board" message={error ?? "Match state could not be found."} action={<Button variant="premium" onClick={retry}>Try Again</Button>} /></div></div>;
