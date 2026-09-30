@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check } from "@/components/ui/icons";
 import { CHARACTER_MAP } from "@/lib/game/characters";
@@ -104,38 +103,34 @@ export function ExchangeSelection({
           ডেক থেকে ২টি নতুন কার্ড তোলা হয়েছে। আপনার হাতে এখন ৪টি কার্ড।
           নিচের কার্ডগুলোর মধ্য থেকে{" "}
           <strong className="text-gold-300">ঠিক ২টি রাখুন</strong> — বাকিগুলো ডেকে
-          ফেরত যাবে। কার্ডের উপর ক্লিক করে বেছে নিন।
+          ফেরত যাবে। কার্ডে ক্লিক করলেও হবে, অথবা নিচের{" "}
+          <strong className="text-gold-300">পিক</strong> বাটনটিতে চাপ দিন।
         </p>
 
-        <div className="grid grid-cols-2 items-start gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 items-start gap-2 sm:grid-cols-4">
           {cards.map((card) => {
             const character = CHARACTER_MAP[card.characterId];
             const isSelected = live.selectedIds.includes(card.id);
+            const cardLabel = `${character?.nameBn ?? card.characterId} — ${
+              isSelected ? "রাখা হয়েছে" : "ফেরত যাবে"
+            }`;
             return (
-              <button
+              <div
                 key={card.id}
-                type="button"
-                onClick={() => handleToggle(card.id)}
-                disabled={busy}
-                aria-pressed={isSelected}
-                aria-label={`${character?.nameBn ?? card.characterId} — ${
-                  isSelected ? "রাখা হয়েছে" : "ফেরত যাবে"
-                }`}
                 data-selected={isSelected}
                 className={cn(
-                  "group flex w-full cursor-pointer select-none flex-col items-center gap-2 rounded-2xl p-2 text-center",
+                  "flex w-full select-none flex-col items-center gap-1.5 rounded-2xl p-1.5 text-center",
                   "transition-[box-shadow,background-color,opacity] duration-200 motion-reduce:transition-none",
-                  "focus-visible:outline-2 focus-visible:outline-gold-400",
                   isSelected
                     ? "bg-gold-500/10 shadow-gold ring-2 ring-gold-400"
-                    : "bg-transparent ring-1 ring-white/10 hover:ring-white/25",
-                  busy && "cursor-wait opacity-70",
+                    : "bg-transparent ring-1 ring-white/10",
+                  busy && "opacity-70",
                 )}
               >
-                {/* The lift is a transform, so selecting a card never resizes
+                {/* The lift is a transform, so picking a card never resizes
                     its slot or reflows the grid. */}
                 <span
-                  className="relative block w-full transition-transform duration-200 motion-reduce:transition-none"
+                  className="relative block transition-transform duration-200 motion-reduce:transition-none"
                   style={{
                     transform: isSelected ? "translateY(-4px)" : "none",
                   }}
@@ -143,29 +138,34 @@ export function ExchangeSelection({
                   <InfluenceCard
                     characterId={card.characterId}
                     state="revealed"
-                    size="sm"
-                    label={`${character?.nameBn ?? card.characterId} — ${
-                      isSelected ? "রাখা হয়েছে" : "ফেরত যাবে"
-                    }`}
-                    style={{ width: "100%" }}
+                    size="xs"
+                    label={cardLabel}
+                    onClick={() => handleToggle(card.id)}
+                    style={{ width: "clamp(58px, 15vw, 76px)" }}
                   />
                   {isSelected ? (
                     <span
                       aria-hidden
-                      className="absolute -right-1 -top-1 flex size-6 items-center justify-center rounded-full bg-gold-400 text-deep-950 shadow-gold"
+                      className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-gold-400 text-deep-950 shadow-gold"
                     >
-                      <Check className="size-4" />
+                      <Check className="size-3.5" />
                     </span>
                   ) : null}
                 </span>
 
-                <Badge
-                  tone={isSelected ? "gold" : "neutral"}
-                  className="h-5 px-2 text-[10px] leading-none"
+                <Button
+                  variant={isSelected ? "gold" : "outline"}
+                  size="sm"
+                  fullWidth
+                  disabled={busy}
+                  onClick={() => handleToggle(card.id)}
+                  aria-pressed={isSelected}
+                  aria-label={cardLabel}
+                  className="text-[11px]"
                 >
-                  {isSelected ? "✓ রাখবেন" : "ফেরত"}
-                </Badge>
-              </button>
+                  {isSelected ? "✓ পিক করা" : "পিক করুন"}
+                </Button>
+              </div>
             );
           })}
         </div>
