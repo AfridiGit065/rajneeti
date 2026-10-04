@@ -1,11 +1,10 @@
 "use client";
 
 import { SFX_NAMES, type SfxName, shouldPlaySfx } from "./sfx-policy";
-import { resolveMusicPlayback } from "./music-policy";
+import { resolveMusicPlayback, pickMusicSource, MUSIC_SOURCES } from "./music-policy";
 import { useUiStore } from "@/store/ui-store";
 
-const MUSIC_SRC = "/assets/game/music/rajneeti-theme.mp3";
-const MUSIC_VOLUME = 0.28;
+const MUSIC_VOLUME = 0.34;
 
 /**
  * Audio for the whole app.
@@ -18,6 +17,7 @@ const MUSIC_VOLUME = 0.28;
 class AudioEngine {
   private ctx: AudioContext | null = null;
   private music: HTMLAudioElement | null = null;
+  private musicSource: string | null = null;
   private unlocked = false;
   private listeners = new Set<() => void>();
 
@@ -169,7 +169,7 @@ class AudioEngine {
       return;
     }
     if (!this.music) {
-      const audio = new Audio(MUSIC_SRC);
+      const audio = new Audio(this.resolveSource());
       audio.loop = true;
       audio.volume = MUSIC_VOLUME;
       audio.preload = "auto";
@@ -180,6 +180,40 @@ class AudioEngine {
         /* blocked until a gesture; the next unlock retries */
       });
     }
+  }
+
+  /**
+   * Probes the candidates once and remembers the winner. A wrong extension is an
+   * invisible 404 that looks exactly like "the game has no music", so this never
+   * assumes a filename.
+   */
+  private resolveSource(): string {
+    if (this.musicSource) return this.musicSource;
+    const fallback = MUSIC_SOURCES[0];
+    void (async () => {
+      const found: string[] = [];
+      await Promise.all(
+        MUSIC_SOURCES.map(async (candidate) => {
+          try {
+            const response = await fetch(candidate, { method: "HEAD" });
+            if (response.ok) found.push(candidate);
+          } catch {
+            /* offline or blocked: keep looking */
+          }
+        }),
+      );
+      const picked = pickMusicSource(found);
+      if (picked && this.music && this.music.src !== picked) {
+        this.music.src = picked;
+        if (this.music.paused) {
+          this.music.play().catch(() => {
+            /* still blocked until a gesture */
+          });
+        }
+      }
+      this.musicSource = picked ?? fallback;
+    })();
+    return fallback;
   }
 }
 

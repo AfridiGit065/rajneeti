@@ -30,7 +30,9 @@ public class RoomMapper {
                 .username(player.getUser().getUsername())
                 .avatarUrl(player.getUser().getAvatarUrl())
                 .seatNumber(player.getSeatNumber())
-                .ready(player.getReady())
+                // Module 06 — readiness is a strict two-state flag: never emit null,
+                // so every client always renders a real READY / NOT_READY badge.
+                .ready(Boolean.TRUE.equals(player.getReady()))
                 .isHost(isHost)
                 .isBot(Boolean.TRUE.equals(player.getUser().getIsBot()))
                 .botDifficulty(player.getUser().getBotDifficulty())

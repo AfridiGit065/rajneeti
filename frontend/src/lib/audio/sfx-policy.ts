@@ -37,3 +37,18 @@ export function shouldPlaySfx(gate: SfxGate, runtime?: Partial<SfxRuntime>): boo
   if (runtime && runtime.unlocked === false) return false;
   return true;
 }
+
+export interface SoundHintGate extends SfxGate {
+  musicEnabled: boolean;
+  unlocked: boolean;
+}
+
+/**
+ * Browsers refuse to play audio until the user interacts with the page, so the
+ * game is silently muted on arrival. Without a hint that reads as "the game has
+ * no sound" instead of "one click is required".
+ */
+export function shouldShowSoundHint(gate: SoundHintGate): boolean {
+  if (gate.unlocked) return false;
+  return gate.soundEnabled || gate.musicEnabled;
+}

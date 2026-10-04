@@ -61,6 +61,10 @@ export default function RoomDetailPage() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [readyLoading, setReadyLoading] = useState(false);
   const [readyError, setReadyError] = useState<string | null>(null);
+  // Module 06 — a synchronous in-flight latch. `readyLoading` only reaches the
+  // button after React re-renders, so a fast double click could otherwise fire
+  // two toggles and leave the backend state flipped from the stale value.
+  const readyRequestInFlight = useRef(false);
   const [startLoading, setStartLoading] = useState(false);
   const [startDialogOpen, setStartDialogOpen] = useState(false);
 
@@ -144,20 +148,25 @@ export default function RoomDetailPage() {
   }
 
   async function toggleReady() {
-    if (!room) return;
+    if (!room || readyRequestInFlight.current) return;
     const newReady = !(me?.isReady ?? false);
+    readyRequestInFlight.current = true;
     setReadyError(null);
     setReadyLoading(true);
-    const result = await RoomService.setReady(room.roomId, newReady);
-    setReadyLoading(false);
-    if (result.ok) {
-      setActiveRoom(result.data);
-    } else {
-      setReadyError(
-        result.error.status === 401
-          ? "Session expired. Please sign in again."
-          : result.error.message,
-      );
+    try {
+      const result = await RoomService.setReady(room.roomId, newReady);
+      if (result.ok) {
+        setActiveRoom(result.data);
+      } else {
+        setReadyError(
+          result.error.status === 401
+            ? "Session expired. Please sign in again."
+            : result.error.message,
+        );
+      }
+    } finally {
+      readyRequestInFlight.current = false;
+      setReadyLoading(false);
     }
   }
 

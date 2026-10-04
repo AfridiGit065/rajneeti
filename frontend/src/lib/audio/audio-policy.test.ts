@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SFX_NAMES, type SfxName, shouldPlaySfx } from "@/lib/audio/sfx-policy";
-import { resolveMusicPlayback } from "@/lib/audio/music-policy";
+import { SFX_NAMES, type SfxName, shouldPlaySfx, shouldShowSoundHint } from "@/lib/audio/sfx-policy";
+import { resolveMusicPlayback, pickMusicSource, MUSIC_SOURCES } from "@/lib/audio/music-policy";
 
 test("every declared sound effect has a playable name", () => {
   assert.ok(SFX_NAMES.length > 0);
@@ -65,4 +65,45 @@ test("switching the toggle off and on again resumes music", () => {
   const off = resolveMusicPlayback({ ...state, musicEnabled: false });
   const back = resolveMusicPlayback({ ...state, musicEnabled: true });
   assert.deepEqual([on, off, back], ["play", "pause", "play"]);
+});
+
+test("the sound hint shows until the first interaction unlocks audio", () => {
+  assert.equal(
+    shouldShowSoundHint({ soundEnabled: true, musicEnabled: true, unlocked: false }),
+    true,
+  );
+  assert.equal(
+    shouldShowSoundHint({ soundEnabled: true, musicEnabled: true, unlocked: true }),
+    false,
+  );
+});
+
+test("the sound hint stays hidden when the player turned audio off entirely", () => {
+  assert.equal(
+    shouldShowSoundHint({ soundEnabled: false, musicEnabled: false, unlocked: false }),
+    false,
+  );
+});
+
+test("the sound hint appears for music-only players", () => {
+  assert.equal(
+    shouldShowSoundHint({ soundEnabled: false, musicEnabled: true, unlocked: false }),
+    true,
+  );
+});
+
+test("the shipped track extension is preferred", () => {
+  assert.match(MUSIC_SOURCES[0], /\.mpeg$/);
+});
+
+test("the first source the server serves wins", () => {
+  assert.equal(pickMusicSource(["/assets/game/music/rajneeti-theme.mp3"]), MUSIC_SOURCES[1]);
+  assert.equal(
+    pickMusicSource(["/assets/game/music/rajneeti-theme.mp3", "/assets/game/music/rajneeti-theme.mpeg"]),
+    MUSIC_SOURCES[0],
+  );
+});
+
+test("no available source yields null instead of a silent 404", () => {
+  assert.equal(pickMusicSource([]), null);
 });
