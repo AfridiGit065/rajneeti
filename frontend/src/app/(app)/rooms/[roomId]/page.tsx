@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { RoomService } from "@/services/room-service";
 import { useRoomStore } from "@/store/room-store";
@@ -17,6 +17,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ChatPanel } from "@/components/rooms/chat-panel";
 import { RealtimeStatusBadge } from "@/components/layout/realtime-status-badge";
 import { PageBackground } from "@/components/layout/page-background";
+import type { MatchStartedPayload, WebSocketEvent } from "@/types/websocket";
 import {
   RoomCodeDisplay,
   Seat,
@@ -63,6 +64,40 @@ export default function RoomDetailPage() {
   const [startLoading, setStartLoading] = useState(false);
   const [startDialogOpen, setStartDialogOpen] = useState(false);
 
+  // Guards against navigating twice for the same match. The host is told to
+  // navigate twice — once by the startGame REST response and again by the
+  // START_GAME broadcast — and a STOMP reconnect replays the subscription, so
+  // the same event can arrive repeatedly. Only the first navigation counts.
+  const navigatedMatchIdRef = useRef<string | null>(null);
+
+  function navigateToMatch(matchId: string | null | undefined) {
+    if (!matchId) return;
+    if (navigatedMatchIdRef.current === matchId) return;
+    navigatedMatchIdRef.current = matchId;
+    router.push(`/game/${matchId}`);
+  }
+
+  /**
+   * A START_GAME broadcast carries the match id in its payload. The envelope's
+   * own `matchId` is null on the room topic (the publisher only fills it for the
+   * match topic), so the payload is the authoritative source here.
+   */
+  function handleRoomEvent(event: WebSocketEvent) {
+    if (event.eventType === "START_GAME") {
+      const payload = event.payload as Partial<MatchStartedPayload> | null | undefined;
+      const matchId = payload?.matchId ?? event.matchId ?? null;
+      navigateToMatch(matchId);
+      return;
+    }
+    // Any other room event (join, ready, host change, chat) just re-syncs the room.
+    setReloadKey((k) => k + 1);
+  }
+
+  useEffect(() => {
+    // A different room means a different match; re-arm the guard.
+    navigatedMatchIdRef.current = null;
+  }, [roomId]);
+
   useEffect(() => {
     let cancelled = false;
     RoomService.getRoomById(roomId).then((result) => {
@@ -80,9 +115,7 @@ export default function RoomDetailPage() {
     };
   }, [roomId, reloadKey, setActiveRoom]);
 
-  useRoomRealtime(roomId, !!activeRoom, () => {
-    setReloadKey((k) => k + 1);
-  });
+  useRoomRealtime(roomId, !!activeRoom, handleRoomEvent);
 
   const room = activeRoom;
   const me = room?.players.find((p) => p.user.id === currentUser?.id) ?? null;
@@ -139,7 +172,7 @@ export default function RoomDetailPage() {
       return;
     }
     setStartDialogOpen(false);
-    router.push(`/game/${result.data.matchId}`);
+    navigateToMatch(result.data.matchId);
   }
 
   if (view === "loading") {
