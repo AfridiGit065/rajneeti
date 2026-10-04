@@ -93,13 +93,13 @@ test("the sound hint appears for music-only players", () => {
 });
 
 test("the shipped track extension is preferred", () => {
-  assert.match(MUSIC_SOURCES[0], /\.mpeg$/);
+  assert.match(MUSIC_SOURCES[0], /\.mp3$/);
 });
 
 test("the first source the server serves wins", () => {
-  assert.equal(pickMusicSource(["/assets/game/music/rajneeti-theme.mp3"]), MUSIC_SOURCES[1]);
+  assert.equal(pickMusicSource(["/assets/game/music/rajneeti-theme.mpeg"]), MUSIC_SOURCES[1]);
   assert.equal(
-    pickMusicSource(["/assets/game/music/rajneeti-theme.mp3", "/assets/game/music/rajneeti-theme.mpeg"]),
+    pickMusicSource(["/assets/game/music/rajneeti-theme.mpeg", "/assets/game/music/rajneeti-theme.mp3"]),
     MUSIC_SOURCES[0],
   );
 });

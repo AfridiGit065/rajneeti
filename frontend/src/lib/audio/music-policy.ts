@@ -25,8 +25,8 @@ export function resolveMusicPlayback(gate: MusicGate): MusicPlayback {
  * silence, so the first source that actually resolves wins.
  */
 export const MUSIC_SOURCES = [
-  "/assets/game/music/rajneeti-theme.mpeg",
   "/assets/game/music/rajneeti-theme.mp3",
+  "/assets/game/music/rajneeti-theme.mpeg",
 ] as const;
 
 /** Picks the first candidate the server can actually serve. */
