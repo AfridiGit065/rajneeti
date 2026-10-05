@@ -104,7 +104,7 @@ export default function RoomDetailPage() {
 
   useEffect(() => {
     let cancelled = false;
-    RoomService.getRoomById(roomId).then((result) => {
+    RoomService.getRoomById(roomId).then(async (result) => {
       if (cancelled) return;
       if (!result.ok) {
         setView(result.error.status === 404 ? "notfound" : "error");
@@ -113,6 +113,14 @@ export default function RoomDetailPage() {
       }
       setActiveRoom(result.data);
       setView("ready");
+      // The broadcast is the fast path, not the only path. A room that has left
+      // the lobby means the match exists, so ask the room which match it owns
+      // instead of stranding the player on a room that no longer renders.
+      if (result.data.status !== "WAITING") {
+        const active = await RoomService.getActiveMatch(roomId);
+        if (cancelled) return;
+        if (active.ok) navigateToMatch(active.data.matchId);
+      }
     });
     return () => {
       cancelled = true;

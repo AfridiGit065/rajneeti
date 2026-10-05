@@ -27,4 +27,7 @@ export const RoomService = {
   async startGame(roomId: string): Promise<Result<{ matchId: string }>> {
     return repositories.room.startGame(roomId);
   },
+  async getActiveMatch(roomId: string): Promise<Result<{ matchId: string }>> {
+    return repositories.room.getActiveMatch(roomId);
+  },
 };

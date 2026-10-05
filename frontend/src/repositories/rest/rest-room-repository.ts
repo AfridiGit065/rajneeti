@@ -78,4 +78,8 @@ export class RestRoomRepository implements RoomRepository {
     const result = await apiClient.post<BackendMatch>(`/api/rooms/${roomId}/start`);
     return result.ok ? { ok: true, data: { matchId: result.data.id } } : result;
   }
+  async getActiveMatch(roomId: string): Promise<Result<{ matchId: string }>> {
+    const result = await apiClient.get<BackendMatch>(`/api/rooms/${roomId}/match`);
+    return result.ok ? { ok: true, data: { matchId: result.data.id } } : result;
+  }
 }

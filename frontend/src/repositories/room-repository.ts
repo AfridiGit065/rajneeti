@@ -10,4 +10,5 @@ export interface RoomRepository {
   leaveRoom(roomId: string): Promise<Result<void>>;
   readyUp(roomId: string, ready: boolean): Promise<Result<RoomSummary>>;
   startGame(roomId: string): Promise<Result<{ matchId: string }>>;
+  getActiveMatch(roomId: string): Promise<Result<{ matchId: string }>>;
 }

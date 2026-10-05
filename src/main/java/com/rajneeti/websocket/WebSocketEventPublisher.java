@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -29,6 +31,30 @@ public class WebSocketEventPublisher {
 
     private static final String ROOM_QUEUE = "/queue/events";
 
+    /**
+     * Defers a broadcast until the surrounding transaction has committed.
+     *
+     * <p>Subscribers treat every room event as "re-read the room now". If the
+     * frame left the server before the commit, that re-read races the very write
+     * the event announces and observes the previous state, which the client
+     * then caches as if it were authoritative (a stale readiness snapshot, for
+     * example). Sending after commit makes the announced state the only state a
+     * subscriber can observe. Outside a transaction the send is immediate, so
+     * non-transactional callers behave exactly as before.
+     */
+    private void afterCommit(Runnable broadcast) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    broadcast.run();
+                }
+            });
+            return;
+        }
+        broadcast.run();
+    }
+
     private WebSocketEvent build(WebSocketEventType type, UUID roomId, UUID matchId,
                                  UUID senderId, Object payload) {
         return WebSocketEvent.builder()
@@ -47,12 +73,14 @@ public class WebSocketEventPublisher {
             return;
         }
         String destination = wsProperties.getTopicPrefix() + "/rooms/" + roomId;
-        try {
-            messagingTemplate.convertAndSend(destination,
-                    build(type, roomId, null, senderId, payload));
-        } catch (Exception ex) {
-            log.warn("Failed to broadcast {} to {}: {}", type, destination, ex.getMessage());
-        }
+        afterCommit(() -> {
+            try {
+                messagingTemplate.convertAndSend(destination,
+                        build(type, roomId, null, senderId, payload));
+            } catch (Exception ex) {
+                log.warn("Failed to broadcast {} to {}: {}", type, destination, ex.getMessage());
+            }
+        });
     }
 
     /** Broadcasts an event to everyone subscribed to a match topic. */
@@ -61,12 +89,14 @@ public class WebSocketEventPublisher {
             return;
         }
         String destination = wsProperties.getTopicPrefix() + "/matches/" + matchId;
-        try {
-            messagingTemplate.convertAndSend(destination,
-                    build(type, null, matchId, senderId, payload));
-        } catch (Exception ex) {
-            log.warn("Failed to broadcast {} to {}: {}", type, destination, ex.getMessage());
-        }
+        afterCommit(() -> {
+            try {
+                messagingTemplate.convertAndSend(destination,
+                        build(type, null, matchId, senderId, payload));
+            } catch (Exception ex) {
+                log.warn("Failed to broadcast {} to {}: {}", type, destination, ex.getMessage());
+            }
+        });
     }
 
     /** Sends an event to a single user's private queue ({@code /user/{id}/queue/events}). */
@@ -85,13 +115,15 @@ public class WebSocketEventPublisher {
         if (userId == null) {
             return;
         }
-        try {
-            // The STOMP principal name is the user UUID (see WebSocketPrincipal),
-            // so convertAndSendToUser resolves the private queue by userId.
-            messagingTemplate.convertAndSendToUser(userId.toString(), ROOM_QUEUE,
-                    build(type, null, matchId, senderId, payload));
-        } catch (Exception ex) {
-            log.warn("Failed to send {} to user {}: {}", type, userId, ex.getMessage());
-        }
+        // The STOMP principal name is the user UUID (see WebSocketPrincipal),
+        // so convertAndSendToUser resolves the private queue by userId.
+        afterCommit(() -> {
+            try {
+                messagingTemplate.convertAndSendToUser(userId.toString(), ROOM_QUEUE,
+                        build(type, null, matchId, senderId, payload));
+            } catch (Exception ex) {
+                log.warn("Failed to send {} to user {}: {}", type, userId, ex.getMessage());
+            }
+        });
     }
 }
