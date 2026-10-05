@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { RoomService } from "@/services/room-service";
 import { useRoomStore } from "@/store/room-store";
 import { useAuthStore } from "@/store/auth-store";
+import { useRealtimeStore } from "@/store/realtime-store";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +103,18 @@ export default function RoomDetailPage() {
     navigatedMatchIdRef.current = null;
   }, [roomId]);
 
+  const realtimeStatus = useRealtimeStore((s) => s.status);
+  const previousRealtimeStatus = useRef(realtimeStatus);
+  useEffect(() => {
+    const previous = previousRealtimeStatus.current;
+    previousRealtimeStatus.current = realtimeStatus;
+    // Whatever happened while the socket was down was never delivered, so on
+    // reconnect re-read the room instead of trusting the gap.
+    if (realtimeStatus === "connected" && previous !== "connected") {
+      setReloadKey((k) => k + 1);
+    }
+  }, [realtimeStatus]);
+
   useEffect(() => {
     let cancelled = false;
     RoomService.getRoomById(roomId).then(async (result) => {
@@ -126,6 +139,21 @@ export default function RoomDetailPage() {
       cancelled = true;
     };
   }, [roomId, reloadKey, setActiveRoom]);
+
+  // Last-resort net for a broadcast that never arrives — a silently dead socket
+  // delivers nothing and never fires a reconnect, which would otherwise leave a
+  // player waiting in the lobby forever. One cheap read of the room every few
+  // seconds while it is still WAITING, and nothing at all once it is not: the
+  // read reuses the same path above, so it lands on the same active match.
+  useEffect(() => {
+    if (view !== "ready" || !activeRoom) return;
+    if (activeRoom.status !== "WAITING") return;
+    const timer = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      setReloadKey((k) => k + 1);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [view, activeRoom?.roomId, activeRoom?.status]);
 
   useRoomRealtime(roomId, !!activeRoom, handleRoomEvent);
 
