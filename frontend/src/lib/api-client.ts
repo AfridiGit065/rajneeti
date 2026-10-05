@@ -1,6 +1,21 @@
 import { err, ok, type ApiError, type ApiResponse, type Result } from "@/types/api";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
+/**
+ * Normalises the configured API origin.
+ *
+ * Repositories pass paths that already start with `/api`, so the base must be a
+ * bare origin. A base that still carries a trailing `/api` silently turns
+ * registration into `/api/api/auth/register`, which is not a public route and
+ * answers 401 "valid Bearer token required" — a very confusing failure for a
+ * request that needs no token at all. Stripping it keeps both spellings working.
+ */
+export function normalizeApiBase(raw: string | undefined): string {
+  const trimmed = (raw ?? "").trim();
+  const base = (trimmed === "" ? "http://localhost:8080" : trimmed).replace(/\/+$/, "");
+  return base.replace(/\/api$/i, "");
+}
+
+const API_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL);
 
 let getAccessToken: (() => string | null) | null = null;
 let onUnauthorized: (() => void) | null = null;

@@ -1,8 +1,8 @@
-import { apiClient } from "@/lib/api-client";
+import { apiClient, normalizeApiBase } from "@/lib/api-client";
 import type { BackendProfile } from "@/types/backend";
 import type { Result } from "@/types/api";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").replace(/\/$/, "");
+const API_URL = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL);
 
 export interface ProfileRepository {
   getProfile(): Promise<Result<BackendProfile>>;
